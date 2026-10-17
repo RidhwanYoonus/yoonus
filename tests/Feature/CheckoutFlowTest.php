@@ -117,6 +117,20 @@ class CheckoutFlowTest extends TestCase
         $this->assertStringContainsString('1,186.37', $html);
     }
 
+    public function test_bag_shows_gold_price_breakdown_but_not_for_fixed_price_items(): void
+    {
+        Product::create(['name' => 'Watch', 'sku' => 'W-9', 'slug' => 'watch', 'pricing_type' => 'FIXED', 'fixed_price' => 800, 'weight_grams' => 0, 'stock_qty' => 2]);
+        $this->post('/cart/add/band', ['qty' => 2]);
+        $this->post('/cart/add/watch');
+
+        $html = $this->get('/cart')->assertOk()->getContent();
+        $this->assertStringContainsString('Gold value (5.000 g × AED 200.00) × 2', $html);
+        $this->assertStringContainsString('AED 2,000.00', $html);                 // gold value for 2 pieces
+        $this->assertStringContainsString('Making charge (10%)', $html);
+        $this->assertStringContainsString('AED 200.00', $html);                   // making for 2 pieces
+        $this->assertSame(1, substr_count($html, 'Making charge'));               // the watch has no breakdown
+    }
+
     public function test_tiered_and_free_shipping_coupons(): void
     {
         Coupon::create(['code' => 'FREESHIP', 'name' => 'Free', 'type' => 'free_shipping', 'scope' => 'cart', 'stackable' => true]);

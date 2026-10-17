@@ -26,10 +26,11 @@
         <div class="mt-8 grid gap-10 lg:grid-cols-[1fr_360px]">
             <ul class="divide-y divide-line border-y border-line">
                 @foreach ($lines as $line)
-                    <li class="flex gap-4 py-5">
-                        <img src="{{ $line->product->primaryImage() }}" alt="" class="h-24 w-24 rounded-xl border border-line object-cover">
-                        <div class="flex-1">
+                    <li class="grid grid-cols-[5rem_1fr] gap-x-4 gap-y-3 py-5 sm:grid-cols-[6rem_1fr_auto]">
+                        <img src="{{ $line->product->primaryImage() }}" alt="" class="h-20 w-20 rounded-xl border border-line object-cover sm:h-24 sm:w-24">
+                        <div class="min-w-0">
                             <a href="{{ route('product.show', $line->product) }}" class="font-medium hover:text-gold-700">{{ $line->product->localized('name') }}</a>
+                            <p class="price font-semibold sm:hidden">{{ Money::format($line->subtotal()) }}</p>
                             <p class="text-xs text-muted">{{ $line->product->specLine() }} · {{ Money::format($line->unit->taxable) }} {{ __('shop.cart.each') }}</p>
                             <div class="mt-3 flex items-center gap-3">
                                 <form method="POST" action="{{ route('cart.update', $line->product->id) }}" class="flex items-center gap-2">
@@ -39,7 +40,20 @@
                                 <form method="POST" action="{{ route('cart.remove', $line->product->id) }}">@csrf @method('DELETE')<button class="text-xs text-muted underline">{{ __('shop.cart.remove') }}</button></form>
                             </div>
                         </div>
-                        <p class="price font-semibold">{{ Money::format($line->subtotal()) }}</p>
+                        <p class="price hidden font-semibold sm:block">{{ Money::format($line->subtotal()) }}</p>
+                            @unless ($line->product->isFixedPrice())
+                                @php($u = $line->unit)
+                                @php($q = $line->qty)
+                                {{-- How the gold price is built up, for this line (all quantities). --}}
+                                <dl class="price col-span-full max-w-md space-y-1 rounded-xl bg-sand/50 px-3 py-2 text-xs text-muted sm:col-span-1 sm:col-start-2">
+                                    <div class="flex justify-between gap-4"><dt>{{ __('shop.breakdown.gold', ['weight' => $line->product->weight_grams, 'rate' => Money::toAed($u->rateFils)]) }}@if ($q > 1) × {{ $q }}@endif</dt><dd>{{ Money::format($u->goldValue * $q) }}</dd></div>
+                                    <div class="flex justify-between gap-4"><dt>{{ __('shop.breakdown.making') }}@if ($line->product->manufacturer_charge_type === 'PERCENTAGE') ({{ rtrim(rtrim((string) $line->product->manufacturer_charge_value, '0'), '.') }}%)@endif</dt><dd>{{ Money::format($u->makingFee * $q) }}</dd></div>
+                                    @if ($u->stoneValue)<div class="flex justify-between gap-4"><dt>{{ __('shop.breakdown.stone') }}@if ($line->product->stone_type) ({{ $line->product->stone_type }})@endif</dt><dd>{{ Money::format($u->stoneValue * $q) }}</dd></div>@endif
+                                    @if ($u->wastage)<div class="flex justify-between gap-4"><dt>{{ __('shop.breakdown.wastage') }}</dt><dd>{{ Money::format($u->wastage * $q) }}</dd></div>@endif
+                                    @if ($u->rounding)<div class="flex justify-between gap-4"><dt>{{ __('shop.breakdown.rounding') }}</dt><dd>{{ Money::format($u->rounding * $q) }}</dd></div>@endif
+                                    <div class="flex justify-between gap-4 border-t border-line pt-1 font-medium text-ink"><dt>{{ __('shop.breakdown.price_ex_vat') }}</dt><dd>{{ Money::format($line->subtotal()) }}</dd></div>
+                                </dl>
+                            @endunless
                     </li>
                 @endforeach
             </ul>
