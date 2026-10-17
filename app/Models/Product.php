@@ -31,6 +31,7 @@ class Product extends Model
             'wastage_percent' => 'decimal:2',
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
+            'fixed_price' => 'decimal:2',
             'cached_gold_value' => 'decimal:2',
             'cached_making_fee' => 'decimal:2',
             'cached_subtotal' => 'decimal:2',
@@ -91,6 +92,20 @@ class Product extends Model
     public function displayPrice(): PriceBreakdown
     {
         return app(PricingService::class)->displayPriceFor($this);
+    }
+
+    public function isFixedPrice(): bool
+    {
+        return $this->pricing_type === 'FIXED';
+    }
+
+    /** Short spec line for cards and the bag, e.g. "22K · 5 g", "18K", or the category for non-gold items. */
+    public function specLine(): string
+    {
+        $weight = (float) $this->weight_grams > 0 ? rtrim(rtrim((string) $this->weight_grams, '0'), '.').' '.__('shop.product.g') : null;
+        $parts = array_filter([$this->goldCategory?->name, $weight]);
+
+        return $parts ? implode(' · ', $parts) : (string) $this->category?->localized('name');
     }
 
     public function inStock(): bool

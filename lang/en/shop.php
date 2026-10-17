@@ -52,6 +52,7 @@ return [
         'add_to_cart' => 'Add to bag', 'sold_out' => 'Sold out', 'out_of_stock' => 'This piece is currently out of stock.',
         'only_left' => '{1} Only 1 left|[2,*] Only :count left',
         'related' => 'You may also like',
+        'fixed_price' => 'Fixed price',
     ],
 
     'breakdown' => [
@@ -65,6 +66,7 @@ return [
         'discount' => 'Offer discount (before VAT)',
         'vat' => 'VAT :vat%',
         'total' => 'Total',
+        'price_ex_vat' => 'Price (excl. VAT)',
     ],
 
     'whatsapp' => [

@@ -12,10 +12,10 @@
                     <tr><th class="w-40 bg-sand/50 px-4 py-3 text-start"></th>@foreach ($products as $p)<td class="px-4 py-3"><img src="{{ $p->primaryImage() }}" alt="" class="aspect-square w-32 rounded-xl object-cover"><a href="{{ route('product.show', $p) }}" class="mt-2 block font-medium">{{ $p->localized('name') }}</a></td>@endforeach</tr>
                     @php($rows = [
                         __('shop.product.price') => fn ($p) => Money::format($p->displayPrice()->total),
-                        __('shop.filters.karat') => fn ($p) => $p->goldCategory->name,
-                        __('shop.product.weight') => fn ($p) => $p->weight_grams.' g',
-                        __('shop.breakdown.gold_short') => fn ($p) => Money::format($p->price()->goldValue),
-                        __('shop.breakdown.making') => fn ($p) => Money::format($p->price()->makingFee),
+                        __('shop.filters.karat') => fn ($p) => $p->goldCategory?->name ?? '—',
+                        __('shop.product.weight') => fn ($p) => (float) $p->weight_grams > 0 ? $p->weight_grams.' g' : '—',
+                        __('shop.breakdown.gold_short') => fn ($p) => $p->isFixedPrice() ? __('shop.product.fixed_price') : Money::format($p->price()->goldValue),
+                        __('shop.breakdown.making') => fn ($p) => $p->isFixedPrice() ? '—' : Money::format($p->price()->makingFee),
                         __('shop.breakdown.stone') => fn ($p) => $p->stone_type ? $p->stone_type.' · '.Money::format($p->price()->stoneValue) : '—',
                         __('shop.filters.category') => fn ($p) => $p->category?->localized('name') ?? '—',
                     ])

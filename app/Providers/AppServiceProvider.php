@@ -36,7 +36,7 @@ class AppServiceProvider extends ServiceProvider
 
         // A product edit (e.g. switching making charge % ↔ per piece) re-prices it immediately.
         Product::saved(function (Product $p) {
-            if ($p->wasChanged(['weight_grams', 'manufacturer_charge_type', 'manufacturer_charge_value', 'stone_value', 'wastage_percent', 'gold_category_id']) || $p->wasRecentlyCreated) {
+            if ($p->wasChanged(['weight_grams', 'manufacturer_charge_type', 'manufacturer_charge_value', 'stone_value', 'wastage_percent', 'gold_category_id', 'pricing_type', 'fixed_price']) || $p->wasRecentlyCreated) {
                 app(PricingService::class)->refreshCachedPrice($p, null, $p->wasRecentlyCreated ? 'created' : 'product_edit');
             }
             StorefrontCache::flushPriceDependent();

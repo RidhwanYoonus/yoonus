@@ -15,7 +15,7 @@ class ProductCsv
     public const COLUMNS = [
         'sku', 'name', 'name_ar', 'category', 'karat', 'weight_grams', 'manufacturer_charge_type', 'manufacturer_charge_value',
         'stone_value', 'stone_type', 'wastage_percent', 'stock_qty', 'is_active', 'is_featured', 'hallmark_ref',
-        'description', 'description_ar', 'images',
+        'description', 'description_ar', 'images', 'pricing_type', 'fixed_price',
     ];
 
     public static function export(): \Closure
@@ -27,10 +27,10 @@ class ProductCsv
             Product::with('goldCategory', 'category')->orderBy('sku')->chunk(500, function ($products) use ($out) {
                 foreach ($products as $p) {
                     fputcsv($out, [
-                        $p->sku, $p->name, $p->name_ar, $p->category?->name, $p->goldCategory->name, $p->weight_grams,
+                        $p->sku, $p->name, $p->name_ar, $p->category?->name, $p->goldCategory?->name, $p->weight_grams,
                         $p->manufacturer_charge_type, $p->manufacturer_charge_value, $p->stone_value, $p->stone_type,
                         $p->wastage_percent, $p->stock_qty, (int) $p->is_active, (int) $p->is_featured, $p->hallmark_ref,
-                        $p->description, $p->description_ar, implode('|', $p->images ?? []),
+                        $p->description, $p->description_ar, implode('|', $p->images ?? []), $p->pricing_type, $p->fixed_price,
                         $p->cached_sales_price, $p->price_calculated_at?->toDateTimeString(),
                     ]);
                 }
@@ -59,14 +59,16 @@ class ProductCsv
                     continue;
                 }
                 $data = array_combine($header, array_pad(array_slice($row, 0, count($header)), count($header), null));
+                $fixed = strtoupper(trim((string) ($data['pricing_type'] ?? ''))) === 'FIXED';
                 $v = Validator::make($data, [
-                    'sku' => 'required|max:64', 'name' => 'required|max:255', 'karat' => 'required',
-                    'weight_grams' => 'required|numeric|min:0.001', 'manufacturer_charge_type' => 'nullable|in:PER_PIECE,PERCENTAGE,per_piece,percentage',
+                    'sku' => 'required|max:64', 'name' => 'required|max:255', 'karat' => $fixed ? 'nullable' : 'required',
+                    'weight_grams' => $fixed ? 'nullable|numeric|min:0' : 'required|numeric|min:0.001',
+                    'fixed_price' => $fixed ? 'required|numeric|min:0.01' : 'nullable|numeric', 'manufacturer_charge_type' => 'nullable|in:PER_PIECE,PERCENTAGE,per_piece,percentage',
                     'manufacturer_charge_value' => 'nullable|numeric|min:0', 'stone_value' => 'nullable|numeric|min:0',
                     'wastage_percent' => 'nullable|numeric|min:0|max:100', 'stock_qty' => 'nullable|integer|min:0',
                 ]);
                 $karatId = $karats[strtoupper(trim((string) $data['karat']))] ?? null;
-                if ($v->fails() || ! $karatId) {
+                if ($v->fails() || (! $karatId && ! $fixed)) {
                     $result['errors'][] = "Row {$line}: ".($karatId ? $v->errors()->first() : "unknown karat '{$data['karat']}'");
 
                     continue;
@@ -83,7 +85,9 @@ class ProductCsv
                     'slug' => $product->slug ?: self::uniqueSlug($data['name'], $data['sku']),
                     'category_id' => $category?->id,
                     'gold_category_id' => $karatId,
-                    'weight_grams' => $data['weight_grams'],
+                    'weight_grams' => $data['weight_grams'] ?: 0,
+                    'pricing_type' => $fixed ? 'FIXED' : 'GOLD_RATE',
+                    'fixed_price' => $fixed ? $data['fixed_price'] : null,
                     'manufacturer_charge_type' => strtoupper($data['manufacturer_charge_type'] ?: 'PERCENTAGE'),
                     'manufacturer_charge_value' => $data['manufacturer_charge_value'] ?: 0,
                     'stone_value' => $data['stone_value'] ?: 0,

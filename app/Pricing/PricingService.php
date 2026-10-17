@@ -42,9 +42,9 @@ class PricingService
             ->pluck('rate_per_gram', 'id')->map(fn ($r) => Money::toFils($r))->all());
     }
 
-    public function rateFor(int $goldCategoryId): int
+    public function rateFor(?int $goldCategoryId): int
     {
-        return $this->rates()[$goldCategoryId] ?? 0;
+        return $goldCategoryId ? ($this->rates()[$goldCategoryId] ?? 0) : 0;
     }
 
     public function vatBpFor(?int $goldCategoryId): int
@@ -55,7 +55,7 @@ class PricingService
                 + ['default' => Money::scaled(VatSetting::where('is_default', true)->value('vat_percent') ?? Settings::get('default_vat_percent', 5), 2)];
         });
 
-        return $map[$goldCategoryId] ?? $map['default'];
+        return ($goldCategoryId ? ($map[$goldCategoryId] ?? null) : null) ?? $map['default'];
     }
 
     public function roundingMode(): RoundingMode

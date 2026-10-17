@@ -20,6 +20,10 @@ final class PriceCalculator
 {
     public function calculate(PricingInput $in, int $rateFils, int $vatBp, RoundingMode $rounding = RoundingMode::Fils, int $discount = 0): PriceBreakdown
     {
+        if ($in->pricingType === 'FIXED') {
+            return $this->fixed($in, $vatBp, $discount);
+        }
+
         $gold = Money::divRound($in->weightMg * $rateFils, 1000);
         $making = $in->chargeType === 'PER_PIECE' ? $in->chargeValue : Money::percentOf($gold, $in->chargeValue);
         $wastage = Money::percentOf($gold, $in->wastageBp);
@@ -40,6 +44,26 @@ final class PriceCalculator
 
         return new PriceBreakdown($rateFils, $gold, $making, $in->stoneFils, $wastage, $origRounding,
             $origTaxable, $discount, $taxable, $vatBp, $vat, $taxable + $vat, $origTaxable + $origVat);
+    }
+
+    /**
+     * Fixed-price product: the admin enters the selling price incl. VAT. VAT is split out of it,
+     * and discounts still come off the pre-VAT amount.
+     */
+    private function fixed(PricingInput $in, int $vatBp, int $discount): PriceBreakdown
+    {
+        $total = $in->fixedFils;
+        $taxable = Money::divRound($total * 10000, 10000 + $vatBp);
+        $vat = $total - $taxable;
+
+        $discount = max(0, min($discount, $taxable));
+        if ($discount === 0) {
+            return new PriceBreakdown(0, 0, 0, 0, 0, 0, $taxable, 0, $taxable, $vatBp, $vat, $total, $total);
+        }
+        $newTaxable = $taxable - $discount;
+        $newVat = Money::percentOf($newTaxable, $vatBp);
+
+        return new PriceBreakdown(0, 0, 0, 0, 0, 0, $taxable, $discount, $newTaxable, $vatBp, $newVat, $newTaxable + $newVat, $total);
     }
 
     /** @return array{0:int,1:int,2:int} taxable, vat, rounding adjustment */

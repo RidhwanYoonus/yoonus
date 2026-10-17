@@ -87,7 +87,7 @@ class OrderService
                     'product_name' => $line->product->name,
                     'product_name_ar' => $line->product->name_ar,
                     'sku' => $line->product->sku,
-                    'karat' => $line->product->goldCategory->name,
+                    'karat' => $line->product->goldCategory?->name ?? ($line->product->isFixedPrice() ? 'Fixed price' : '—'),
                     'weight_grams' => $line->product->weight_grams,
                     'qty' => $line->qty,
                     'gold_rate_snapshot' => Money::toAed($u->rateFils),

@@ -24,7 +24,9 @@
     <g:identifier_exists>no</g:identifier_exists>
     <g:google_product_category>188</g:google_product_category>
     <g:product_type>{{ $i['product_type'] }}</g:product_type>
+@if ($i['material'])
     <g:material>{{ $i['material'] }}</g:material>
+@endif
     <g:product_detail>
       <g:attribute_name>Weight</g:attribute_name>
       <g:attribute_value>{{ $i['weight'] }}</g:attribute_value>

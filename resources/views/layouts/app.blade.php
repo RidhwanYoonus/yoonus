@@ -45,7 +45,8 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @include('partials.pixels')
 </head>
-<body class="min-h-screen flex flex-col">
+@php($focus = $focus ?? false)
+<body class="min-h-screen flex flex-col {{ $focus ? 'pb-24' : 'pb-16' }} lg:pb-0">
     @include('partials.rate-banner')
     @include('partials.header')
 
@@ -62,8 +63,11 @@
 
     @include('partials.footer')
     @if (Settings::bool('whatsapp_button') && Settings::get('whatsapp_number'))
-        @include('partials.whatsapp-button')
+        @include('partials.whatsapp-button', ['hideOnMobile' => $focus])
     @endif
+    @unless ($focus)
+        @include('partials.mobile-nav')
+    @endunless
     @stack('scripts')
 </body>
 </html>

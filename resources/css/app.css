@@ -29,7 +29,12 @@
     [dir='rtl'] body { font-family: var(--font-arabic); }
     [dir='rtl'] .font-display { font-family: 'Tajawal', var(--font-arabic); font-weight: 700; }
     [x-cloak] { display: none !important; }
+    /* Amounts never break across lines ("AED / 2,400.00"). */
+    td.text-end, dd { white-space: nowrap; }
 }
+
+@utility no-scrollbar { scrollbar-width: none; &::-webkit-scrollbar { display: none; } }
+@utility pb-safe { padding-bottom: env(safe-area-inset-bottom); }
 
 @utility container-x { @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8; }
 @utility btn { @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-medium tracking-wide transition focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 focus-visible:ring-offset-2 disabled:opacity-50; }

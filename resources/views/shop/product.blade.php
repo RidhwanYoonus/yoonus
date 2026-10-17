@@ -1,15 +1,16 @@
 @extends('layouts.app')
 @php
+    $focus = true;   // sticky add-to-bag bar replaces the bottom nav on phones
     use App\Pricing\Money;
     $name = $product->localized('name');
     $images = $product->imageUrls() ?: [$product->primaryImage()];
     $shareText = __('shop.whatsapp.share', ['name' => $name, 'price' => Money::format($price->total), 'url' => route('product.show', $product)]);
-    $enquireText = __('shop.whatsapp.enquire', ['name' => $name, 'sku' => $product->sku, 'karat' => $product->goldCategory->name, 'weight' => $product->weight_grams, 'url' => route('product.show', $product)]);
+    $enquireText = __('shop.whatsapp.enquire', ['name' => $name, 'sku' => $product->sku, 'karat' => $product->goldCategory?->name ?? '-', 'weight' => $product->weight_grams, 'url' => route('product.show', $product)]);
     $fmt = fn ($f) => Money::format($f);
 @endphp
 
 @section('content')
-<div class="container-x py-10">
+<div class="container-x py-6 sm:py-10">
     <nav class="text-xs text-muted" aria-label="breadcrumb">
         <a href="{{ route('home') }}">{{ __('shop.nav.home') }}</a> /
         @if ($product->category)<a href="{{ route('category.show', $product->category) }}">{{ $product->category->localized('name') }}</a> /@endif
@@ -33,8 +34,11 @@
         </div>
 
         <div>
-            <p class="eyebrow">{{ $product->goldCategory->name }} {{ __('shop.product.gold') }} · {{ $product->category?->localized('name') }}</p>
-            <h1 class="font-display mt-2 text-4xl">{{ $name }}</h1>
+            <p class="eyebrow">{{ collect([$product->goldCategory ? $product->goldCategory->name.' '.__('shop.product.gold') : null, $product->category?->localized('name')])->filter()->join(' · ') }}</p>
+            <h1 class="font-display mt-2 text-3xl sm:text-4xl">{{ $name }}</h1>
+            @if (auth()->user()?->is_admin)
+                <a href="{{ \App\Filament\Resources\ProductResource::getUrl('edit', ['record' => $product]) }}" class="mt-2 inline-flex items-center gap-1 rounded-full border border-gold-500 px-3 py-1 text-xs text-gold-700 hover:bg-gold-600 hover:text-white">✎ Edit in admin</a>
+            @endif
             <p class="mt-1 text-xs text-muted">SKU {{ $product->sku }} @if($product->hallmark_ref) · {{ __('shop.product.hallmark') }} {{ $product->hallmark_ref }} @endif</p>
 
             <div class="mt-6 flex flex-wrap items-baseline gap-3 price">
@@ -45,14 +49,20 @@
                 @endif
             </div>
             <p class="mt-1 text-xs text-muted">{{ __('shop.product.incl_vat', ['vat' => rtrim(rtrim($price->vatPercent(), '0'), '.')]) }}</p>
-            <p class="mt-2 text-xs text-muted">{{ __('shop.product.valid_as_of', ['time' => now()->locale(app()->getLocale())->isoFormat('LLL'), 'rate' => Money::format($price->rateFils)]) }}</p>
+            @unless ($product->isFixedPrice())
+                <p class="mt-2 text-xs text-muted">{{ __('shop.product.valid_as_of', ['time' => now()->locale(app()->getLocale())->isoFormat('LLL'), 'rate' => Money::format($price->rateFils)]) }}</p>
+            @endunless
 
             <div class="mt-8 card overflow-hidden">
                 <p class="border-b border-line bg-sand/60 px-5 py-3 text-xs font-medium uppercase tracking-wider text-muted">{{ __('shop.breakdown.title') }}</p>
                 <table class="w-full text-sm price">
                     <tbody class="divide-y divide-line">
+                        @if ($product->isFixedPrice())
+                        <tr><td class="px-5 py-2.5">{{ __('shop.breakdown.price_ex_vat') }}</td><td class="px-5 py-2.5 text-end">{{ $fmt($price->subtotal) }}</td></tr>
+                        @else
                         <tr><td class="px-5 py-2.5">{{ __('shop.breakdown.gold', ['weight' => $product->weight_grams, 'rate' => Money::toAed($price->rateFils)]) }}</td><td class="px-5 py-2.5 text-end">{{ $fmt($price->goldValue) }}</td></tr>
                         <tr><td class="px-5 py-2.5">{{ __('shop.breakdown.making') }} @if($product->manufacturer_charge_type === 'PERCENTAGE')<span class="text-muted">({{ rtrim(rtrim((string) $product->manufacturer_charge_value, '0'), '.') }}%)</span>@endif</td><td class="px-5 py-2.5 text-end">{{ $fmt($price->makingFee) }}</td></tr>
+                        @endif
                         @if ($price->stoneValue)<tr><td class="px-5 py-2.5">{{ __('shop.breakdown.stone') }} @if($product->stone_type)<span class="text-muted">({{ $product->stone_type }})</span>@endif</td><td class="px-5 py-2.5 text-end">{{ $fmt($price->stoneValue) }}</td></tr>@endif
                         @if ($price->wastage)<tr><td class="px-5 py-2.5">{{ __('shop.breakdown.wastage') }} <span class="text-muted">({{ rtrim(rtrim((string) $product->wastage_percent, '0'), '.') }}%)</span></td><td class="px-5 py-2.5 text-end">{{ $fmt($price->wastage) }}</td></tr>@endif
                         @if ($price->rounding)<tr><td class="px-5 py-2.5">{{ __('shop.breakdown.rounding') }}</td><td class="px-5 py-2.5 text-end">{{ $fmt($price->rounding) }}</td></tr>@endif
@@ -64,7 +74,7 @@
             </div>
 
             @if ($product->inStock())
-                <form method="POST" action="{{ route('cart.add', $product) }}" class="mt-6 flex gap-3">
+                <form id="add-to-bag" method="POST" action="{{ route('cart.add', $product) }}" class="mt-6 flex gap-3">
                     @csrf
                     <label class="sr-only" for="qty">{{ __('shop.cart.qty') }}</label>
                     <input id="qty" type="number" name="qty" value="1" min="1" max="{{ $product->stock_qty }}" class="input w-20 text-center">
@@ -75,7 +85,7 @@
                 <p class="mt-6 rounded-xl bg-sand px-4 py-3 text-sm">{{ __('shop.product.out_of_stock') }}</p>
             @endif
 
-            <div class="mt-3 grid grid-cols-2 gap-3">
+            <div class="mt-3 grid gap-3 sm:grid-cols-2">
                 <a href="{{ \App\Messaging\WhatsApp::link($whatsapp, $enquireText) }}" target="_blank" rel="noopener" class="btn-whatsapp">{{ __('shop.whatsapp.enquire_cta') }}</a>
                 <a href="https://wa.me/?text={{ rawurlencode($shareText) }}" target="_blank" rel="noopener" class="btn-outline">{{ __('shop.whatsapp.share_cta') }}</a>
             </div>
@@ -88,8 +98,8 @@
                 <div class="prose mt-8 max-w-none text-sm leading-relaxed text-muted">{!! nl2br(e($product->localized('description'))) !!}</div>
             @endif
             <dl class="mt-6 grid grid-cols-2 gap-3 text-sm">
-                <div class="card px-4 py-3"><dt class="text-xs text-muted">{{ __('shop.product.purity') }}</dt><dd class="font-medium">{{ $product->goldCategory->name }} ({{ $product->goldCategory->purity_percent }}%)</dd></div>
-                <div class="card px-4 py-3"><dt class="text-xs text-muted">{{ __('shop.product.weight') }}</dt><dd class="font-medium">{{ $product->weight_grams }} {{ __('shop.product.g') }}</dd></div>
+                @if ($product->goldCategory)<div class="card px-4 py-3"><dt class="text-xs text-muted">{{ __('shop.product.purity') }}</dt><dd class="font-medium">{{ $product->goldCategory->name }} ({{ $product->goldCategory->purity_percent }}%)</dd></div>@endif
+                @if ((float) $product->weight_grams > 0)<div class="card px-4 py-3"><dt class="text-xs text-muted">{{ __('shop.product.weight') }}</dt><dd class="font-medium">{{ $product->weight_grams }} {{ __('shop.product.g') }}</dd></div>@endif
             </dl>
         </div>
     </div>
@@ -119,6 +129,24 @@
             <p class="text-xs text-muted">{{ __('shop.reviews.moderated') }}</p>
         </form>
     </section>
+
+    {{-- Phones: price + Add to bag always in reach. --}}
+    <div class="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-line bg-ivory/95 backdrop-blur lg:hidden">
+        <div class="container-x flex items-center gap-3 py-3">
+            <div class="min-w-0 flex-1">
+                <p class="price truncate font-semibold text-gold-700">{{ $fmt($price->total) }}</p>
+                <p class="text-[11px] text-muted">{{ __('shop.product.incl_vat', ['vat' => rtrim(rtrim($price->vatPercent(), '0'), '.')]) }}</p>
+            </div>
+            <a href="{{ \App\Messaging\WhatsApp::link($whatsapp, $enquireText) }}" target="_blank" rel="noopener" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-white" aria-label="{{ __('shop.whatsapp.enquire_cta') }}">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 004.74 1.21c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zm5.8 14.02c-.24.68-1.41 1.3-1.95 1.38-.5.07-1.13.1-1.82-.12-.42-.13-.96-.31-1.65-.61-2.9-1.25-4.79-4.17-4.94-4.36-.14-.19-1.18-1.57-1.18-3s.75-2.13 1.02-2.42c.27-.29.58-.36.78-.36h.56c.18 0 .42-.07.66.5.24.58.82 2.01.89 2.16.07.14.12.31.02.5-.1.19-.14.31-.29.48-.14.17-.3.38-.43.5-.14.14-.29.3-.13.59.17.29.74 1.22 1.59 1.98 1.09.97 2.01 1.27 2.3 1.42.29.14.46.12.63-.07.17-.19.72-.84.91-1.13.19-.29.38-.24.65-.14.26.1 1.68.79 1.97.94.29.14.48.21.55.33.07.12.07.7-.17 1.38z"/></svg>
+            </a>
+            @if ($product->inStock())
+                <button form="add-to-bag" class="btn-dark shrink-0 px-5">{{ __('shop.product.add_to_cart') }}</button>
+            @else
+                <span class="shrink-0 rounded-full bg-sand px-4 py-2.5 text-xs">{{ __('shop.product.sold_out') }}</span>
+            @endif
+        </div>
+    </div>
 
     @if ($related->isNotEmpty())
         <section class="mt-20">

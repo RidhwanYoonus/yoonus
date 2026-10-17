@@ -71,7 +71,7 @@ class FeedController extends Controller
 
                 return [
                     'id' => $p->sku,
-                    'title' => Str::limit($p->name.' — '.$p->goldCategory->name.' Gold '.rtrim(rtrim((string) $p->weight_grams, '0'), '.').'g', 150, ''),
+                    'title' => Str::limit($p->goldCategory ? $p->name.' — '.$p->goldCategory->name.' Gold '.rtrim(rtrim((string) $p->weight_grams, '0'), '.').'g' : $p->name, 150, ''),
                     'description' => Str::limit(strip_tags((string) $p->description) ?: $p->name, 4900, ''),
                     'link' => route('product.show', $p),
                     'image' => url($p->primaryImage()),
@@ -80,7 +80,7 @@ class FeedController extends Controller
                     'price' => Money::toAed($price->total).' AED',
                     'sale_price' => $display->hasDiscount() ? Money::toAed($display->total).' AED' : null,
                     'brand' => Settings::get('store_name'),
-                    'material' => $p->goldCategory->name.' Gold',
+                    'material' => $p->goldCategory ? $p->goldCategory->name.' Gold' : null,
                     'product_type' => $p->category?->name ?? 'Jewelry',
                     'weight' => $p->weight_grams.' g',
                 ];

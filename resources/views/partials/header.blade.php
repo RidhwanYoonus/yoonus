@@ -3,11 +3,11 @@
     $categories = \Illuminate\Support\Facades\Cache::remember('nav.categories.'.app()->getLocale(), 300, fn () => \App\Models\Category::where('is_active', true)->orderBy('sort_order')->take(6)->get());
 @endphp
 <header class="sticky top-0 z-40 border-b border-line bg-ivory/95 backdrop-blur" x-data="{ open: false }">
-    <div class="container-x flex h-16 items-center gap-4">
+    <div class="container-x flex h-14 items-center gap-3 sm:h-16 sm:gap-4">
         <button class="lg:hidden -ms-2 p-2" @click="open = !open" aria-label="{{ __('shop.nav.menu') }}">
             <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
         </button>
-        <a href="{{ route('home') }}" class="font-display text-2xl tracking-wide text-gold-700">{{ \App\Support\Seo::storeName() }}</a>
+        <a href="{{ route('home') }}" class="font-display min-w-0 truncate text-xl leading-none tracking-wide text-gold-700 sm:text-2xl">{{ \App\Support\Seo::storeName() }}</a>
 
         <nav class="ms-8 hidden items-center gap-6 text-sm lg:flex">
             <a href="{{ route('shop.index') }}" class="hover:text-gold-600">{{ __('shop.nav.shop') }}</a>
@@ -17,15 +17,15 @@
             <a href="{{ route('gift-cards') }}" class="hover:text-gold-600">{{ __('shop.nav.gift_cards') }}</a>
         </nav>
 
-        <div class="ms-auto flex items-center gap-1 sm:gap-3 text-sm">
+        <div class="ms-auto flex shrink-0 items-center gap-1 sm:gap-3 text-sm">
             <form action="{{ route('shop.index') }}" class="hidden md:block">
                 <input name="q" type="search" value="{{ request('q') }}" placeholder="{{ __('shop.nav.search') }}" class="input w-44 rounded-full py-1.5" aria-label="{{ __('shop.nav.search') }}">
             </form>
             <a href="{{ request()->fullUrlWithQuery(['lang' => $rtl ? 'en' : 'ar']) }}" class="rounded-full border border-line px-3 py-1 text-xs hover:border-gold-500" hreflang="{{ $rtl ? 'en' : 'ar' }}">{{ $rtl ? 'English' : 'العربية' }}</a>
-            <a href="{{ route('wishlist') }}" class="p-2 hover:text-gold-600" aria-label="{{ __('shop.nav.wishlist') }}">
+            <a href="{{ route('wishlist') }}" class="hidden p-2 hover:text-gold-600 lg:inline-flex" aria-label="{{ __('shop.nav.wishlist') }}">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg>
             </a>
-            <a href="{{ auth()->check() ? route('account') : route('login') }}" class="p-2 hover:text-gold-600" aria-label="{{ __('shop.nav.account') }}">
+            <a href="{{ auth()->check() ? route('account') : route('login') }}" class="hidden p-2 hover:text-gold-600 lg:inline-flex" aria-label="{{ __('shop.nav.account') }}">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.1a7.5 7.5 0 0115 0A17.9 17.9 0 0112 21.75c-2.68 0-5.22-.58-7.5-1.65z"/></svg>
             </a>
             <a href="{{ route('cart.show') }}" class="relative p-2 hover:text-gold-600" aria-label="{{ __('shop.nav.cart') }}">

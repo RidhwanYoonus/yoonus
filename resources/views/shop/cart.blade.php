@@ -30,7 +30,7 @@
                         <img src="{{ $line->product->primaryImage() }}" alt="" class="h-24 w-24 rounded-xl border border-line object-cover">
                         <div class="flex-1">
                             <a href="{{ route('product.show', $line->product) }}" class="font-medium hover:text-gold-700">{{ $line->product->localized('name') }}</a>
-                            <p class="text-xs text-muted">{{ $line->product->goldCategory->name }} · {{ $line->product->weight_grams }} {{ __('shop.product.g') }} · {{ Money::format($line->unit->total) }} {{ __('shop.cart.each') }}</p>
+                            <p class="text-xs text-muted">{{ $line->product->specLine() }} · {{ Money::format($line->unit->total) }} {{ __('shop.cart.each') }}</p>
                             <div class="mt-3 flex items-center gap-3">
                                 <form method="POST" action="{{ route('cart.update', $line->product->id) }}" class="flex items-center gap-2">
                                     @csrf @method('PATCH')

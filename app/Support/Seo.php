@@ -31,10 +31,12 @@ class Seo
     {
         $price = $p->displayPrice();
         $name = $p->localized('name');
-        $title = $p->meta_title ?: __('shop.seo.product_title', ['name' => $name, 'karat' => $p->goldCategory->name, 'weight' => rtrim(rtrim((string) $p->weight_grams, '0'), '.')]);
+        $title = $p->meta_title ?: ($p->goldCategory
+            ? __('shop.seo.product_title', ['name' => $name, 'karat' => $p->goldCategory->name, 'weight' => rtrim(rtrim((string) $p->weight_grams, '0'), '.')])
+            : $name);
         $description = $p->meta_description ?: __('shop.seo.product_description', [
             'name' => $name,
-            'karat' => $p->goldCategory->name,
+            'karat' => $p->goldCategory?->name ?? '',
             'weight' => rtrim(rtrim((string) $p->weight_grams, '0'), '.'),
             'price' => Money::format($price->total),
         ]);
@@ -67,7 +69,7 @@ class Seo
             'image' => array_map(fn ($u) => url($u), $p->imageUrls() ?: [$p->primaryImage()]),
             'brand' => ['@type' => 'Brand', 'name' => Settings::get('store_name')],
             'category' => $p->category?->name ?? 'Jewelry',
-            'material' => $p->goldCategory->name.' Gold',
+            'material' => $p->goldCategory ? $p->goldCategory->name.' Gold' : null,
             'weight' => ['@type' => 'QuantitativeValue', 'value' => (float) $p->weight_grams, 'unitCode' => 'GRM'],
             'offers' => [
                 '@type' => 'Offer',

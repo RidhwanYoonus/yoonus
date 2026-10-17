@@ -1,5 +1,6 @@
 @extends('layouts.app')
 @php
+    $focus = true;   // sticky total bar replaces the bottom nav on phones
     use App\Pricing\Money;
     $user = auth()->user();
     $f = fn ($fils) => Money::format($fils);
@@ -22,8 +23,8 @@
 @endphp
 
 @section('content')
-<div class="container-x py-10" x-data="checkout(@js(['form' => $form, 'quote' => $initial, 'url' => route('checkout.quote'), 'csrf' => csrf_token()]))">
-    <h1 class="font-display text-4xl">{{ __('shop.checkout.title') }}</h1>
+<div class="container-x py-6 sm:py-10" x-data="checkout(@js(['form' => $form, 'quote' => $initial, 'url' => route('checkout.quote'), 'csrf' => csrf_token()]))">
+    <h1 class="font-display text-3xl sm:text-4xl">{{ __('shop.checkout.title') }}</h1>
 
     @if ($blocked)
         <div class="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{{ __('shop.checkout.rates_stale') }}</div>
@@ -39,7 +40,7 @@
         @csrf
         <input type="hidden" name="expected_total" :value="q.grand_total_raw">
         <div class="space-y-8">
-            <section class="card p-6">
+            <section class="card p-4 sm:p-6">
                 <h2 class="font-display text-2xl">{{ __('shop.checkout.contact') }}</h2>
                 @guest<p class="mt-1 text-sm text-muted">{{ __('shop.checkout.guest_note') }} <a href="{{ route('login') }}" class="text-gold-700 underline">{{ __('shop.auth.login') }}</a></p>@endguest
                 <div class="mt-4 grid gap-4 sm:grid-cols-2">
@@ -50,7 +51,7 @@
                 </div>
             </section>
 
-            <section class="card p-6">
+            <section class="card p-4 sm:p-6">
                 <h2 class="font-display text-2xl">{{ __('shop.checkout.delivery') }}</h2>
                 <div class="mt-4 grid grid-cols-2 gap-3">
                     <label class="card flex cursor-pointer items-center gap-3 p-4" :class="form.fulfilment === 'delivery' && 'border-gold-500 ring-1 ring-gold-500'"><input type="radio" name="fulfilment" value="delivery" x-model="form.fulfilment" class="accent-gold-600"> {{ __('shop.checkout.home_delivery') }}</label>
@@ -77,7 +78,7 @@
                 </div>
             </section>
 
-            <section class="card p-6">
+            <section class="card p-4 sm:p-6">
                 <h2 class="font-display text-2xl">{{ __('shop.checkout.payment') }}</h2>
                 <div class="mt-4 space-y-3">
                     <template x-for="(m, key) in q.methods" :key="key">
@@ -89,14 +90,14 @@
                 </div>
             </section>
 
-            <section class="card p-6">
+            <section class="card p-4 sm:p-6">
                 <label class="label" for="notes">{{ __('shop.checkout.notes') }}</label>
                 <textarea id="notes" name="notes" x-model="form.notes" rows="2" class="input"></textarea>
             </section>
         </div>
 
         <aside class="h-fit space-y-4 lg:sticky lg:top-24">
-            <div class="card p-6" :class="loading && 'opacity-60'">
+            <div class="card p-4 sm:p-6" :class="loading && 'opacity-60'">
                 <h2 class="font-display text-2xl">{{ __('shop.checkout.summary') }}</h2>
                 <ul class="mt-4 space-y-3 text-sm">
                     <template x-for="l in q.lines"><li class="flex justify-between gap-3"><span><span x-text="l.name"></span> <span class="text-muted" x-text="'× ' + l.qty"></span><span class="block text-xs text-gold-700" x-show="l.discount" x-text="'− ' + l.discount"></span></span><span class="price" x-text="l.total"></span></li></template>
@@ -124,9 +125,20 @@
                     <div class="flex justify-between font-semibold" x-show="q.gift_card"><dt>{{ __('shop.checkout.amount_due') }}</dt><dd x-text="q.amount_due"></dd></div>
                 </dl>
                 <p class="mt-3 text-xs text-muted">{{ __('shop.checkout.vat_note') }}</p>
-                <button class="btn-dark mt-5 w-full" @disabled($blocked) :disabled="loading">{{ __('shop.checkout.place') }}</button>
+                <button class="btn-dark mt-5 hidden w-full lg:flex" @disabled($blocked) :disabled="loading">{{ __('shop.checkout.place') }}</button>
             </div>
         </aside>
+
+        {{-- Phones: total + Place order always visible. --}}
+        <div class="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-line bg-ivory/95 backdrop-blur lg:hidden">
+            <div class="container-x flex items-center gap-3 py-3">
+                <div class="min-w-0 flex-1">
+                    <p class="text-[11px] text-muted">{{ __('shop.checkout.total') }} · {{ __('shop.product.incl_vat', ['vat' => 5]) }}</p>
+                    <p class="price truncate text-lg font-semibold text-gold-700" x-text="q.gift_card ? q.amount_due : q.grand_total"></p>
+                </div>
+                <button class="btn-dark shrink-0 px-6" @disabled($blocked) :disabled="loading">{{ __('shop.checkout.place') }}</button>
+            </div>
+        </div>
     </form>
 </div>
 @endsection

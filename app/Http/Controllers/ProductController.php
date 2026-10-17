@@ -19,7 +19,7 @@ class ProductController extends Controller
         Product::whereKey($product->id)->increment('view_count');
 
         $related = Product::with('goldCategory')->active()->whereKeyNot($product->id)
-            ->where(fn ($q) => $q->where('category_id', $product->category_id)->orWhere('gold_category_id', $product->gold_category_id))
+            ->where(fn ($q) => $q->where('category_id', $product->category_id)->when($product->gold_category_id, fn ($q) => $q->orWhere('gold_category_id', $product->gold_category_id)))
             ->inRandomOrder()->take(4)->get();
 
         return view('shop.product', [
