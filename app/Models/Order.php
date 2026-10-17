@@ -35,6 +35,8 @@ class Order extends Model
 
     protected $guarded = ['id'];
 
+    protected $hidden = ['id_number', 'handover_otp_hash'];
+
     protected function casts(): array
     {
         $money = collect(['items_subtotal', 'discount_total', 'taxable_amount', 'vat_total', 'shipping_total', 'shipping_vat', 'payment_fee', 'payment_fee_vat', 'grand_total', 'gift_card_amount', 'amount_due'])
@@ -45,6 +47,10 @@ class Order extends Model
             'paid_at' => 'datetime',
             'invoiced_at' => 'datetime',
             'conversion_sent' => 'boolean',
+            'id_number' => 'encrypted',
+            'id_expiry' => 'date',
+            'handover_otp_sent_at' => 'datetime',
+            'handover_verified_at' => 'datetime',
         ];
     }
 
@@ -81,6 +87,11 @@ class Order extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function hasIdDocument(): bool
+    {
+        return (bool) $this->id_type;
     }
 
     public function isPickup(): bool

@@ -42,7 +42,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('checkout.place') }}" class="mt-8 grid gap-10 lg:grid-cols-[1fr_400px]">
+    <form method="POST" action="{{ route('checkout.place') }}" enctype="multipart/form-data" class="mt-8 grid gap-10 lg:grid-cols-[1fr_400px]">
         @csrf
         <input type="hidden" name="expected_total" :value="q.grand_total_raw">
         <div class="space-y-8">
@@ -92,6 +92,52 @@
                     @endforeach
                 </div>
             </section>
+
+            @if ($idMode !== 'off')
+                @php($savedId = auth()->user()?->hasValidSavedId() ? auth()->user() : null)
+                <section class="card p-4 sm:p-6" x-data="{ mode: @js($idMode), useSaved: @js((bool) $savedId && old('use_saved_id', '1') === '1'), get needed() { return this.mode === 'all' || (this.mode === 'delivery' && this.form.fulfilment === 'delivery') } }" x-show="needed" x-cloak>
+                    <div class="flex items-start gap-3">
+                        <svg class="mt-1 h-6 w-6 shrink-0 text-gold-700" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 12l2 2 4-4m5.6-4.02A11.96 11.96 0 0112 2.94a11.96 11.96 0 01-8.6 3.04A12 12 0 003 9c0 5.6 3.82 10.3 9 11.62 5.18-1.33 9-6.03 9-11.62 0-1.04-.13-2.05-.38-3.02z"/></svg>
+                        <div><h2 class="font-display text-2xl">{{ __('shop.id.title') }}</h2><p class="mt-1 text-sm text-muted">{{ __('shop.id.intro') }}</p></div>
+                    </div>
+                    <input type="hidden" name="use_saved_id" :value="useSaved ? 1 : 0">
+
+                    @if ($savedId)
+                        <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                            <label class="card flex cursor-pointer items-center gap-3 p-4" :class="useSaved && 'border-gold-500 ring-1 ring-gold-500'"><input type="radio" :checked="useSaved" @change="useSaved = true" class="accent-gold-600">
+                                <span><span class="font-medium">{{ __('shop.id.use_saved') }}</span><span class="block text-xs text-muted">{{ \App\Support\IdDocument::masked($savedId->id_type, $savedId->id_last4) }}@if ($savedId->id_expiry) · {{ __('shop.id.expires', ['date' => $savedId->id_expiry->format('d/m/Y')]) }}@endif</span></span></label>
+                            <label class="card flex cursor-pointer items-center gap-3 p-4" :class="!useSaved && 'border-gold-500 ring-1 ring-gold-500'"><input type="radio" :checked="!useSaved" @change="useSaved = false" class="accent-gold-600"> {{ __('shop.id.use_new') }}</label>
+                        </div>
+                    @endif
+
+                    <div x-show="!useSaved" class="mt-4 grid gap-4 sm:grid-cols-2">
+                        <div><label class="label" for="id_type">{{ __('shop.id.type') }}</label>
+                            <select id="id_type" name="id_type" class="input" :required="needed && !useSaved" :disabled="!needed || useSaved">
+                                @foreach (\App\Support\IdDocument::TYPES as $t)<option value="{{ $t }}" @selected(old('id_type', 'emirates_id') === $t)>{{ __('shop.id.types.'.$t) }}</option>@endforeach
+                            </select>
+                        </div>
+                        <div><label class="label" for="id_number">{{ __('shop.id.number') }}</label>
+                            <input id="id_number" name="id_number" value="{{ old('id_number') }}" class="input" dir="ltr" placeholder="784-1990-1234567-1" autocomplete="off" :required="needed && !useSaved" :disabled="!needed || useSaved">
+                            @error('id_number')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror</div>
+                        <div><label class="label" for="id_expiry">{{ __('shop.id.expiry') }}</label>
+                            <input id="id_expiry" type="date" name="id_expiry" value="{{ old('id_expiry') }}" min="{{ now()->addDay()->toDateString() }}" class="input" :required="needed && !useSaved" :disabled="!needed || useSaved">
+                            @error('id_expiry')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror</div>
+                        <div class="hidden sm:block"></div>
+                        <div><label class="label" for="id_front">{{ __('shop.id.front') }}</label>
+                            <input id="id_front" type="file" name="id_front" accept="image/*,.pdf" class="input file:mr-3 file:rounded-full file:border-0 file:bg-sand file:px-3 file:py-1 file:text-xs" :required="needed && !useSaved" :disabled="!needed || useSaved">
+                            @error('id_front')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror</div>
+                        <div><label class="label" for="id_back">{{ __('shop.id.back') }}</label>
+                            <input id="id_back" type="file" name="id_back" accept="image/*,.pdf" class="input file:mr-3 file:rounded-full file:border-0 file:bg-sand file:px-3 file:py-1 file:text-xs" :disabled="!needed || useSaved">
+                            @error('id_back')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror</div>
+                        @auth
+                            <label class="flex items-center gap-2 text-sm sm:col-span-2"><input type="checkbox" name="save_id" value="1" @checked(old('save_id', true)) class="accent-gold-600" :disabled="!needed || useSaved"> {{ __('shop.id.save') }}</label>
+                        @else
+                            <p class="text-xs text-muted sm:col-span-2">{{ __('shop.id.guest_save') }}</p>
+                        @endauth
+                    </div>
+                    <p class="mt-4 rounded-xl bg-sand px-4 py-3 text-xs text-muted">🔒 {{ __('shop.id.privacy') }}</p>
+                </section>
+            @endif
 
             <section class="card p-4 sm:p-6">
                 <h2 class="font-display text-2xl">{{ __('shop.checkout.payment') }}</h2>

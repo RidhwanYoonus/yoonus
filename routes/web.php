@@ -59,6 +59,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/account', [AccountController::class, 'show'])->name('account');
     Route::post('/account/addresses', [AccountController::class, 'storeAddress'])->name('account.addresses.store');
     Route::delete('/account/addresses/{address}', [AccountController::class, 'deleteAddress'])->name('account.addresses.delete');
+    Route::delete('/account/id', [AccountController::class, 'forgetId'])->name('account.id.forget');
 });
 
 Route::post('/newsletter', [MarketingController::class, 'subscribe'])->middleware('throttle:5,1')->name('newsletter.subscribe');
@@ -82,3 +83,5 @@ Route::get('/video-call/{call}', [\App\Http\Controllers\VideoCallController::cla
 Route::get('/video-call/{call}/status', [\App\Http\Controllers\VideoCallController::class, 'status'])->name('video-call.status');
 Route::get('/admin/video-calls/{id}/join', \App\Http\Controllers\Admin\VideoCallJoinController::class)
     ->middleware('auth')->whereNumber('id')->name('admin.video-call.join');
+Route::get('/admin/id-documents/{owner}/{id}/{side}', \App\Http\Controllers\Admin\IdDocumentController::class)
+    ->middleware('auth')->whereIn('owner', ['order', 'user'])->whereNumber('id')->whereIn('side', ['front', 'back'])->name('admin.id-document');

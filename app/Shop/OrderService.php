@@ -80,6 +80,13 @@ class OrderService
                 'coupon_code' => implode(',', $quote->couponCodes()) ?: null,
                 'gift_card_code' => $quote->giftCard?->code,
                 'notes' => $data['notes'] ?? null,
+                // Proof of identity (encrypted number, private file paths) when the order needed it.
+                'id_type' => $data['id']['type'] ?? null,
+                'id_number' => $data['id']['number'] ?? null,
+                'id_last4' => $data['id']['last4'] ?? null,
+                'id_expiry' => $data['id']['expiry'] ?? null,
+                'id_front_path' => $data['id']['front'] ?? null,
+                'id_back_path' => $data['id']['back'] ?? null,
             ]);
 
             foreach ($quote->lines as $i => $line) {
@@ -201,6 +208,9 @@ class OrderService
         if ($to === 'paid') {
             return $this->markPaid($order, $order->payment_method, 'manual-'.$order->number);
         }
+        if ($to === 'delivered' && HandoverOtp::required($order)) {
+            throw new RuntimeException('Enter the customer\'s handover code first (or override it with a reason).');
+        }
 
         return DB::transaction(function () use ($order, $to, $by, $note) {
             $from = $order->status;
@@ -216,6 +226,9 @@ class OrderService
                 $order->refresh();
             }
             DB::afterCommit(fn () => SendOrderNotification::dispatch($order->id, $to));
+            if (HandoverOtp::enabled() && HandoverOtp::sendsOn($order, $to) && ! $order->handover_verified_at) {
+                DB::afterCommit(fn () => app(HandoverOtp::class)->issue($order));
+            }
 
             return $order;
         });

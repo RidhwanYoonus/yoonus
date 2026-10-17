@@ -90,6 +90,11 @@ class Settings extends Page implements HasForms
                     Forms\Components\Toggle::make('pickup_enabled')->label('Store pickup available')->inline(false),
                     $text('delivery_off_message', 'Message while delivery is paused (English)')->columnSpanFull()->visible(fn (Forms\Get $get) => ! $get('delivery_enabled')),
                     $text('delivery_off_message_ar', 'Message while delivery is paused (Arabic)')->extraInputAttributes(['dir' => 'rtl'])->columnSpanFull()->visible(fn (Forms\Get $get) => ! $get('delivery_enabled')),
+                    Forms\Components\Select::make('id_verification')->label('Proof of ID at checkout')->required()
+                        ->options(['delivery' => 'Required for home delivery', 'all' => 'Required for every order (delivery and pickup)', 'off' => 'Not required'])
+                        ->helperText('Customers enter their ID type, number and expiry and upload a photo as the last step before payment. They can save it for next time.'),
+                    Forms\Components\Toggle::make('handover_otp')->label('Handover code on delivery / collection')->inline(false)
+                        ->helperText('A 6-digit code is emailed and WhatsApped to the customer when the order is shipped (or ready for pickup). Staff must enter it to mark the order delivered.'),
                     Forms\Components\Toggle::make('product_store_map')->label('Show store map on every product page')->inline(false)
                         ->helperText('Google Maps location of each pickup branch. Set the pin under Settings → Branches & pickup.'),
                 ]),

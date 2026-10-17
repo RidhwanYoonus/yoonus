@@ -269,4 +269,29 @@ return [
         'join' => 'Join the video call', 'join_note' => 'Opens in a new tab. Allow camera and microphone when your browser asks.',
         'whatsapp_alt' => 'Prefer a WhatsApp video call?', 'whatsapp_text' => 'Hello, I would like a live video call about :name (:sku).',
     ],
+
+    'id' => [
+        'title' => 'Identity verification',
+        'intro' => 'For your security, high-value jewellery is only handed over to the buyer. Please add a valid ID — our staff will check it on delivery.',
+        'type' => 'ID type', 'number' => 'ID number', 'expiry' => 'Expiry date',
+        'front' => 'Photo of ID (front)', 'back' => 'Photo of ID (back, optional)',
+        'types' => ['emirates_id' => 'Emirates ID', 'passport' => 'Passport', 'gcc_id' => 'GCC national ID', 'driving_licence' => 'UAE driving licence'],
+        'use_saved' => 'Use my saved ID', 'use_new' => 'Use a different ID', 'expires' => 'expires :date',
+        'save' => 'Save my ID for faster checkout next time',
+        'guest_save' => 'Create an account to save your ID for future orders.',
+        'privacy' => 'Your ID is encrypted and stored privately. It is only used to confirm the person receiving the order and is never shared.',
+        'invalid_eid' => 'Enter the 15-digit Emirates ID number starting with 784 (e.g. 784-1990-1234567-1).',
+        'invalid_number' => 'Enter the ID number exactly as shown on the document.',
+        'remove' => 'Remove saved ID',
+        'on_file' => 'ID on file: :id',
+    ],
+
+    'otp' => [
+        'delivery_subject' => 'Your delivery code for order :number: :code',
+        'delivery_body' => 'Hi :name, your order :number is on its way. Give this code to our delivery staff only when you receive your order: :code',
+        'pickup_subject' => 'Your collection code for order :number: :code',
+        'pickup_body' => 'Hi :name, your order :number is ready. Show this code at the store when you collect it: :code',
+        'warning' => 'Never share this code by phone or before you have the order in your hands. Please also have your ID ready.',
+        'sent_note' => 'We\'ve sent a handover code to your email and WhatsApp. Give it to our staff — together with your ID — when you receive your order.',
+    ],
 ];

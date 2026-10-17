@@ -41,7 +41,7 @@ class CheckoutFlowTest extends TestCase
             'zone_id' => ShippingZone::where('code', 'other_emirates')->value('id'), 'line1' => 'Tower 1', 'city' => 'Al Reem',
             // 1,100 goods + AED 35 delivery (free only above AED 1,500), then 5% VAT on both: 1,135 + 56.75
             'payment_method' => 'cod', 'expected_total' => '1191.75',
-        ];
+        ] + $this->idFields();
     }
 
     public function test_guest_cod_checkout_creates_snapshot_order(): void
@@ -135,6 +135,7 @@ class CheckoutFlowTest extends TestCase
 
     public function test_store_pickup_orders_go_ready_then_collected_never_shipped(): void
     {
+        Settings::set(['handover_otp' => false]);   // the handover code has its own test
         $branch = Branch::create(['name' => 'Gold Souk', 'emirate' => 'Dubai', 'address' => 'Deira']);
         $this->post('/cart/add/band');
         $form = ['email' => 'p@example.com', 'phone' => '+971501234567', 'name' => 'P', 'fulfilment' => 'pickup', 'pickup_branch_id' => $branch->id, 'payment_method' => 'card'];

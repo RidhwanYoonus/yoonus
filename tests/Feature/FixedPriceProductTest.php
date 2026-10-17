@@ -84,7 +84,7 @@ class FixedPriceProductTest extends TestCase
             'email' => 'g@example.com', 'phone' => '+971501234567', 'name' => 'G', 'fulfilment' => 'delivery',
             'zone_id' => ShippingZone::where('code', 'dubai')->value('id'), 'line1' => 'A', 'city' => 'B',
             'payment_method' => 'cod', 'expected_total' => '1050.00',
-        ])->assertRedirect();
+        ] + $this->idFields())->assertRedirect();
 
         $item = Order::sole()->items->first();
         $this->assertSame('Fixed price', $item->karat);

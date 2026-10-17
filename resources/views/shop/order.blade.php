@@ -17,6 +17,9 @@
         <p class="mt-6 rounded-xl bg-sand px-4 py-3 text-sm">{{ $order->statusLabel() }}</p>
     @endif
 
+    @if ($order->handover_otp_sent_at && ! $order->handover_verified_at && in_array($order->status, ['shipped', 'ready']))
+        <p class="mt-6 rounded-xl border border-gold-400 bg-gold-300/20 px-4 py-3 text-sm">🔐 {{ __('shop.otp.sent_note') }}</p>
+    @endif
     @if ($order->tracking_number)
         <p class="mt-6 text-sm">{{ __('shop.order.tracking') }}: <strong dir="ltr">{{ $order->tracking_carrier }} {{ $order->tracking_number }}</strong></p>
     @endif

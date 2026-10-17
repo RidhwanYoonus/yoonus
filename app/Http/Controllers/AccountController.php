@@ -54,4 +54,13 @@ class AccountController extends Controller
 
         return back();
     }
+
+    /** Forget the saved ID (copies kept with past orders for delivery records stay with those orders). */
+    public function forgetId(Request $request)
+    {
+        $request->user()->forceFill(['id_type' => null, 'id_number' => null, 'id_last4' => null, 'id_expiry' => null,
+            'id_front_path' => null, 'id_back_path' => null, 'id_saved_at' => null])->save();
+
+        return back();
+    }
 }

@@ -6,8 +6,10 @@ use App\Filament\Resources\OrderResource\Pages;
 use App\Filament\Resources\OrderResource\RelationManagers\ItemsRelationManager;
 use App\Messaging\WhatsApp;
 use App\Models\Order;
+use App\Shop\HandoverOtp;
 use App\Shop\InvoiceService;
 use App\Shop\OrderService;
+use App\Support\IdDocument;
 use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Infolists;
@@ -87,8 +89,9 @@ class OrderResource extends Resource
     {
         return Tables\Actions\Action::make('advance')->label('Update status')->icon('heroicon-o-arrow-right-circle')
             ->form(fn (Order $record) => [
-                Forms\Components\Select::make('status')->required()
+                Forms\Components\Select::make('status')->required()->live()
                     ->options(collect($record->allowedTransitions())->mapWithKeys(fn ($s) => [$s => $record->statusLabel($s)])),
+                ...self::handoverFields($record, fn (Forms\Get $get) => $get('status') === 'delivered'),
                 Forms\Components\TextInput::make('tracking_carrier')->placeholder('Aramex, Emirates Post…')->default($record->tracking_carrier)->visible(! $record->isPickup()),
                 Forms\Components\TextInput::make('tracking_number')->default($record->tracking_number)->visible(! $record->isPickup()),
                 Forms\Components\TextInput::make('note')->maxLength(255),
@@ -96,6 +99,9 @@ class OrderResource extends Resource
             ->visible(fn (Order $record) => $record->allowedTransitions() !== [])
             ->action(function (Order $record, array $data) {
                 try {
+                    if ($data['status'] === 'delivered') {
+                        self::verifyHandover($record, $data);
+                    }
                     $record->update(array_filter(['tracking_carrier' => $data['tracking_carrier'] ?? null, 'tracking_number' => $data['tracking_number'] ?? null]));
                     app(OrderService::class)->transition($record, $data['status'], Auth::user(), $data['note'] ?? null);
                     Notification::make()->success()->title("Order {$record->number} → ".$record->fresh()->statusLabel())->send();
@@ -103,6 +109,39 @@ class OrderResource extends Resource
                     Notification::make()->danger()->title($e->getMessage())->send();
                 }
             });
+    }
+
+    /** Code (or a manager override with reason) plus an ID check, asked before marking delivered. */
+    public static function handoverFields(Order $record, \Closure $show): array
+    {
+        if (! HandoverOtp::required($record)) {
+            return [];
+        }
+
+        return [
+            Forms\Components\TextInput::make('handover_code')->label('Customer\'s 6-digit handover code')
+                ->inputMode('numeric')->maxLength(6)->autocomplete(false)
+                ->visible(fn (Forms\Get $get) => $show($get) && ! $get('override'))->required(fn (Forms\Get $get) => $show($get) && ! $get('override'))
+                ->helperText($record->handover_otp_sent_at ? 'Sent '.$record->handover_otp_sent_at->diffForHumans().' to the customer\'s email and WhatsApp.' : 'No code sent yet — use "Send handover code" first.'),
+            Forms\Components\Checkbox::make('id_checked')->label('I checked the customer\'s ID matches: '.IdDocument::masked($record->id_type, $record->id_last4).' ('.$record->customer_name.')')
+                ->visible(fn (Forms\Get $get) => $show($get) && $record->hasIdDocument())->accepted(fn (Forms\Get $get) => $show($get) && $record->hasIdDocument()),
+            Forms\Components\Toggle::make('override')->label('Customer can\'t receive the code — override')->live()
+                ->visible(fn (Forms\Get $get) => $show($get)),
+            Forms\Components\TextInput::make('override_reason')->label('Reason (kept in the order history)')->maxLength(200)
+                ->visible(fn (Forms\Get $get) => $show($get) && $get('override'))->required(fn (Forms\Get $get) => $show($get) && $get('override')),
+        ];
+    }
+
+    public static function verifyHandover(Order $record, array $data): void
+    {
+        if (! HandoverOtp::required($record)) {
+            return;
+        }
+        $otp = app(HandoverOtp::class);
+        ! empty($data['override'])
+            ? $otp->override($record, Auth::user(), (string) $data['override_reason'])
+            : $otp->verify($record, (string) ($data['handover_code'] ?? ''));
+        $record->refresh();
     }
 
     public static function infolist(Infolist $infolist): Infolist
@@ -130,6 +169,26 @@ class OrderResource extends Resource
                 Infolists\Components\TextEntry::make('buyer_trn')->label('Buyer TRN')->placeholder('—'),
                 Infolists\Components\TextEntry::make('shipping_address')->label('Delivery')->placeholder(fn (Order $record) => $record->pickupBranch ? 'Pickup: '.$record->pickupBranch->name : '—')
                     ->formatStateUsing(fn ($state) => is_array($state) ? implode(', ', array_filter([$state['line1'] ?? null, $state['line2'] ?? null, $state['city'] ?? null, $state['zone'] ?? null])) : $state),
+            ]),
+            Infolists\Components\Section::make('Identity & handover')->columnSpan(1)->schema([
+                Infolists\Components\TextEntry::make('id_type')->label('ID')->placeholder('Not provided')
+                    ->formatStateUsing(fn (Order $record) => __('shop.id.types.'.$record->id_type, [], 'en')),
+                Infolists\Components\TextEntry::make('id_number')->label('ID number')->copyable()->fontFamily('mono')->visible(fn (Order $record) => $record->hasIdDocument()),
+                Infolists\Components\TextEntry::make('id_expiry')->label('ID expiry')->date('d M Y')->visible(fn (Order $record) => $record->hasIdDocument())
+                    ->color(fn (Order $record) => $record->id_expiry?->isPast() ? 'danger' : null)
+                    ->suffix(fn (Order $record) => $record->id_expiry?->isPast() ? ' (expired)' : ''),
+                Infolists\Components\TextEntry::make('id_front_path')->label('ID photos')->visible(fn (Order $record) => (bool) $record->id_front_path)
+                    ->formatStateUsing(fn (Order $record) => new \Illuminate\Support\HtmlString(
+                        '<a class="text-primary-600 underline" target="_blank" href="'.e(route('admin.id-document', ['order', $record->id, 'front'])).'">Front</a>'
+                        .($record->id_back_path ? ' · <a class="text-primary-600 underline" target="_blank" href="'.e(route('admin.id-document', ['order', $record->id, 'back'])).'">Back</a>' : ''))),
+                Infolists\Components\TextEntry::make('handover_verified_via')->label('Handover')
+                    ->state(fn (Order $record) => match (true) {
+                        $record->handover_verified_via === 'otp' => 'Verified by code · '.$record->handover_verified_at?->format('d M H:i'),
+                        $record->handover_verified_via === 'override' => 'Code overridden · '.$record->handover_verified_at?->format('d M H:i'),
+                        (bool) $record->handover_otp_sent_at => 'Code sent '.$record->handover_otp_sent_at->format('d M H:i').' · waiting',
+                        default => 'Code is sent when the order is '.($record->isPickup() ? 'ready for pickup' : 'shipped'),
+                    })
+                    ->badge()->color(fn (Order $record) => match ($record->handover_verified_via) { 'otp' => 'success', 'override' => 'warning', default => 'gray' }),
             ]),
             Infolists\Components\Section::make('Totals (frozen at checkout)')->columnSpan(2)->columns(4)->schema([
                 Infolists\Components\TextEntry::make('items_subtotal')->money('AED'),

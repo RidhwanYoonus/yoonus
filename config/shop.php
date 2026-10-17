@@ -66,6 +66,8 @@ return [
         'delivery_off_message' => 'Home delivery is paused at the moment — please collect your order from our store.',
         'delivery_off_message_ar' => 'التوصيل للمنازل متوقف حالياً — يرجى استلام طلبك من متجرنا.',
         'product_store_map' => true,
+        'id_verification' => 'delivery',   // proof of ID at checkout: delivery | all | off
+        'handover_otp' => true,            // customer gives staff a one-time code on delivery / collection
 
         'video_call_enabled' => true,
         'video_call_hours' => 'Daily 10:00 – 22:00',

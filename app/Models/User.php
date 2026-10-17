@@ -21,13 +21,16 @@ class User extends Authenticatable implements FilamentUser
         'name', 'email', 'password', 'phone', 'locale', 'buyer_trn', 'marketing_opt_in', 'referred_by_id',
     ];
 
-    protected $hidden = ['password', 'remember_token'];
+    protected $hidden = ['password', 'remember_token', 'id_number'];
 
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'id_number' => 'encrypted',
+            'id_expiry' => 'date',
+            'id_saved_at' => 'datetime',
             'is_admin' => 'boolean',
             'marketing_opt_in' => 'boolean',
         ];
@@ -81,5 +84,11 @@ class User extends Authenticatable implements FilamentUser
     public function routeNotificationForWhatsApp(): ?string
     {
         return $this->phone;
+    }
+
+    /** Saved proof of identity that can be reused at checkout (still valid). */
+    public function hasValidSavedId(): bool
+    {
+        return $this->id_saved_at && $this->id_front_path && (! $this->id_expiry || $this->id_expiry->isFuture());
     }
 }

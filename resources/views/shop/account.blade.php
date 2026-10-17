@@ -69,4 +69,11 @@
         </div>
     </section>
 </div>
+    @if (auth()->user()->id_saved_at)
+        <section class="card mt-10 flex flex-wrap items-center justify-between gap-4 p-4 sm:p-6">
+            <div><h2 class="font-display text-2xl">{{ __('shop.id.title') }}</h2>
+                <p class="mt-1 text-sm text-muted">{{ __('shop.id.on_file', ['id' => \App\Support\IdDocument::masked(auth()->user()->id_type, auth()->user()->id_last4)]) }}@if (auth()->user()->id_expiry) · {{ __('shop.id.expires', ['date' => auth()->user()->id_expiry->format('d/m/Y')]) }}@endif</p></div>
+            <form method="POST" action="{{ route('account.id.forget') }}">@csrf @method('DELETE')<button class="btn-outline px-4 py-2 text-xs">{{ __('shop.id.remove') }}</button></form>
+        </section>
+    @endif
 @endsection

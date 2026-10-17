@@ -13,6 +13,7 @@ use App\Shop\OrderService;
 use App\Shop\OutOfStockException;
 use App\Shop\Quote;
 use App\Shop\QuoteBuilder;
+use App\Support\IdDocument;
 use App\Support\Seo;
 use App\Support\Settings;
 use Illuminate\Http\Request;
@@ -50,6 +51,7 @@ class CheckoutController extends Controller
             'zones' => ShippingZone::where('is_active', true)->orderBy('sort_order')->get(),
             'branches' => self::pickupBranches(),
             'deliveryEnabled' => $delivery,
+            'idMode' => (string) Settings::get('id_verification', 'delivery'),
             'addresses' => $request->user()?->addresses ?? collect(),
             'methods' => $this->gateways->available($quote),
             'blocked' => $this->ratesBlocked(),
@@ -85,7 +87,7 @@ class CheckoutController extends Controller
             'loyalty_points' => 'nullable|integer|min:0',
             'notes' => 'nullable|string|max:500',
             'save_address' => 'nullable|boolean',
-        ]);
+        ] + $this->idRules($request));
 
         if ($this->ratesBlocked()) {
             return back()->withInput()->withErrors(['checkout' => __('shop.checkout.rates_stale')]);
@@ -112,10 +114,21 @@ class CheckoutController extends Controller
             'city' => $data['city'], 'zone' => $quote->zone?->name, 'country' => 'AE',
         ] : null;
 
+        $id = $this->idDocument($request, $quote->fulfilment);
         try {
-            $order = app(OrderService::class)->place($quote, $data + ['address' => $address], $request->user());
+            $order = app(OrderService::class)->place($quote, $data + ['address' => $address, 'id' => $id], $request->user());
         } catch (OutOfStockException $e) {
+            if ($id && ! $id['saved']) {
+                IdDocument::delete($id['front'], $id['back']);
+            }
+
             return back()->withInput()->withErrors(['checkout' => $e->getMessage()]);
+        }
+        if ($id && ! $id['saved'] && $request->user() && $request->boolean('save_id')) {
+            $request->user()->forceFill([
+                'id_type' => $id['type'], 'id_number' => $id['number'], 'id_last4' => $id['last4'], 'id_expiry' => $id['expiry'],
+                'id_front_path' => $id['front'], 'id_back_path' => $id['back'], 'id_saved_at' => now(),
+            ])->save();
         }
 
         if ($address && $request->user() && $request->boolean('save_address')) {
@@ -191,6 +204,49 @@ class CheckoutController extends Controller
             'messages' => array_values(array_unique($q->messages)),
             'methods' => $this->gateways->available($q),
         ];
+    }
+
+    /** Proof-of-ID rules: only when this order needs it and the customer isn't reusing a saved, valid ID. */
+    private function idRules(Request $request): array
+    {
+        $fulfilment = $request->input('fulfilment') === 'pickup' || ! self::deliveryEnabled() ? 'pickup' : 'delivery';
+        if (! IdDocument::requiredFor($fulfilment) || $this->usesSavedId($request)) {
+            return [];
+        }
+        $file = ['file', 'mimes:jpg,jpeg,png,webp,heic,pdf', 'max:8192'];
+
+        return [
+            'id_type' => ['required', Rule::in(IdDocument::TYPES)],
+            'id_number' => ['required', 'string', 'max:32', IdDocument::numberRule($request->input('id_type'))],
+            'id_expiry' => ['required', 'date', 'after:today'],
+            'id_front' => ['required', ...$file],
+            'id_back' => ['nullable', ...$file],
+            'save_id' => 'nullable|boolean',
+        ];
+    }
+
+    private function usesSavedId(Request $request): bool
+    {
+        return $request->boolean('use_saved_id') && (bool) $request->user()?->hasValidSavedId();
+    }
+
+    /** Stores the uploaded ID privately (or reuses the saved one) and returns the order snapshot. */
+    private function idDocument(Request $request, string $fulfilment): ?array
+    {
+        if (! IdDocument::requiredFor($fulfilment)) {
+            return null;
+        }
+        if ($this->usesSavedId($request)) {
+            $u = $request->user();
+
+            return ['type' => $u->id_type, 'number' => $u->id_number, 'last4' => $u->id_last4, 'expiry' => $u->id_expiry,
+                'front' => $u->id_front_path, 'back' => $u->id_back_path, 'saved' => true];
+        }
+        $number = IdDocument::normalise($request->input('id_type'), $request->input('id_number'));
+
+        return ['type' => $request->input('id_type'), 'number' => $number, 'last4' => IdDocument::last4($number), 'expiry' => $request->input('id_expiry'),
+            'front' => IdDocument::store($request->file('id_front')),
+            'back' => $request->hasFile('id_back') ? IdDocument::store($request->file('id_back')) : null, 'saved' => false];
     }
 
     /** Home delivery can be paused from Settings → Payments; pickup then becomes the only option. */
