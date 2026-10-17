@@ -108,6 +108,8 @@ class ProductResource extends Resource
                     Forms\Components\TextInput::make('low_stock_threshold')->numeric()->default(2)->minValue(0),
                     Forms\Components\Toggle::make('is_active')->label('Visible in shop')->default(true),
                     Forms\Components\Toggle::make('is_featured')->label('Featured on homepage'),
+                    Forms\Components\Toggle::make('video_call_enabled')->label('Live video call button')->default(true)
+                        ->helperText(fn () => \App\Support\Settings::bool('video_call_enabled') ? 'Customers can request a live video call about this piece.' : 'Video calls are switched off for the whole shop in Settings → Video calls.'),
                 ]),
             ]),
         ]);

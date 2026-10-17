@@ -109,7 +109,7 @@ return [
     ],
 
     'checkout' => [
-        'title' => 'Checkout', 'contact' => 'Contact details', 'guest_note' => 'Checking out as a guest. Have an account?',
+        'title' => 'Checkout', 'delivery_paused' => 'Paused at the moment', 'no_fulfilment' => 'Delivery and pickup are both unavailable right now — please contact us to order.', 'contact' => 'Contact details', 'guest_note' => 'Checking out as a guest. Have an account?',
         'name' => 'Full name', 'phone' => 'Mobile number', 'email' => 'Email address',
         'buyer_trn' => 'Company TRN (optional)', 'buyer_trn_note' => 'For B2B purchases — shown on your tax invoice.',
         'delivery' => 'Delivery', 'home_delivery' => 'Home delivery', 'store_pickup' => 'Store pickup',
@@ -250,5 +250,23 @@ return [
         'product_description' => ':name in :karat gold, :weight g. :price + VAT, priced live from today\'s gold rate. Delivery across the UAE.',
         'category_title' => ':name — Gold Jewellery UAE',
         'category_description' => 'Shop :name in 18K, 21K and 22K gold. Live gold rate prices, transparent making charges and UAE delivery.',
+    ],
+
+    'pickup' => [
+        'eyebrow' => 'Collect in store', 'title' => 'See it, try it, collect it',
+        'intro' => 'Order online and collect from our premium retail store — or visit us to see this piece in person.',
+        'only_pickup' => 'Home delivery is paused — collect this piece from our store.',
+        'map_title' => 'Map to :name', 'hours' => 'Opening hours', 'directions' => 'Get directions', 'call' => 'Call store',
+    ],
+
+    'video' => [
+        'cta' => 'Live video call with our staff', 'hint' => 'See this piece live on camera · :hours',
+        'title' => 'Live video call', 'eyebrow' => 'See it live',
+        'intro' => 'One of our staff will show you :name live on camera and answer your questions.',
+        'privacy' => 'We only use your number to reach you if the call drops.', 'start' => 'Start video call', 'close' => 'Close',
+        'waiting' => 'Our staff have been notified and will join in a moment…',
+        'answered' => 'Our staff member has joined — open the call.', 'ended' => 'This call has ended. Request a new one from any product page.',
+        'join' => 'Join the video call', 'join_note' => 'Opens in a new tab. Allow camera and microphone when your browser asks.',
+        'whatsapp_alt' => 'Prefer a WhatsApp video call?', 'whatsapp_text' => 'Hello, I would like a live video call about :name (:sku).',
     ],
 ];

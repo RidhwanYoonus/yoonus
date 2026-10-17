@@ -35,18 +35,21 @@ class CheckoutController extends Controller
             return redirect()->route('cart.show');
         }
         $changes = $this->cart->revalidate();
-        $zone = ShippingZone::where('is_active', true)->orderBy('sort_order')->first();
-        $quote = $this->quotes->build($this->cart->lines(), $request->user(), $request->user()?->email, zone: $zone);
+        $delivery = self::deliveryEnabled();
+        $zone = $delivery ? ShippingZone::where('is_active', true)->orderBy('sort_order')->first() : null;
+        $fulfilment = $delivery ? 'delivery' : 'pickup';
+        $quote = $this->quotes->build($this->cart->lines(), $request->user(), $request->user()?->email, zone: $zone, fulfilment: $fulfilment);
         // Price the first available payment method so its fee is included from the start.
         $method = old('payment_method', array_key_first($this->gateways->available($quote)));
-        $quote = $this->quotes->build($this->cart->lines(), $request->user(), $request->user()?->email, zone: $zone, paymentMethod: $method);
+        $quote = $this->quotes->build($this->cart->lines(), $request->user(), $request->user()?->email, zone: $zone, fulfilment: $fulfilment, paymentMethod: $method);
 
         return view('shop.checkout', [
             'seo' => Seo::page(__('shop.checkout.title')),
             'quote' => $quote,
             'changes' => $changes,
             'zones' => ShippingZone::where('is_active', true)->orderBy('sort_order')->get(),
-            'branches' => Settings::bool('pickup_enabled') ? Branch::where('pickup_enabled', true)->get() : collect(),
+            'branches' => self::pickupBranches(),
+            'deliveryEnabled' => $delivery,
             'addresses' => $request->user()?->addresses ?? collect(),
             'methods' => $this->gateways->available($quote),
             'blocked' => $this->ratesBlocked(),
@@ -69,7 +72,7 @@ class CheckoutController extends Controller
             'phone' => ['required', 'string', 'max:32', 'regex:/^[+0-9 ()-]{7,}$/'],
             'name' => 'required|string|max:120',
             'buyer_trn' => 'nullable|digits:15',
-            'fulfilment' => 'required|in:delivery,pickup',
+            'fulfilment' => ['required', Rule::in(self::deliveryEnabled() ? ['delivery', 'pickup'] : ['pickup'])],
             'zone_id' => 'required_if:fulfilment,delivery|nullable|exists:shipping_zones,id',
             'line1' => 'required_if:fulfilment,delivery|nullable|string|max:191',
             'line2' => 'nullable|string|max:191',
@@ -148,7 +151,7 @@ class CheckoutController extends Controller
 
     private function buildFrom(Request $request): Quote
     {
-        $fulfilment = $request->input('fulfilment') === 'pickup' ? 'pickup' : 'delivery';
+        $fulfilment = $request->input('fulfilment') === 'pickup' || ! self::deliveryEnabled() ? 'pickup' : 'delivery';
 
         return $this->quotes->build(
             $this->cart->lines(),
@@ -188,6 +191,17 @@ class CheckoutController extends Controller
             'messages' => array_values(array_unique($q->messages)),
             'methods' => $this->gateways->available($q),
         ];
+    }
+
+    /** Home delivery can be paused from Settings → Payments; pickup then becomes the only option. */
+    public static function deliveryEnabled(): bool
+    {
+        return Settings::bool('delivery_enabled');
+    }
+
+    public static function pickupBranches()
+    {
+        return Settings::bool('pickup_enabled') ? Branch::where('pickup_enabled', true)->get() : collect();
     }
 
     private function ratesBlocked(): bool

@@ -71,7 +71,6 @@ class Settings extends Page implements HasForms
                     Forms\Components\TextInput::make('tabby_min')->numeric()->prefix('AED'), Forms\Components\TextInput::make('tabby_max')->numeric()->prefix('AED'),
                     Forms\Components\Toggle::make('tamara_enabled')->label('Tamara')->inline(false),
                     Forms\Components\TextInput::make('tamara_min')->numeric()->prefix('AED'), Forms\Components\TextInput::make('tamara_max')->numeric()->prefix('AED'),
-                    Forms\Components\Toggle::make('pickup_enabled')->label('Store pickup')->inline(false),
                     Forms\Components\Section::make('Payment / card fee charged to the customer')
                         ->description('Added at checkout for the method the customer picks: % of the amount paid + a fixed amount. 5% VAT is added on the fee too, and it is shown on the tax invoice.')
                         ->columns(4)->columnSpanFull()->schema([
@@ -84,6 +83,23 @@ class Settings extends Page implements HasForms
                             Forms\Components\TextInput::make('cod_fee_percent')->label('Cash on delivery fee %')->numeric()->minValue(0)->suffix('%'),
                             Forms\Components\TextInput::make('cod_fee_fixed')->label('Cash on delivery fee fixed')->numeric()->minValue(0)->prefix('AED'),
                         ]),
+                ]),
+                Forms\Components\Tabs\Tab::make('Delivery & pickup')->icon('heroicon-o-truck')->columns(2)->schema([
+                    Forms\Components\Toggle::make('delivery_enabled')->label('Home delivery available')->inline(false)->live()
+                        ->helperText('Switch off to pause delivery (holidays, busy days). Customers can then only collect from the store.'),
+                    Forms\Components\Toggle::make('pickup_enabled')->label('Store pickup available')->inline(false),
+                    $text('delivery_off_message', 'Message while delivery is paused (English)')->columnSpanFull()->visible(fn (Forms\Get $get) => ! $get('delivery_enabled')),
+                    $text('delivery_off_message_ar', 'Message while delivery is paused (Arabic)')->extraInputAttributes(['dir' => 'rtl'])->columnSpanFull()->visible(fn (Forms\Get $get) => ! $get('delivery_enabled')),
+                    Forms\Components\Toggle::make('product_store_map')->label('Show store map on every product page')->inline(false)
+                        ->helperText('Google Maps location of each pickup branch. Set the pin under Settings → Branches & pickup.'),
+                ]),
+                Forms\Components\Tabs\Tab::make('Video calls')->icon('heroicon-o-video-camera')->columns(2)->schema([
+                    Forms\Components\Toggle::make('video_call_enabled')->label('Live video call button on products')->inline(false)
+                        ->helperText('Can also be switched off per product (Products → edit → Stock & visibility).'),
+                    $text('video_call_hours', 'Hours shown to customers')->placeholder('Daily 10:00 – 22:00'),
+                    $text('video_call_notify_email', 'Email staff about new calls')->email()->placeholder('Store email is used when empty'),
+                    $text('video_call_base_url', 'Video service address')->url()
+                        ->helperText('https://meet.jit.si works free with no account (staff sign in with Google once to open the room). Use your own Jitsi server or 8x8 JaaS address for a branded service.'),
                 ]),
                 Forms\Components\Tabs\Tab::make('Loyalty & referrals')->icon('heroicon-o-star')->columns(2)->schema([
                     Forms\Components\TextInput::make('loyalty_earn_per_aed')->label('Spend per point')->numeric()->prefix('AED')->helperText('1 point per AED X spent'),

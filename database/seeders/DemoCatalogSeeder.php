@@ -60,7 +60,7 @@ class DemoCatalogSeeder extends Seeder
             ]);
         }
 
-        $branch = Branch::firstOrCreate(['name' => 'Gold Souk, Deira'], ['name_ar' => 'سوق الذهب، ديرة', 'emirate' => 'Dubai', 'address' => 'Gold Souk, Deira, Dubai', 'phone' => '+971 4 000 0000', 'opening_hours' => '10:00–22:00']);
+        $branch = Branch::firstOrCreate(['name' => 'Gold Souk, Deira'], ['name_ar' => 'سوق الذهب، ديرة', 'emirate' => 'Dubai', 'address' => 'Gold Souk, Deira, Dubai', 'phone' => '+971 4 000 0000', 'opening_hours' => '10:00–22:00', 'latitude' => 25.2697, 'longitude' => 55.2972]);
         Product::pluck('id')->each(fn ($id) => BranchStock::firstOrCreate(['branch_id' => $branch->id, 'product_id' => $id], ['qty' => 2]));
 
         $campaign = Campaign::firstOrCreate(['slug' => 'eid-sale'], [

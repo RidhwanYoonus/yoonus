@@ -31,6 +31,8 @@ class ProductController extends Controller
             'related' => $related,
             'inWishlist' => in_array($product->id, ShopController::wishlistIds($request)),
             'whatsapp' => Settings::get('whatsapp_number'),
+            'deliveryEnabled' => CheckoutController::deliveryEnabled(),
+            'storeBranches' => Settings::bool('product_store_map') ? CheckoutController::pickupBranches() : collect(),
         ]);
     }
 

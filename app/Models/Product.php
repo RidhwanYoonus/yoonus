@@ -32,6 +32,7 @@ class Product extends Model
             'wastage_percent' => 'decimal:2',
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
+            'video_call_enabled' => 'boolean',
             'fixed_price' => 'decimal:2',
             'cached_gold_value' => 'decimal:2',
             'cached_making_fee' => 'decimal:2',
@@ -109,9 +110,14 @@ class Product extends Model
         return $parts ? implode(' · ', $parts) : (string) $this->category?->localized('name');
     }
 
+    public function videoCallAvailable(): bool
+    {
+        return $this->video_call_enabled && Settings::bool('video_call_enabled');
+    }
+
     /**
      * Making-charge badge for cards, e.g. ['text' => 'Only 1% making', 'highlight' => true].
-     * Null for fixed-price items or when the badge is switched off.
+     * Null for fixed-price and per-piece items or when the badge is switched off.
      */
     public function makingBadge(): ?array
     {

@@ -81,6 +81,7 @@
                     <input id="qty" type="number" name="qty" value="1" min="1" max="{{ $product->stock_qty }}" class="input w-20 text-center">
                     <button class="btn-dark flex-1">{{ __('shop.product.add_to_cart') }}</button>
                 </form>
+                @unless ($deliveryEnabled)<p class="mt-2 text-xs text-gold-700">{{ __('shop.pickup.only_pickup') }}</p>@endunless
                 @if ($product->isLowStock())<p class="mt-2 text-xs text-red-700">{{ trans_choice('shop.product.only_left', $product->stock_qty, ['count' => $product->stock_qty]) }}</p>@endif
             @else
                 <p class="mt-6 rounded-xl bg-sand px-4 py-3 text-sm">{{ __('shop.product.out_of_stock') }}</p>
@@ -90,6 +91,28 @@
                 <a href="{{ \App\Messaging\WhatsApp::link($whatsapp, $enquireText) }}" target="_blank" rel="noopener" class="btn-whatsapp">{{ __('shop.whatsapp.enquire_cta') }}</a>
                 <a href="https://wa.me/?text={{ rawurlencode($shareText) }}" target="_blank" rel="noopener" class="btn-outline">{{ __('shop.whatsapp.share_cta') }}</a>
             </div>
+            @if ($product->videoCallAvailable())
+                <div x-data="{ open: {{ $errors->has('name') || $errors->has('phone') ? 'true' : 'false' }} }" class="mt-3">
+                    <button type="button" @click="open = true" class="btn-outline w-full gap-2">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 10l4.55-2.28A1 1 0 0121 8.62v6.76a1 1 0 01-1.45.9L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        {{ __('shop.video.cta') }}
+                    </button>
+                    <p class="mt-1 text-center text-xs text-muted">{{ __('shop.video.hint', ['hours' => \App\Support\Settings::get('video_call_hours')]) }}</p>
+                    <div x-show="open" x-cloak class="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center" @keydown.escape.window="open = false" @click.self="open = false">
+                        <form method="POST" action="{{ route('video-call.store', $product) }}" class="card w-full max-w-md space-y-4 p-6">
+                            @csrf
+                            <div class="flex items-start justify-between gap-4">
+                                <div><h2 class="font-display text-2xl">{{ __('shop.video.title') }}</h2><p class="mt-1 text-sm text-muted">{{ __('shop.video.intro', ['name' => $name]) }}</p></div>
+                                <button type="button" @click="open = false" class="text-2xl leading-none text-muted" aria-label="{{ __('shop.video.close') }}">×</button>
+                            </div>
+                            <div><label class="label" for="vc_name">{{ __('shop.checkout.name') }}</label><input id="vc_name" name="name" value="{{ old('name', auth()->user()?->name) }}" required class="input" autocomplete="name">@error('name')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror</div>
+                            <div><label class="label" for="vc_phone">{{ __('shop.checkout.phone') }}</label><input id="vc_phone" name="phone" value="{{ old('phone', auth()->user()?->phone) }}" required class="input" dir="ltr" placeholder="+971 50 000 0000" autocomplete="tel">@error('phone')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror</div>
+                            <p class="text-xs text-muted">{{ __('shop.video.privacy') }}</p>
+                            <button class="btn-dark w-full">{{ __('shop.video.start') }}</button>
+                        </form>
+                    </div>
+                </div>
+            @endif
             <div class="mt-3 flex gap-4 text-sm">
                 <form method="POST" action="{{ route('wishlist.toggle', $product) }}">@csrf<button class="text-muted hover:text-gold-700">{{ $inWishlist ? '♥ '.__('shop.wishlist.remove') : '♡ '.__('shop.wishlist.add') }}</button></form>
                 <form method="POST" action="{{ route('compare.toggle', $product) }}">@csrf<button class="text-muted hover:text-gold-700">⇄ {{ __('shop.compare.add') }}</button></form>
@@ -104,6 +127,17 @@
             </dl>
         </div>
     </div>
+
+    @if ($storeBranches->isNotEmpty())
+        <section class="mt-20" id="collect">
+            <p class="text-xs uppercase tracking-[0.3em] text-gold-700">{{ __('shop.pickup.eyebrow') }}</p>
+            <h2 class="mt-2 font-display text-3xl">{{ __('shop.pickup.title') }}</h2>
+            <p class="mt-2 max-w-2xl text-sm text-muted">{{ $deliveryEnabled ? __('shop.pickup.intro') : \App\Support\Settings::get(app()->getLocale() === 'ar' ? 'delivery_off_message_ar' : 'delivery_off_message') }}</p>
+            <div class="mt-6 grid gap-6 {{ $storeBranches->count() > 1 ? 'md:grid-cols-2' : '' }}">
+                @foreach ($storeBranches as $b)@include('partials.store-map', ['branch' => $b, 'height' => 'h-64 sm:h-80'])@endforeach
+            </div>
+        </section>
+    @endif
 
     <section class="mt-20 grid gap-10 lg:grid-cols-[1fr_380px]" id="reviews">
         <div>

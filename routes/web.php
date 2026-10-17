@@ -75,3 +75,10 @@ Route::get('/feed/meta.xml', [FeedController::class, 'meta'])->name('feed.meta')
 // One-click "artisan migrate" for the admin banner shown when an update added new migrations.
 Route::post('/admin/update-database', \App\Http\Controllers\Admin\DatabaseUpdateController::class)
     ->middleware('auth')->name('admin.update-database');
+
+// Live video call with staff (per product, switchable in the admin).
+Route::post('/product/{product}/video-call', [\App\Http\Controllers\VideoCallController::class, 'store'])->middleware('throttle:5,10')->name('video-call.store');
+Route::get('/video-call/{call}', [\App\Http\Controllers\VideoCallController::class, 'show'])->name('video-call.show');
+Route::get('/video-call/{call}/status', [\App\Http\Controllers\VideoCallController::class, 'status'])->name('video-call.status');
+Route::get('/admin/video-calls/{id}/join', \App\Http\Controllers\Admin\VideoCallJoinController::class)
+    ->middleware('auth')->whereNumber('id')->name('admin.video-call.join');

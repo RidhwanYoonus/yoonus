@@ -18,14 +18,14 @@ class DatabaseUpdateBannerTest extends TestCase
         $admin = User::factory()->create(['is_admin' => true]);
         $this->assertSame([], PendingMigrations::list());
 
-        Artisan::call('migrate:rollback', ['--step' => 1, '--force' => true]); // the payment-fee migration
-        $this->assertFalse(Schema::hasColumn('orders', 'payment_fee'));
+        Artisan::call('migrate:rollback', ['--step' => 1, '--force' => true]); // the newest migration
+        $this->assertFalse(Schema::hasTable('video_call_requests'));
         $this->assertNotEmpty(PendingMigrations::list());
 
         $this->actingAs($admin)->get('/admin')->assertOk()->assertSee('Update database now');
 
         $this->actingAs($admin)->post('/admin/update-database')->assertRedirect();
-        $this->assertTrue(Schema::hasColumn('orders', 'payment_fee'));
+        $this->assertTrue(Schema::hasTable('video_call_requests'));
         $this->assertSame([], PendingMigrations::list());
         $this->actingAs($admin)->get('/admin')->assertDontSee('Update database now');
     }

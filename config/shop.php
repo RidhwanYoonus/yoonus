@@ -62,6 +62,15 @@ return [
         'referral_reward' => 50,
 
         'pickup_enabled' => true,
+        'delivery_enabled' => true,
+        'delivery_off_message' => 'Home delivery is paused at the moment — please collect your order from our store.',
+        'delivery_off_message_ar' => 'التوصيل للمنازل متوقف حالياً — يرجى استلام طلبك من متجرنا.',
+        'product_store_map' => true,
+
+        'video_call_enabled' => true,
+        'video_call_hours' => 'Daily 10:00 – 22:00',
+        'video_call_base_url' => 'https://meet.jit.si',
+        'video_call_notify_email' => null,
 
         'ga4_id' => null,
         'ga4_api_secret' => null,
