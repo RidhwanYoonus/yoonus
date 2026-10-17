@@ -1,0 +1,44 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Cormorant Garamond', Georgia, serif;
+    --font-arabic: 'Cairo', 'Tajawal', Tahoma, sans-serif;
+
+    --color-ivory: #fbf7ef;
+    --color-sand: #f1e8d6;
+    --color-line: #e5d8bd;
+    --color-ink: #231b14;
+    --color-muted: #75664f;
+    --color-gold-300: #e6cf8f;
+    --color-gold-400: #d4b468;
+    --color-gold-500: #b8954a;
+    --color-gold-600: #9a7b2f;
+    --color-gold-700: #7a5f22;
+    --color-onyx: #17120d;
+}
+
+@layer base {
+    html { -webkit-font-smoothing: antialiased; }
+    body { @apply bg-ivory text-ink font-sans; }
+    [dir='rtl'] body { font-family: var(--font-arabic); }
+    [dir='rtl'] .font-display { font-family: 'Tajawal', var(--font-arabic); font-weight: 700; }
+    [x-cloak] { display: none !important; }
+}
+
+@utility container-x { @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8; }
+@utility btn { @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-medium tracking-wide transition focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 focus-visible:ring-offset-2 disabled:opacity-50; }
+@utility btn-gold { @apply btn bg-gold-600 text-white hover:bg-gold-700 shadow-sm; }
+@utility btn-dark { @apply btn bg-onyx text-ivory hover:bg-black; }
+@utility btn-outline { @apply btn border border-gold-500 text-gold-700 hover:bg-gold-600 hover:text-white; }
+@utility btn-whatsapp { @apply btn bg-[#25D366] text-white hover:bg-[#1ebe5b]; }
+@utility input { @apply block w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-sm placeholder:text-muted/60 focus:border-gold-500 focus:ring-2 focus:ring-gold-300/50 focus:outline-none; }
+@utility label { @apply mb-1.5 block text-xs font-medium uppercase tracking-wider text-muted; }
+@utility card { @apply rounded-2xl border border-line bg-white; }
+@utility eyebrow { @apply text-xs font-medium uppercase tracking-[0.25em] text-gold-600; }
+@utility price { font-variant-numeric: tabular-nums; }

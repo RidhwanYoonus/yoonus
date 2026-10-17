@@ -1,0 +1,69 @@
+@php
+    use App\Support\Settings;
+    $rtl = app()->getLocale() === 'ar';
+    $seo = $seo ?? \App\Support\Seo::page(Settings::get('store_name'));
+    $otherLocale = $rtl ? 'en' : 'ar';
+@endphp
+<!DOCTYPE html>
+<html lang="{{ app()->getLocale() }}" dir="{{ $rtl ? 'rtl' : 'ltr' }}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{{ $seo['title'] }}</title>
+    <meta name="description" content="{{ $seo['description'] }}">
+    <link rel="canonical" href="{{ $seo['canonical'] }}">
+    <link rel="alternate" hreflang="en" href="{{ $seo['canonical'] }}?lang=en">
+    <link rel="alternate" hreflang="ar" href="{{ $seo['canonical'] }}?lang=ar">
+    <link rel="alternate" hreflang="x-default" href="{{ $seo['canonical'] }}">
+
+    <meta property="og:type" content="{{ $seo['type'] }}">
+    <meta property="og:title" content="{{ $seo['title'] }}">
+    <meta property="og:description" content="{{ $seo['description'] }}">
+    <meta property="og:url" content="{{ $seo['canonical'] }}">
+    <meta property="og:image" content="{{ url($seo['image']) }}">
+    <meta property="og:locale" content="{{ $rtl ? 'ar_AE' : 'en_AE' }}">
+    <meta property="og:site_name" content="{{ \App\Support\Seo::storeName() }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ $seo['title'] }}">
+    <meta name="twitter:description" content="{{ $seo['description'] }}">
+    <meta name="twitter:image" content="{{ url($seo['image']) }}">
+    @stack('meta')
+
+    @foreach ($seo['json_ld'] as $schema)
+        <script type="application/ld+json">{!! json_encode($schema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) !!}</script>
+    @endforeach
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    @if ($rtl)
+        <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Tajawal:wght@500;700&display=swap" rel="stylesheet">
+    @else
+        <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    @endif
+
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @include('partials.pixels')
+</head>
+<body class="min-h-screen flex flex-col">
+    @include('partials.rate-banner')
+    @include('partials.header')
+
+    @if (session('status'))
+        <div class="container-x mt-4"><div class="rounded-xl border border-gold-300 bg-gold-300/20 px-4 py-3 text-sm" role="status">{{ session('status') }}</div></div>
+    @endif
+    @if ($errors->any())
+        <div class="container-x mt-4"><div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+            @foreach ($errors->all() as $e)<p>{{ $e }}</p>@endforeach
+        </div></div>
+    @endif
+
+    <main class="flex-1">@yield('content')</main>
+
+    @include('partials.footer')
+    @if (Settings::bool('whatsapp_button') && Settings::get('whatsapp_number'))
+        @include('partials.whatsapp-button')
+    @endif
+    @stack('scripts')
+</body>
+</html>
