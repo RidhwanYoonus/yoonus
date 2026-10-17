@@ -24,8 +24,8 @@ return new class extends Migration
             $table->string('banner_image')->nullable();
             $table->string('link_url')->nullable();
             $table->boolean('show_countdown')->default(true);
-            $table->timestamp('starts_at');
-            $table->timestamp('ends_at');
+            $table->dateTime('starts_at');
+            $table->dateTime('ends_at');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
@@ -146,7 +146,7 @@ return new class extends Migration
             $table->timestamp('checkout_started_at')->nullable();
             $table->foreignId('order_id')->nullable()->constrained()->nullOnDelete();
             $table->timestamp('converted_at')->nullable();
-            $table->timestamp('last_activity_at');
+            $table->dateTime('last_activity_at');
             $table->timestamps();
             $table->index(['converted_at', 'last_activity_at']);
         });

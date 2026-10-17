@@ -31,7 +31,7 @@ return new class extends Migration
             $table->decimal('rate_per_gram', 10, 2);
             $table->string('input_unit', 8)->default('gram');
             $table->decimal('input_value', 12, 2)->nullable();
-            $table->timestamp('effective_from');
+            $table->dateTime('effective_from');
             $table->foreignId('changed_by')->nullable()->constrained('users')->nullOnDelete();
             $table->string('source', 32)->default('manual');
             $table->string('recalc_batch_id', 64)->nullable();
