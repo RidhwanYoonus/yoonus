@@ -27,6 +27,8 @@ class WebsiteGoldRates
         $url ??= self::url();
         try {
             $html = Http::timeout(20)
+                // Ship our own Mozilla CA list so HTTPS works on Windows/XAMPP PHP without php.ini edits.
+                ->withOptions(['verify' => resource_path('certs/cacert.pem')])
                 ->withHeaders([
                     'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36',
                     'Accept' => 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',
@@ -34,11 +36,7 @@ class WebsiteGoldRates
                 ])
                 ->get($url)->throw()->body();
         } catch (Throwable $e) {
-            $hint = str_contains($e->getMessage(), 'cURL error 60')
-                ? ' PHP cannot verify SSL certificates: download https://curl.se/ca/cacert.pem, save it as C:\php83\extras\ssl\cacert.pem and set curl.cainfo and openssl.cafile to that path in php.ini.'
-                : '';
-
-            throw new RuntimeException("Could not open {$url}: ".$e->getMessage().$hint, previous: $e);
+            throw new RuntimeException("Could not open {$url}: ".$e->getMessage(), previous: $e);
         }
 
         $rates = $this->parse($html);
