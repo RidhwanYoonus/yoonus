@@ -101,19 +101,30 @@
                 <td class="num">{{ $m($order->shipping_total) }}</td>
             </tr>
         @endif
+        @if ((float) $order->payment_fee)
+            <tr>
+                <td></td><td>Payment processing fee ({{ strtoupper($order->payment_method) }})</td><td class="num">1</td><td colspan="5"></td>
+                <td class="num">{{ $m($order->payment_fee) }}</td>
+                <td class="num">{{ rtrim(rtrim(number_format((float) Settings::get('default_vat_percent'), 2), '0'), '.') }}%</td>
+                <td class="num">{{ $m($order->payment_fee_vat) }}</td>
+                <td class="num">{{ $m((float) $order->payment_fee + (float) $order->payment_fee_vat) }}</td>
+            </tr>
+        @endif
     </tbody>
 </table>
 
 <table class="totals" style="margin-top:12px; width:50%; margin-left:50%">
     <tr><td>Total before discount (excl. VAT)</td><td class="num">{{ $m($order->items_subtotal) }}</td></tr>
     @if ((float) $order->discount_total)<tr><td>Discount{{ $order->coupon_code ? ' ('.$order->coupon_code.')' : '' }}</td><td class="num">-{{ $m($order->discount_total) }}</td></tr>@endif
-    <tr><td>Total taxable amount</td><td class="num">{{ $m((float) $order->taxable_amount + (float) $order->shipping_total - (float) $order->shipping_vat) }}</td></tr>
-    <tr><td>Total VAT</td><td class="num">{{ $m((float) $order->vat_total + (float) $order->shipping_vat) }}</td></tr>
+    @if ((float) $order->shipping_total)<tr><td>Delivery (excl. VAT)</td><td class="num">{{ $m((float) $order->shipping_total - (float) $order->shipping_vat) }}</td></tr>@endif
+    @if ((float) $order->payment_fee)<tr><td>Payment processing fee (excl. VAT)</td><td class="num">{{ $m($order->payment_fee) }}</td></tr>@endif
+    <tr><td>Total taxable amount</td><td class="num">{{ $m((float) $order->taxable_amount + (float) $order->shipping_total - (float) $order->shipping_vat + (float) $order->payment_fee) }}</td></tr>
+    <tr><td>Total VAT</td><td class="num">{{ $m((float) $order->vat_total + (float) $order->shipping_vat + (float) $order->payment_fee_vat) }}</td></tr>
     <tr class="grand"><td>Total amount payable (AED)</td><td class="num">{{ $m($order->grand_total) }}</td></tr>
     @if ((float) $order->gift_card_amount)<tr><td class="muted">Paid by gift card</td><td class="num muted">-{{ $m($order->gift_card_amount) }}</td></tr>@endif
 </table>
 
-<p class="muted" style="margin-top:24px">Discounts are applied before VAT; VAT is charged on the discounted amount in accordance with UAE Federal Decree-Law No. 8 of 2017 on VAT. Gold prices reflect the rate per gram at the time of purchase as shown above.</p>
+<p class="muted" style="margin-top:24px">Discounts are applied before VAT; VAT is charged on the discounted goods, delivery and payment fee in accordance with UAE Federal Decree-Law No. 8 of 2017 on VAT. Gold prices reflect the rate per gram at the time of purchase as shown above.</p>
 <p class="muted">This is a computer-generated tax invoice.</p>
 </body>
 </html>

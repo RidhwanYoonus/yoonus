@@ -21,9 +21,44 @@ class ListGoldCategories extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            $this->updateAllAction(),
             $this->fetchFromWebsiteAction(),
             Actions\CreateAction::make()->label('Add karat')->color('gray'),
         ];
+    }
+
+    /** One form to type today's rate for every karat; only changed karats are updated. */
+    private function updateAllAction(): Actions\Action
+    {
+        return Actions\Action::make('updateAllRates')
+            ->label('Update all rates')
+            ->icon('heroicon-o-pencil-square')
+            ->modalHeading('Update today\'s gold rates')
+            ->modalDescription('Type the rate per gram for each karat. Karats you leave unchanged keep their rate.')
+            ->modalSubmitActionLabel('Save rates')
+            ->fillForm(fn () => GoldCategory::where('is_active', true)->get()
+                ->mapWithKeys(fn (GoldCategory $c) => ["rate_{$c->id}" => $c->rate_per_gram])->all())
+            ->form(fn () => [
+                Forms\Components\Grid::make(['default' => 2, 'md' => 5])->schema(
+                    GoldCategory::where('is_active', true)->orderByDesc('karat')->get()
+                        ->map(fn (GoldCategory $c) => Forms\Components\TextInput::make("rate_{$c->id}")
+                            ->label("{$c->name} (AED/g)")->numeric()->minValue(0.01)->required()->prefix('AED'))->all()
+                ),
+            ])
+            ->action(function (array $data) {
+                $applied = [];
+                foreach (GoldCategory::where('is_active', true)->orderByDesc('karat')->get() as $cat) {
+                    $value = $data["rate_{$cat->id}"] ?? null;
+                    if (is_numeric($value) && round((float) $value, 2) !== round((float) $cat->rate_per_gram, 2)) {
+                        app(GoldRateService::class)->updateRate($cat, $value, 'gram', Auth::id(), 'manual');
+                        $applied[] = "{$cat->name} AED ".number_format((float) $value, 2);
+                    }
+                }
+
+                $applied
+                    ? Notification::make()->success()->title('Gold rates updated')->body(implode(' · ', $applied).'. Product prices are being recalculated.')->send()
+                    : Notification::make()->info()->title('No rates changed.')->send();
+            });
     }
 
     /**

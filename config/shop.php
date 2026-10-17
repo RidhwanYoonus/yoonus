@@ -32,6 +32,16 @@ return [
         'rate_stale_hours' => 24,
         'block_checkout_when_stale' => false,
 
+        // Payment / card fee charged to the customer at checkout: % of the amount paid + fixed AED. VAT is added on top.
+        'card_fee_percent' => 2.5,
+        'card_fee_fixed' => 0,
+        'tabby_fee_percent' => 0,
+        'tabby_fee_fixed' => 0,
+        'tamara_fee_percent' => 0,
+        'tamara_fee_fixed' => 0,
+        'cod_fee_percent' => 0,
+        'cod_fee_fixed' => 0,
+
         'cod_enabled' => true,
         'cod_max_total' => 10000,
         'card_gateway' => 'mock',           // mock | stripe | telr | paytabs

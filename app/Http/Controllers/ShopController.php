@@ -44,15 +44,15 @@ class ShopController extends Controller
             ->when($categoryId, fn ($q) => $q->where('category_id', $categoryId))
             ->when($filters['karat'] ?? null, fn ($q, $k) => $q->whereIn('gold_category_id', $k))
             ->when($filters['stone'] ?? null, fn ($q, $s) => $s === 'none' ? $q->whereNull('stone_type') : $q->where('stone_type', $s))
-            ->when($filters['min_price'] ?? null, fn ($q, $v) => $q->where('cached_sales_price', '>=', $v))
-            ->when($filters['max_price'] ?? null, fn ($q, $v) => $q->where('cached_sales_price', '<=', $v))
+            ->when($filters['min_price'] ?? null, fn ($q, $v) => $q->where('cached_subtotal', '>=', $v))
+            ->when($filters['max_price'] ?? null, fn ($q, $v) => $q->where('cached_subtotal', '<=', $v))
             ->when($filters['min_weight'] ?? null, fn ($q, $v) => $q->where('weight_grams', '>=', $v))
             ->when($filters['max_weight'] ?? null, fn ($q, $v) => $q->where('weight_grams', '<=', $v))
             ->when($filters['q'] ?? null, fn ($q, $s) => $q->where(fn ($q) => $q->where('name', 'like', "%{$s}%")->orWhere('name_ar', 'like', "%{$s}%")->orWhere('sku', $s)));
 
         match ($filters['sort'] ?? 'newest') {
-            'price_asc' => $query->orderBy('cached_sales_price'),
-            'price_desc' => $query->orderByDesc('cached_sales_price'),
+            'price_asc' => $query->orderBy('cached_subtotal'),
+            'price_desc' => $query->orderByDesc('cached_subtotal'),
             'weight_asc' => $query->orderBy('weight_grams'),
             'weight_desc' => $query->orderByDesc('weight_grams'),
             'popular' => $query->orderByDesc('view_count'),

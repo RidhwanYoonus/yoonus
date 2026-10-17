@@ -105,4 +105,25 @@ class WebsiteGoldRatesTest extends TestCase
         $this->assertSame('464.75', GoldCategory::where('name', '22K')->value('rate_per_gram'));
         $this->assertSame('382.00', GoldCategory::where('name', '18K')->value('rate_per_gram'));
     }
+
+    public function test_update_all_rates_button_sets_each_karat_and_skips_unchanged(): void
+    {
+        $this->seed(ReferenceDataSeeder::class);
+        $this->setGoldRates(['24K' => '500', '22K' => '460', '21K' => '440', '18K' => '380']);
+        $admin = User::factory()->create();
+        $admin->forceFill(['is_admin' => true])->save();
+        $this->actingAs($admin);
+        $ids = GoldCategory::pluck('id', 'name');
+        $before = GoldRateHistory::count();
+
+        Livewire::test(ListGoldCategories::class)
+            ->mountAction('updateAllRates')
+            ->assertActionDataSet(["rate_{$ids['22K']}" => '460.00'])
+            ->setActionData(["rate_{$ids['24K']}" => '502', "rate_{$ids['22K']}" => '464.75'])
+            ->callMountedAction()
+            ->assertHasNoActionErrors();
+
+        $this->assertSame(['24K' => '502.00', '22K' => '464.75', '21K' => '440.00', '18K' => '380.00'], GoldCategory::pluck('rate_per_gram', 'name')->all());
+        $this->assertSame($before + 2, GoldRateHistory::count());   // only the two changed karats are logged
+    }
 }

@@ -158,7 +158,7 @@ class AcceptanceTest extends TestCase
     {
         $p = $this->product();
         $this->get('/product/'.$p->slug.'?lang=ar')->assertOk()
-            ->assertSee('dir="rtl"', false)->assertSee('خاتم')->assertSee('1,155.00 د.إ')->assertSee('تفاصيل السعر');
+            ->assertSee('dir="rtl"', false)->assertSee('خاتم')->assertSee('1,100.00 د.إ')->assertSee('تفاصيل السعر');
         $this->get('/?lang=en')->assertSee('dir="ltr"', false);
     }
 
@@ -251,7 +251,8 @@ class AcceptanceTest extends TestCase
 
         $this->assertNotNull($schema);
         $this->assertSame('AED', $schema['offers']['priceCurrency']);
-        $this->assertSame('1155.00', $schema['offers']['price']);
+        $this->assertSame('1100.00', $schema['offers']['price']);   // shown before VAT, like the page
+        $this->assertFalse($schema['offers']['priceSpecification']['valueAddedTaxIncluded']);
         $this->assertSame('https://schema.org/InStock', $schema['offers']['availability']);
         $this->assertSame($p->sku, $schema['sku']);
         $this->assertNotEmpty($schema['image']);

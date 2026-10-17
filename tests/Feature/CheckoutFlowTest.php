@@ -37,7 +37,8 @@ class CheckoutFlowTest extends TestCase
         return $over + [
             'email' => 'guest@example.com', 'phone' => '+971501234567', 'name' => 'Guest', 'fulfilment' => 'delivery',
             'zone_id' => ShippingZone::where('code', 'other_emirates')->value('id'), 'line1' => 'Tower 1', 'city' => 'Al Reem',
-            'payment_method' => 'cod', 'expected_total' => '1190.00',   // 1155 + AED 35 delivery (free only above AED 1,500)
+            // 1,100 goods + AED 35 delivery (free only above AED 1,500), then 5% VAT on both: 1,135 + 56.75
+            'payment_method' => 'cod', 'expected_total' => '1191.75',
         ];
     }
 
@@ -49,7 +50,8 @@ class CheckoutFlowTest extends TestCase
         $res = $this->post('/checkout', $this->form());
         $order = Order::sole();
         $res->assertRedirect(route('checkout.complete', $order->number));
-        $this->assertSame('1190.00', $order->grand_total);
+        $this->assertSame('1191.75', $order->grand_total);
+        $this->assertSame('0.00', $order->payment_fee);
         $this->assertSame('cod', $order->payment_status);
         $this->assertSame(2, $this->product->fresh()->stock_qty);
         $this->get(route('checkout.complete', $order->number))->assertOk()->assertSee($order->number);
@@ -76,7 +78,8 @@ class CheckoutFlowTest extends TestCase
     public function test_mock_card_payment_marks_paid_and_issues_invoice(): void
     {
         $this->post('/cart/add/band');
-        $res = $this->post('/checkout', $this->form(['payment_method' => 'card']));
+        $quoted = $this->postJson('/checkout/quote', $this->form(['payment_method' => 'card']))->json('grand_total_raw');
+        $res = $this->post('/checkout', $this->form(['payment_method' => 'card', 'expected_total' => $quoted]));
         $order = Order::sole();
         $this->assertStringContainsString('/payments/mock/'.$order->number, $res->headers->get('Location'));
 
@@ -87,13 +90,40 @@ class CheckoutFlowTest extends TestCase
         $this->get(route('order.invoice', $order->number))->assertOk()->assertHeader('content-type', 'application/pdf');
     }
 
+    public function test_card_fee_and_vat_are_added_at_checkout_only(): void
+    {
+        Settings::set(['card_fee_percent' => 2.5, 'card_fee_fixed' => 1]);
+        $this->post('/cart/add/band');
+        $this->get('/cart')->assertSee('AED 1,100.00')->assertDontSee('AED 1,155.00');
+
+        $form = $this->form(['zone_id' => ShippingZone::where('code', 'dubai')->value('id')]);   // free delivery
+        $cod = $this->postJson('/checkout/quote', $form)->json();
+        $this->assertSame('AED 1,155.00', $cod['grand_total']);      // 1,100 + 5% VAT, no fee
+        $this->assertNull($cod['payment_fee']);
+
+        $card = $this->postJson('/checkout/quote', ['payment_method' => 'card'] + $form)->json();
+        // fee = 2.5% of 1,155 + AED 1 = 29.88 → VAT on fee 1.49 → total 1,155 + 29.88 + 1.49
+        $this->assertSame('AED 29.88', $card['payment_fee']);
+        $this->assertSame('AED 56.49', $card['vat']);                 // 55.00 goods + 1.49 fee
+        $this->assertSame('AED 1,186.37', $card['grand_total']);
+
+        $res = $this->post('/checkout', ['payment_method' => 'card', 'expected_total' => $card['grand_total_raw']] + $form);
+        $order = Order::sole();
+        $this->assertSame(['29.88', '1.49', '1186.37'], [$order->payment_fee, $order->payment_fee_vat, $order->grand_total]);
+
+        $this->post($res->headers->get('Location'));   // simulated card payment → invoice issued
+        $html = view('invoices.tax-invoice', ['order' => $order->fresh()->load('items'), 'ar' => fn ($t) => $t])->render();
+        $this->assertStringContainsString('Payment processing fee (CARD)', $html);
+        $this->assertStringContainsString('1,186.37', $html);
+    }
+
     public function test_tiered_and_free_shipping_coupons(): void
     {
         Coupon::create(['code' => 'FREESHIP', 'name' => 'Free', 'type' => 'free_shipping', 'scope' => 'cart', 'stackable' => true]);
         $this->post('/cart/add/band');
         $json = $this->postJson('/checkout/quote', ['coupon' => 'FREESHIP', 'zone_id' => ShippingZone::where('code', 'abu_dhabi')->value('id')])->json();
         $this->assertSame(__('shop.checkout.free'), $json['shipping']);
-        $this->assertSame('AED 1,155.00', $json['grand_total']);
+        $this->assertSame('AED 1,155.00', $json['grand_total']);   // 1,100 + 5% VAT, delivery waived
 
         Coupon::create(['code' => 'TIER', 'name' => 'Tier', 'type' => 'tiered', 'rules' => [['min' => 5000, 'percent' => 10]], 'scope' => 'cart']);
         $json = $this->postJson('/checkout/quote', ['coupon' => 'TIER'])->json();

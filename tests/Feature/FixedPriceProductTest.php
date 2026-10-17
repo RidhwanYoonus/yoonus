@@ -32,7 +32,7 @@ class FixedPriceProductTest extends TestCase
     {
         return Product::create($attrs + [
             'name' => 'Silver Watch', 'sku' => 'W-1', 'slug' => 'silver-watch', 'pricing_type' => 'FIXED',
-            'fixed_price' => '1050.00', 'gold_category_id' => null, 'weight_grams' => 0, 'stock_qty' => 5,
+            'fixed_price' => '1000.00', 'gold_category_id' => null, 'weight_grams' => 0, 'stock_qty' => 5,
             'category_id' => Category::create(['name' => 'Watches', 'slug' => 'watches'])->id,
         ]);
     }
@@ -74,7 +74,7 @@ class FixedPriceProductTest extends TestCase
     public function test_product_page_and_checkout_work_without_a_karat(): void
     {
         $this->fixed();
-        $this->get('/product/silver-watch')->assertOk()->assertSee('AED 1,050.00')->assertSee('Price (excl. VAT)')->assertDontSee('Gold rate AED');
+        $this->get('/product/silver-watch')->assertOk()->assertSee('AED 1,000.00')->assertSee('Price (excl. VAT)')->assertDontSee('Gold rate AED');
         $this->get('/product/silver-watch?lang=ar')->assertOk();
         $this->get('/shop')->assertOk()->assertSee('Watches');
         $this->get('/feed/google.xml')->assertOk()->assertSee('<g:price>1050.00 AED</g:price>', false);

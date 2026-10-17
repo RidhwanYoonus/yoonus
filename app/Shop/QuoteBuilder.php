@@ -27,13 +27,14 @@ class QuoteBuilder
         string $fulfilment = 'delivery',
         int $loyaltyPoints = 0,
         ?string $giftCardCode = null,
+        ?string $paymentMethod = null,
     ): Quote {
         $q = new Quote($lines, $zone, $fulfilment);
         if ($q->isEmpty()) {
             return $q;
         }
 
-        $baseShipping = $this->shippingFor($q, $zone, $fulfilment, $q->itemsGross());
+        $baseShipping = $this->shippingFor($q, $zone, $fulfilment, array_sum(array_map(fn (CartLine $l) => $l->subtotal(), $lines)));
         $this->applyCoupons($q, $user, $email, $couponCode, $baseShipping);
         $this->applyLoyalty($q, $user, $loyaltyPoints);
 
@@ -46,17 +47,34 @@ class QuoteBuilder
             $q->vat += $q->lineVat[$i];
         }
 
-        $itemsTotal = $q->taxable + $q->vat;
-        $q->shipping = $q->freeShipping ? 0 : $this->shippingFor($q, $zone, $fulfilment, $itemsTotal);
-        // Shipping rates are VAT-inclusive; split out the 5% for the invoice.
+        // Everything is priced before VAT; VAT is added once here, on goods, delivery and the payment fee.
         $vatBp = Money::scaled(Settings::get('default_vat_percent', 5), 2);
-        $q->shippingVat = $q->shipping - Money::divRound($q->shipping * 10000, 10000 + $vatBp);
-        $q->grandTotal = $itemsTotal + $q->shipping;
+        $q->shipping = $q->freeShipping ? 0 : $this->shippingFor($q, $zone, $fulfilment, $q->taxable);
+        $q->shippingVat = Money::percentOf($q->shipping, $vatBp);
+        $beforeFee = $q->taxable + $q->vat + $q->shipping + $q->shippingVat;
 
-        $this->applyGiftCard($q, $giftCardCode);
+        $this->applyGiftCard($q, $giftCardCode, $beforeFee);
+        $q->amountBeforeFee = $beforeFee - $q->giftCardAmount;
+
+        $q->paymentMethod = $paymentMethod;
+        $q->paymentFee = $this->paymentFee($paymentMethod, $q->amountBeforeFee);
+        $q->paymentFeeVat = Money::percentOf($q->paymentFee, $vatBp);
+
+        $q->grandTotal = $beforeFee + $q->paymentFee + $q->paymentFeeVat;
         $q->amountDue = $q->grandTotal - $q->giftCardAmount;
 
         return $q;
+    }
+
+    /** Fee for the chosen payment method: % of the amount being paid + fixed amount (both from Settings). */
+    public function paymentFee(?string $method, int $amount): int
+    {
+        if (! $method || $amount <= 0 || ! in_array($method, ['card', 'tabby', 'tamara', 'cod'], true)) {
+            return 0;
+        }
+
+        return Money::percentOf($amount, Money::scaled(Settings::get("{$method}_fee_percent", 0), 2))
+            + Money::toFils(Settings::get("{$method}_fee_fixed", 0));
     }
 
     private function shippingFor(Quote $q, ?ShippingZone $zone, string $fulfilment, int $itemsTotal): int
@@ -146,7 +164,7 @@ class QuoteBuilder
         $q->loyaltyDiscount = $applied;
     }
 
-    private function applyGiftCard(Quote $q, ?string $code): void
+    private function applyGiftCard(Quote $q, ?string $code, int $payable): void
     {
         if (! $code = strtoupper(trim((string) $code))) {
             return;
@@ -158,6 +176,6 @@ class QuoteBuilder
             return;
         }
         $q->giftCard = $card;
-        $q->giftCardAmount = min(Money::toFils($card->balance), $q->grandTotal);
+        $q->giftCardAmount = min(Money::toFils($card->balance), $payable);
     }
 }

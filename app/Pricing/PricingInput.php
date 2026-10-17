@@ -14,7 +14,7 @@ final class PricingInput
         public readonly int $stoneFils,
         public readonly int $wastageBp,
         public readonly string $pricingType = 'GOLD_RATE',   // GOLD_RATE | FIXED
-        public readonly int $fixedFils = 0,                 // FIXED: selling price incl. VAT
+        public readonly int $fixedFils = 0,                 // FIXED: selling price before VAT
     ) {}
 
     public static function fromProduct(Product $p): self

@@ -6,12 +6,14 @@
     $f = fn ($fils) => Money::format($fils);
     $initial = [
         'items_subtotal' => $f($quote->itemsSubtotal), 'discount' => $quote->discountTotal ? $f($quote->discountTotal) : null,
-        'taxable' => $f($quote->taxable), 'vat' => $f($quote->vat),
+        'taxable' => $f($quote->taxable), 'vat' => $f($quote->vatTotal()),
         'shipping' => $quote->shipping ? $f($quote->shipping) : __('shop.checkout.free'),
+        'payment_fee' => $quote->paymentFee ? $f($quote->paymentFee) : null,
+        'taxable_all' => $f($quote->taxable + $quote->shipping + $quote->paymentFee),
         'grand_total' => $f($quote->grandTotal), 'grand_total_raw' => Money::toAed($quote->grandTotal),
         'gift_card' => null, 'loyalty' => null, 'amount_due' => $f($quote->amountDue),
         'coupons' => $quote->couponCodes(), 'messages' => $quote->messages, 'methods' => $methods,
-        'lines' => collect($quote->lines)->map(fn ($l, $i) => ['name' => $l->product->localized('name'), 'qty' => $l->qty, 'subtotal' => $f($l->subtotal()), 'discount' => $l->discount ? $f($l->discount) : null, 'total' => $f($quote->lineTotal($i))])->all(),
+        'lines' => collect($quote->lines)->map(fn ($l, $i) => ['name' => $l->product->localized('name'), 'qty' => $l->qty, 'subtotal' => $f($l->subtotal()), 'discount' => $l->discount ? $f($l->discount) : null, 'total' => $f($quote->lineTaxable($i))])->all(),
     ];
     $form = [
         'email' => old('email', $user?->email), 'phone' => old('phone', $user?->phone), 'name' => old('name', $user?->name),
@@ -117,9 +119,10 @@
                     <div class="flex justify-between"><dt>{{ __('shop.checkout.subtotal_ex_vat') }}</dt><dd x-text="q.items_subtotal"></dd></div>
                     <div class="flex justify-between text-gold-700" x-show="q.discount"><dt>{{ __('shop.checkout.discount') }}</dt><dd x-text="'− ' + q.discount"></dd></div>
                     <div class="flex justify-between text-xs text-muted" x-show="q.loyalty"><dt>{{ __('shop.loyalty.applied') }}</dt><dd x-text="q.loyalty && (q.loyalty.points + ' pts')"></dd></div>
-                    <div class="flex justify-between"><dt>{{ __('shop.checkout.taxable') }}</dt><dd x-text="q.taxable"></dd></div>
-                    <div class="flex justify-between"><dt>{{ __('shop.checkout.vat') }}</dt><dd x-text="q.vat"></dd></div>
                     <div class="flex justify-between"><dt>{{ __('shop.checkout.shipping') }}</dt><dd x-text="q.shipping"></dd></div>
+                    <div class="flex justify-between" x-show="q.payment_fee"><dt>{{ __('shop.checkout.payment_fee') }}</dt><dd x-text="q.payment_fee"></dd></div>
+                    <div class="flex justify-between border-t border-line pt-2"><dt>{{ __('shop.checkout.taxable') }}</dt><dd x-text="q.taxable_all"></dd></div>
+                    <div class="flex justify-between"><dt>{{ __('shop.checkout.vat') }}</dt><dd x-text="q.vat"></dd></div>
                     <div class="flex justify-between border-t border-line pt-3 text-base font-semibold"><dt>{{ __('shop.checkout.total') }}</dt><dd class="text-gold-700" x-text="q.grand_total"></dd></div>
                     <div class="flex justify-between text-gold-700" x-show="q.gift_card"><dt>{{ __('shop.checkout.gift_card') }}</dt><dd x-text="'− ' + q.gift_card"></dd></div>
                     <div class="flex justify-between font-semibold" x-show="q.gift_card"><dt>{{ __('shop.checkout.amount_due') }}</dt><dd x-text="q.amount_due"></dd></div>

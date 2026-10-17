@@ -14,11 +14,11 @@
         <p class="text-[11px] uppercase tracking-widest text-muted">{{ $product->specLine() }}</p>
         <h3 class="mt-1 line-clamp-1 text-sm font-medium"><a href="{{ route('product.show', $product) }}" class="hover:text-gold-700">{{ $product->localized('name') }}</a></h3>
         <p class="price mt-1 text-sm">
-            <span class="font-semibold text-gold-700">{{ \App\Pricing\Money::format($price->total) }}</span>
+            <span class="font-semibold text-gold-700">{{ \App\Pricing\Money::format($price->taxable) }}</span>
             @if ($price->hasDiscount())
-                <s class="ms-1 text-xs text-muted">{{ \App\Pricing\Money::format($price->originalTotal) }}</s>
+                <s class="ms-1 text-xs text-muted">{{ \App\Pricing\Money::format($price->subtotal) }}</s>
             @endif
         </p>
-        <p class="text-[11px] text-muted">{{ __('shop.product.incl_vat', ['vat' => rtrim(rtrim($price->vatPercent(), '0'), '.')]) }}</p>
+        <p class="text-[11px] text-muted">{{ __('shop.product.plus_vat', ['vat' => rtrim(rtrim($price->vatPercent(), '0'), '.')]) }}</p>
     </div>
 </article>

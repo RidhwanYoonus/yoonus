@@ -30,7 +30,7 @@ return [
         'promise_stone_title' => 'Stones',
         'promise_stone' => 'Diamonds and gemstones are priced separately at a fixed value.',
         'promise_vat_title' => 'VAT 5%',
-        'promise_vat' => 'UAE VAT is always shown separately and charged on the price after any discount.',
+        'promise_vat' => 'Prices are shown before VAT. 5% UAE VAT is added at checkout, on the price after any discount.',
     ],
 
     'campaign' => ['ends_in' => 'Offer ends in', 'days' => 'Days', 'hours' => 'Hrs', 'minutes' => 'Min', 'seconds' => 'Sec', 'shop_now' => 'Shop the offer'],
@@ -47,6 +47,7 @@ return [
     'product' => [
         'g' => 'g', 'gold' => 'Gold', 'price' => 'Price', 'weight' => 'Weight', 'purity' => 'Purity', 'hallmark' => 'Hallmark',
         'incl_vat' => 'Includes :vat% VAT',
+        'plus_vat' => '+ :vat% VAT at checkout',
         'valid_as_of' => 'Price valid as of :time · Gold rate :rate/g',
         'save_percent' => 'Save :percent%', 'save_amount' => 'Save :amount',
         'add_to_cart' => 'Add to bag', 'sold_out' => 'Sold out', 'out_of_stock' => 'This piece is currently out of stock.',
@@ -67,6 +68,7 @@ return [
         'vat' => 'VAT :vat%',
         'total' => 'Total',
         'price_ex_vat' => 'Price (excl. VAT)',
+        'vat_at_checkout' => ':vat% VAT, delivery and any payment fee are added at checkout.',
     ],
 
     'whatsapp' => [
@@ -92,7 +94,7 @@ return [
         'added' => ':name was added to your bag.', 'removed' => 'Removed from your bag.',
         'prices_updated' => 'Some prices have changed since you added them.',
         'prices_reason' => 'Gold prices follow the live market rate. The new prices are shown below.',
-        'shipping_next' => 'Delivery and offers are calculated at checkout.',
+        'shipping_next' => 'VAT 5%, delivery, payment fee and offers are calculated at checkout.',
         'checkout' => 'Checkout', 'bnpl_hint' => 'Pay in 4 interest-free with Tabby or Tamara.',
     ],
 
@@ -106,9 +108,9 @@ return [
         'free' => 'Free', 'free_above' => 'free over :amount',
         'payment' => 'Payment', 'notes' => 'Order notes (optional)', 'summary' => 'Order summary',
         'coupon' => 'Promo code', 'gift_card' => 'Gift card', 'apply' => 'Apply',
-        'subtotal_ex_vat' => 'Subtotal (excl. VAT)', 'discount' => 'Discount', 'taxable' => 'Taxable amount', 'vat' => 'VAT 5%',
+        'subtotal_ex_vat' => 'Subtotal (excl. VAT)', 'discount' => 'Discount', 'taxable' => 'Taxable amount', 'vat' => 'VAT 5%', 'payment_fee' => 'Payment / card fee',
         'shipping' => 'Delivery', 'total' => 'Total', 'amount_due' => 'Amount to pay',
-        'vat_note' => 'Discounts are applied before VAT. VAT is charged on the discounted amount.',
+        'vat_note' => 'Discounts are applied before VAT. VAT is charged on the discounted goods, delivery and payment fee.',
         'place' => 'Place order', 'thanks' => 'Thank you for your order',
         'price_updated' => 'The gold rate changed while you were checking out. Your new total is :total — please review and confirm.',
         'rates_stale' => "Today's gold rates are being updated. Checkout will reopen shortly — please try again in a few minutes.",
@@ -118,6 +120,7 @@ return [
 
     'pay' => [
         'card' => 'Credit / debit card', 'card_note' => 'Visa, Mastercard, Apple Pay',
+        'fee_note' => ':fee payment fee',
         'tabby' => 'Tabby — pay in 4', 'tabby_note' => '4 interest-free payments of AED :amount',
         'tamara' => 'Tamara — split in 4', 'tamara_note' => '4 interest-free payments of AED :amount',
         'cod' => 'Cash on delivery', 'covered' => 'Fully paid by gift card', 'giftcard' => 'Gift card',
@@ -224,7 +227,7 @@ return [
     'footer' => [
         'about' => 'Fine gold and diamond jewellery, priced live from the daily gold rate with every charge shown.',
         'help' => 'Help', 'visit' => 'Visit us', 'trn' => 'TRN',
-        'vat_note' => 'All prices in AED and include 5% VAT.',
+        'vat_note' => 'Prices in AED, excluding 5% VAT (added at checkout).',
         'payments' => 'Card · Apple Pay · Tabby · Tamara · Cash on delivery',
     ],
 
@@ -232,7 +235,7 @@ return [
         'home_title' => 'Gold & Diamond Jewellery in the UAE — Live Gold Rate Prices',
         'default_description' => 'Shop 18K, 21K, 22K and 24K gold jewellery online in the UAE. Live gold rate pricing, transparent making charges, 5% VAT shown, Tabby & Tamara.',
         'product_title' => ':name — :karat Gold, :weight g',
-        'product_description' => ':name in :karat gold, :weight g. :price incl. VAT, priced live from today\'s gold rate. Delivery across the UAE.',
+        'product_description' => ':name in :karat gold, :weight g. :price + VAT, priced live from today\'s gold rate. Delivery across the UAE.',
         'category_title' => ':name — Gold Jewellery UAE',
         'category_description' => 'Shop :name in 18K, 21K and 22K gold. Live gold rate prices, transparent making charges and UAE delivery.',
     ],

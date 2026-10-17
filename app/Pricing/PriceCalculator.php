@@ -47,14 +47,14 @@ final class PriceCalculator
     }
 
     /**
-     * Fixed-price product: the admin enters the selling price incl. VAT. VAT is split out of it,
-     * and discounts still come off the pre-VAT amount.
+     * Fixed-price product: the admin enters the selling price before VAT (like every price in
+     * the shop); VAT is added at checkout. Discounts come off the pre-VAT amount.
      */
     private function fixed(PricingInput $in, int $vatBp, int $discount): PriceBreakdown
     {
-        $total = $in->fixedFils;
-        $taxable = Money::divRound($total * 10000, 10000 + $vatBp);
-        $vat = $total - $taxable;
+        $taxable = $in->fixedFils;
+        $vat = Money::percentOf($taxable, $vatBp);
+        $total = $taxable + $vat;
 
         $discount = max(0, min($discount, $taxable));
         if ($discount === 0) {

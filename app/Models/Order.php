@@ -25,7 +25,7 @@ class Order extends Model
 
     protected function casts(): array
     {
-        $money = collect(['items_subtotal', 'discount_total', 'taxable_amount', 'vat_total', 'shipping_total', 'shipping_vat', 'grand_total', 'gift_card_amount', 'amount_due'])
+        $money = collect(['items_subtotal', 'discount_total', 'taxable_amount', 'vat_total', 'shipping_total', 'shipping_vat', 'payment_fee', 'payment_fee_vat', 'grand_total', 'gift_card_amount', 'amount_due'])
             ->mapWithKeys(fn ($c) => [$c => 'decimal:2'])->all();
 
         return $money + [

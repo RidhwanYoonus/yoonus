@@ -132,6 +132,7 @@ class OrderResource extends Resource
                 Infolists\Components\TextEntry::make('taxable_amount')->money('AED'),
                 Infolists\Components\TextEntry::make('vat_total')->label('VAT')->money('AED'),
                 Infolists\Components\TextEntry::make('shipping_total')->money('AED'),
+                Infolists\Components\TextEntry::make('payment_fee')->label('Payment fee (excl. VAT)')->money('AED'),
                 Infolists\Components\TextEntry::make('gift_card_amount')->money('AED'),
                 Infolists\Components\TextEntry::make('grand_total')->money('AED')->weight('bold')->size('lg'),
                 Infolists\Components\TextEntry::make('amount_due')->money('AED'),

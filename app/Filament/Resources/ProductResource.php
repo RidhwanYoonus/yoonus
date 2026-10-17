@@ -67,9 +67,9 @@ class ProductResource extends Resource
                     Forms\Components\ToggleButtons::make('pricing_type')->label('How is this product priced?')->inline()->required()->default('GOLD_RATE')->live()->columnSpanFull()
                         ->options(['GOLD_RATE' => 'By weight × today\'s gold rate', 'FIXED' => 'Fixed price'])
                         ->icons(['GOLD_RATE' => 'heroicon-o-scale', 'FIXED' => 'heroicon-o-tag']),
-                    Forms\Components\TextInput::make('fixed_price')->label('Selling price (incl. VAT)')->numeric()->minValue(0.01)->prefix('AED')->live(debounce: 400)
+                    Forms\Components\TextInput::make('fixed_price')->label('Selling price (excl. VAT)')->numeric()->minValue(0.01)->prefix('AED')->live(debounce: 400)
                         ->visible(fn (Forms\Get $get) => $get('pricing_type') === 'FIXED')->required(fn (Forms\Get $get) => $get('pricing_type') === 'FIXED')
-                        ->helperText('The price customers pay. VAT is shown separately on the product page and invoice. Gold-rate changes do not affect it.'),
+                        ->helperText('Shown in the shop as the price before VAT; 5% VAT is added at checkout. Gold-rate changes do not affect it.'),
                     Forms\Components\Select::make('gold_category_id')->label(fn (Forms\Get $get) => $get('pricing_type') === 'FIXED' ? 'Karat (optional, for display)' : 'Karat')->relationship('goldCategory', 'name')
                         ->required(fn (Forms\Get $get) => $get('pricing_type') !== 'FIXED')->live()
                         ->getOptionLabelFromRecordUsing(fn (GoldCategory $record) => "{$record->name} — AED {$record->rate_per_gram}/g"),
@@ -136,9 +136,9 @@ class ProductResource extends Resource
 
         if ($fixed) {
             return new HtmlString('<table class="w-full text-sm">'
-                .$row('Price (excl. VAT)', $p->subtotal)
-                .$row('VAT '.rtrim(rtrim($p->vatPercent(), '0'), '.').'%', $p->vat)
-                .$row('Total', $p->total, true)
+                .$row('Shop price (excl. VAT)', $p->subtotal, true)
+                .$row('+ VAT '.rtrim(rtrim($p->vatPercent(), '0'), '.').'% at checkout', $p->vat)
+                .$row('Customer pays (before delivery / fees)', $p->total)
                 .'</table><p class="mt-2 text-xs text-gray-500">Fixed price — not linked to the gold rate.</p>');
         }
 
@@ -148,9 +148,9 @@ class ProductResource extends Resource
             .$row('Stone', $p->stoneValue)
             .$row('Wastage', $p->wastage)
             .($p->rounding ? $row('Rounding', $p->rounding) : '')
-            .$row('Subtotal', $p->subtotal)
-            .$row('VAT '.rtrim(rtrim($p->vatPercent(), '0'), '.').'%', $p->vat)
-            .$row('Total', $p->total, true)
+            .$row('Shop price (excl. VAT)', $p->subtotal, true)
+            .$row('+ VAT '.rtrim(rtrim($p->vatPercent(), '0'), '.').'% at checkout', $p->vat)
+            .$row('Customer pays (before delivery / fees)', $p->total)
             .'</table><p class="mt-2 text-xs text-gray-500">At AED '.Money::toAed($p->rateFils).'/g</p>');
     }
 
@@ -170,7 +170,7 @@ class ProductResource extends Resource
                 Tables\Columns\TextColumn::make('weight_grams')->label('Weight')->suffix(' g')->sortable()->toggleable(),
                 Tables\Columns\TextColumn::make('making')->label('Making')->toggleable(isToggledHiddenByDefault: true)
                     ->state(fn (Product $record) => $record->isFixedPrice() ? '—' : ($record->manufacturer_charge_type === 'PER_PIECE' ? 'AED '.$record->manufacturer_charge_value : $record->manufacturer_charge_value.'%')),
-                Tables\Columns\TextColumn::make('cached_sales_price')->label('Price (incl. VAT)')->money('AED')->sortable()->weight('bold'),
+                Tables\Columns\TextColumn::make('cached_subtotal')->label('Price (excl. VAT)')->money('AED')->sortable()->weight('bold'),
                 Tables\Columns\TextColumn::make('price_calculated_at')->label('Recalculated')->since()->sortable()->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('stock_qty')->label('Stock')->sortable()
                     ->color(fn (Product $record) => $record->isLowStock() ? 'danger' : null)->icon(fn (Product $record) => $record->isLowStock() ? 'heroicon-o-exclamation-triangle' : null),

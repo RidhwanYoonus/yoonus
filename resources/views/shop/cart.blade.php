@@ -30,7 +30,7 @@
                         <img src="{{ $line->product->primaryImage() }}" alt="" class="h-24 w-24 rounded-xl border border-line object-cover">
                         <div class="flex-1">
                             <a href="{{ route('product.show', $line->product) }}" class="font-medium hover:text-gold-700">{{ $line->product->localized('name') }}</a>
-                            <p class="text-xs text-muted">{{ $line->product->specLine() }} · {{ Money::format($line->unit->total) }} {{ __('shop.cart.each') }}</p>
+                            <p class="text-xs text-muted">{{ $line->product->specLine() }} · {{ Money::format($line->unit->taxable) }} {{ __('shop.cart.each') }}</p>
                             <div class="mt-3 flex items-center gap-3">
                                 <form method="POST" action="{{ route('cart.update', $line->product->id) }}" class="flex items-center gap-2">
                                     @csrf @method('PATCH')
@@ -39,17 +39,14 @@
                                 <form method="POST" action="{{ route('cart.remove', $line->product->id) }}">@csrf @method('DELETE')<button class="text-xs text-muted underline">{{ __('shop.cart.remove') }}</button></form>
                             </div>
                         </div>
-                        <p class="price font-semibold">{{ Money::format($line->gross()) }}</p>
+                        <p class="price font-semibold">{{ Money::format($line->subtotal()) }}</p>
                     </li>
                 @endforeach
             </ul>
-            @php($gross = array_sum(array_map(fn ($l) => $l->gross(), $lines)))
-            @php($vat = array_sum(array_map(fn ($l) => $l->unit->vat * $l->qty, $lines)))
+            @php($subtotal = array_sum(array_map(fn ($l) => $l->subtotal(), $lines)))
             <aside class="card h-fit p-6">
                 <dl class="space-y-2 text-sm price">
-                    <div class="flex justify-between"><dt>{{ __('shop.checkout.subtotal_ex_vat') }}</dt><dd>{{ Money::format($gross - $vat) }}</dd></div>
-                    <div class="flex justify-between"><dt>{{ __('shop.checkout.vat') }}</dt><dd>{{ Money::format($vat) }}</dd></div>
-                    <div class="flex justify-between border-t border-line pt-3 text-base font-semibold"><dt>{{ __('shop.checkout.total') }}</dt><dd class="text-gold-700">{{ Money::format($gross) }}</dd></div>
+                    <div class="flex justify-between text-base font-semibold"><dt>{{ __('shop.checkout.subtotal_ex_vat') }}</dt><dd class="text-gold-700">{{ Money::format($subtotal) }}</dd></div>
                 </dl>
                 <p class="mt-2 text-xs text-muted">{{ __('shop.cart.shipping_next') }}</p>
                 <a href="{{ route('checkout.show') }}" class="btn-dark mt-6 w-full">{{ __('shop.cart.checkout') }}</a>

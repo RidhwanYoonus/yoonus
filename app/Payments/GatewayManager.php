@@ -36,25 +36,39 @@ class GatewayManager
      */
     public function available(Quote $quote): array
     {
-        $due = $quote->amountDue / 100;
+        $due = $quote->amountBeforeFee / 100;
         $methods = [];
         if ($due > 0) {
-            $methods['card'] = ['label' => __('shop.pay.card'), 'note' => __('shop.pay.card_note')];
+            $methods['card'] = ['label' => __('shop.pay.card'), 'note' => $this->withFee(__('shop.pay.card_note'), 'card')];
             foreach (['tabby', 'tamara'] as $bnpl) {
                 if (Settings::bool("{$bnpl}_enabled") && $due >= (float) Settings::get("{$bnpl}_min") && $due <= (float) Settings::get("{$bnpl}_max")) {
                     $methods[$bnpl] = [
                         'label' => __("shop.pay.{$bnpl}"),
-                        'note' => __("shop.pay.{$bnpl}_note", ['amount' => number_format($due / 4, 2)]),
+                        'note' => $this->withFee(__("shop.pay.{$bnpl}_note", ['amount' => number_format($due / 4, 2)]), $bnpl),
                     ];
                 }
             }
             if (Settings::bool('cod_enabled') && $due <= (float) Settings::get('cod_max_total', 10000) && $quote->fulfilment === 'delivery') {
-                $methods['cod'] = ['label' => __('shop.pay.cod'), 'note' => null];
+                $methods['cod'] = ['label' => __('shop.pay.cod'), 'note' => $this->withFee(null, 'cod')];
             }
         } else {
             $methods['giftcard'] = ['label' => __('shop.pay.covered'), 'note' => null];
         }
 
         return $methods;
+    }
+
+    /** Append "+ 2.5% card fee" style text when a fee is configured for the method. */
+    private function withFee(?string $note, string $method): ?string
+    {
+        $pct = (float) Settings::get("{$method}_fee_percent", 0);
+        $fixed = (float) Settings::get("{$method}_fee_fixed", 0);
+        if ($pct <= 0 && $fixed <= 0) {
+            return $note;
+        }
+        $parts = array_filter([$pct > 0 ? rtrim(rtrim(number_format($pct, 2), '0'), '.').'%' : null, $fixed > 0 ? 'AED '.number_format($fixed, 2) : null]);
+        $fee = __('shop.pay.fee_note', ['fee' => implode(' + ', $parts)]);
+
+        return $note ? "{$note} · {$fee}" : $fee;
     }
 }

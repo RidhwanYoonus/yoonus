@@ -38,7 +38,7 @@ class Seo
             'name' => $name,
             'karat' => $p->goldCategory?->name ?? '',
             'weight' => rtrim(rtrim((string) $p->weight_grams, '0'), '.'),
-            'price' => Money::format($price->total),
+            'price' => Money::format($price->taxable),
         ]);
 
         return self::page($title, $description, $p->primaryImage(), route('product.show', $p), 'product', [self::productSchema($p)]);
@@ -75,16 +75,16 @@ class Seo
                 '@type' => 'Offer',
                 'url' => route('product.show', $p),
                 'priceCurrency' => 'AED',
-                'price' => Money::toAed($price->total),
+                'price' => Money::toAed($price->taxable),
                 'priceValidUntil' => now()->addDay()->toDateString(),
                 'availability' => $p->inStock() ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
                 'itemCondition' => 'https://schema.org/NewCondition',
                 'seller' => ['@type' => 'Organization', 'name' => Settings::get('store_legal_name')],
                 'priceSpecification' => [
                     '@type' => 'UnitPriceSpecification',
-                    'price' => Money::toAed($price->total),
+                    'price' => Money::toAed($price->taxable),
                     'priceCurrency' => 'AED',
-                    'valueAddedTaxIncluded' => true,
+                    'valueAddedTaxIncluded' => false,   // matches the price shown on the page; VAT is added at checkout
                 ],
             ],
         ];

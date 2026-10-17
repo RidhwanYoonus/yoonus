@@ -68,8 +68,11 @@ class OrderService
                 'discount_total' => Money::toAed($quote->discountTotal),
                 'taxable_amount' => Money::toAed($quote->taxable),
                 'vat_total' => Money::toAed($quote->vat),
-                'shipping_total' => Money::toAed($quote->shipping),
+                // shipping_total is stored incl. its VAT; the payment fee is stored excl. VAT with its VAT alongside.
+                'shipping_total' => Money::toAed($quote->shipping + $quote->shippingVat),
                 'shipping_vat' => Money::toAed($quote->shippingVat),
+                'payment_fee' => Money::toAed($quote->paymentFee),
+                'payment_fee_vat' => Money::toAed($quote->paymentFeeVat),
                 'grand_total' => Money::toAed($quote->grandTotal),
                 'gift_card_amount' => Money::toAed($quote->giftCardAmount),
                 'amount_due' => Money::toAed($quote->amountDue),
@@ -260,7 +263,7 @@ class OrderService
         $items = $order->items;
         $taxable = $items->sum(fn ($i) => Money::toFils($i->subtotal) - Money::toFils($i->discount_amount));
         $vat = $items->sum(fn ($i) => Money::toFils($i->vat_amount));
-        $grand = $taxable + $vat + Money::toFils($order->shipping_total);
+        $grand = $taxable + $vat + Money::toFils($order->shipping_total) + Money::toFils($order->payment_fee) + Money::toFils($order->payment_fee_vat);
         $order->update([
             'discount_total' => Money::toAed($items->sum(fn ($i) => Money::toFils($i->discount_amount))),
             'taxable_amount' => Money::toAed($taxable),

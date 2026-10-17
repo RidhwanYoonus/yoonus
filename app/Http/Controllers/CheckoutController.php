@@ -35,8 +35,11 @@ class CheckoutController extends Controller
             return redirect()->route('cart.show');
         }
         $changes = $this->cart->revalidate();
-        $quote = $this->quotes->build($this->cart->lines(), $request->user(), $request->user()?->email,
-            zone: ShippingZone::where('is_active', true)->orderBy('sort_order')->first());
+        $zone = ShippingZone::where('is_active', true)->orderBy('sort_order')->first();
+        $quote = $this->quotes->build($this->cart->lines(), $request->user(), $request->user()?->email, zone: $zone);
+        // Price the first available payment method so its fee is included from the start.
+        $method = old('payment_method', array_key_first($this->gateways->available($quote)));
+        $quote = $this->quotes->build($this->cart->lines(), $request->user(), $request->user()?->email, zone: $zone, paymentMethod: $method);
 
         return view('shop.checkout', [
             'seo' => Seo::page(__('shop.checkout.title')),
@@ -156,6 +159,7 @@ class CheckoutController extends Controller
             $fulfilment,
             (int) $request->input('loyalty_points', 0),
             $request->input('gift_card'),
+            $request->input('payment_method'),
         );
     }
 
@@ -166,13 +170,15 @@ class CheckoutController extends Controller
         return [
             'lines' => collect($q->lines)->map(fn ($l, $i) => [
                 'name' => $l->product->localized('name'), 'qty' => $l->qty,
-                'subtotal' => $f($l->subtotal()), 'discount' => $l->discount ? $f($l->discount) : null, 'total' => $f($q->lineTotal($i)),
+                'subtotal' => $f($l->subtotal()), 'discount' => $l->discount ? $f($l->discount) : null, 'total' => $f($q->lineTaxable($i)),
             ])->all(),
             'items_subtotal' => $f($q->itemsSubtotal),
             'discount' => $q->discountTotal ? $f($q->discountTotal) : null,
             'taxable' => $f($q->taxable),
-            'vat' => $f($q->vat),
+            'vat' => $f($q->vatTotal()),
             'shipping' => $q->shipping ? $f($q->shipping) : __('shop.checkout.free'),
+            'payment_fee' => $q->paymentFee ? $f($q->paymentFee) : null,
+            'taxable_all' => $f($q->taxable + $q->shipping + $q->paymentFee),
             'grand_total' => $f($q->grandTotal),
             'grand_total_raw' => Money::toAed($q->grandTotal),
             'gift_card' => $q->giftCardAmount ? $f($q->giftCardAmount) : null,

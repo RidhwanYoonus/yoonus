@@ -34,6 +34,16 @@ final class Quote
 
     public bool $freeShipping = false;
 
+    public ?string $paymentMethod = null;
+
+    /** Card / transaction fee (excl. VAT) and its VAT. */
+    public int $paymentFee = 0;
+
+    public int $paymentFeeVat = 0;
+
+    /** What the customer pays before any payment fee (used for BNPL limits and the fee itself). */
+    public int $amountBeforeFee = 0;
+
     public int $grandTotal = 0;
 
     public int $giftCardAmount = 0;
@@ -72,6 +82,12 @@ final class Quote
         return $this->lineTaxable($i) + ($this->lineVat[$i] ?? 0);
     }
 
+    /** Every VAT component: goods, delivery and payment fee. */
+    public function vatTotal(): int
+    {
+        return $this->vat + $this->shippingVat + $this->paymentFeeVat;
+    }
+
     public function itemsGross(): int
     {
         return array_sum(array_map(fn (CartLine $l) => $l->gross(), $this->lines));
@@ -79,7 +95,7 @@ final class Quote
 
     public function toArray(): array
     {
-        return collect(['itemsSubtotal', 'discountTotal', 'taxable', 'vat', 'shipping', 'shippingVat', 'grandTotal', 'giftCardAmount', 'amountDue', 'loyaltyDiscount'])
+        return collect(['itemsSubtotal', 'discountTotal', 'taxable', 'vat', 'shipping', 'shippingVat', 'paymentFee', 'paymentFeeVat', 'grandTotal', 'giftCardAmount', 'amountDue', 'loyaltyDiscount'])
             ->mapWithKeys(fn ($k) => [$k => Money::toAed($this->{$k})])->all();
     }
 }
