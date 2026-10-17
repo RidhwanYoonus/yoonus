@@ -67,6 +67,7 @@ return [
         'klaviyo_api_key' => null,
         'klaviyo_list_id' => null,
 
+        'gold_rate_source_url' => 'https://dubaicityofgold.com/',   // "Fetch rate" button in Gold rate manager
         'gold_rate_api_url' => null,        // optional automatic rate feed
         'gold_rate_api_key' => null,
     ],
