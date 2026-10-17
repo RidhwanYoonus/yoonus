@@ -8,7 +8,6 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\ShippingZone;
 use App\Payments\StripeGateway;
-use App\Pricing\GoldRateService;
 use App\Support\Settings;
 use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -26,7 +25,7 @@ class CheckoutFlowTest extends TestCase
         parent::setUp();
         Mail::fake();
         $this->seed(ReferenceDataSeeder::class);
-        app(GoldRateService::class)->updateRate(GoldCategory::where('name', '24K')->first(), '218.18');
+        $this->setGoldRates(['22K' => '200.00']);
         $this->product = Product::create([
             'name' => 'Band', 'sku' => 'B-1', 'slug' => 'band', 'gold_category_id' => GoldCategory::where('name', '22K')->value('id'),
             'weight_grams' => 5, 'manufacturer_charge_type' => 'PERCENTAGE', 'manufacturer_charge_value' => 10, 'stock_qty' => 3,
@@ -59,7 +58,7 @@ class CheckoutFlowTest extends TestCase
     public function test_price_change_during_checkout_is_flagged_not_charged(): void
     {
         $this->post('/cart/add/band');
-        app(GoldRateService::class)->updateRate(GoldCategory::where('name', '24K')->first(), '230');
+        $this->setGoldRates(['22K' => '210']);
 
         $this->post('/checkout', $this->form())->assertSessionHas('price_updated');
         $this->assertSame(0, Order::count());

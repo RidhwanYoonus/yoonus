@@ -67,7 +67,7 @@ class WebsiteGoldRatesTest extends TestCase
     public function test_button_sets_every_karat_including_14k_to_the_website_rate(): void
     {
         $this->seed(ReferenceDataSeeder::class);
-        GoldCategory::create(['name' => '14K', 'karat' => 14, 'purity_percent' => 58.50, 'auto_derive' => true, 'base_category_id' => GoldCategory::where('name', '24K')->value('id')]);
+        GoldCategory::create(['name' => '14K', 'karat' => 14, 'purity_percent' => 58.50]);
         Http::fake(['dubaicityofgold.com/*' => Http::response(self::layouts()['dubaicityofgold'][0])]);
         $admin = User::factory()->create();
         $admin->forceFill(['is_admin' => true])->save();

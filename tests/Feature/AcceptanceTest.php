@@ -42,7 +42,7 @@ class AcceptanceTest extends TestCase
         $this->seed(ReferenceDataSeeder::class);
         $this->k24 = GoldCategory::where('name', '24K')->first();
         $this->k22 = GoldCategory::where('name', '22K')->first();
-        app(GoldRateService::class)->updateRate($this->k24, '218.18');   // → 22K AED 200.00/g
+        $this->setGoldRates(['24K' => '218.18', '22K' => '200.00', '18K' => '163.64']);
     }
 
     private function product(array $attrs = []): Product
@@ -77,7 +77,6 @@ class AcceptanceTest extends TestCase
         $products = collect(range(1, 3))->map(fn () => $this->product());
         $other = $this->product(['gold_category_id' => GoldCategory::where('name', '18K')->value('id')]);
 
-        $this->k24->derived()->where('name', '22K')->update(['auto_derive' => false]);
         app(GoldRateService::class)->updateRate($this->k22->fresh(), '210');
 
         foreach ($products as $p) {
@@ -111,7 +110,7 @@ class AcceptanceTest extends TestCase
     public function test_04_order_snapshot_survives_rate_change(): void
     {
         $order = $this->placeOrder([$this->product()]);
-        app(GoldRateService::class)->updateRate($this->k24->fresh(), '240');
+        $this->setGoldRates(['22K' => '220']);
 
         $item = $order->fresh()->items->first();
         $this->assertSame('200.00', $item->gold_rate_snapshot);
@@ -148,7 +147,7 @@ class AcceptanceTest extends TestCase
         $p = $this->product();
         $this->get('/feed/google.xml')->assertOk()->assertSee('<g:price>1155.00 AED</g:price>', false);
 
-        app(GoldRateService::class)->updateRate($this->k24->fresh(), '240');
+        $this->setGoldRates(['22K' => '220']);
         $expected = Money::toAed($p->fresh()->price()->total);
         $this->assertNotSame('1155.00', $expected);
         $this->get('/feed/google.xml')->assertOk()->assertSee("<g:price>{$expected} AED</g:price>", false)->assertSee('<g:id>'.$p->sku.'</g:id>', false);
@@ -217,11 +216,11 @@ class AcceptanceTest extends TestCase
     {
         $admin = User::factory()->create();
         $p = $this->product();
-        app(GoldRateService::class)->updateRate($this->k24->fresh(), '2400', 'ten_gram', $admin->id);
+        app(GoldRateService::class)->updateRate($this->k22->fresh(), '2200', 'ten_gram', $admin->id);
 
         $h = GoldRateHistory::where('gold_category_id', $this->k22->id)->latest('id')->first();
         $this->assertSame('200.00', $h->previous_rate);
-        $this->assertSame('220.00', $h->rate_per_gram);   // 240 × 22/24
+        $this->assertSame('220.00', $h->rate_per_gram);   // AED 2,200 per 10 g
         $this->assertSame($admin->id, $h->changed_by);
         $log = PriceRecalcLog::where('product_id', $p->id)->where('gold_rate_history_id', $h->id)->sole();
         $this->assertSame('1155.00', $log->old_price);
@@ -229,6 +228,23 @@ class AcceptanceTest extends TestCase
 
         $this->expectException(\LogicException::class);
         $h->delete();
+    }
+
+    public function test_11b_changing_24k_leaves_other_karats_alone(): void
+    {
+        $p = $this->product();
+        $this->setGoldRates(['24K' => '260']);
+
+        $this->assertSame('200.00', $this->k22->fresh()->rate_per_gram);
+        $this->assertSame('1155.00', $p->fresh()->cached_sales_price);
+    }
+
+    public function test_11c_derivation_still_works_when_switched_on_for_a_karat(): void
+    {
+        $this->k22->update(['auto_derive' => true, 'base_category_id' => $this->k24->id]);
+        $this->setGoldRates(['24K' => '240']);
+
+        $this->assertSame('220.00', $this->k22->fresh()->rate_per_gram);   // 240 × 22/24
     }
 
     /** 12. Product page carries Schema.org Product + Offer markup in AED. */

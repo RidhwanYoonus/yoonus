@@ -37,7 +37,8 @@ class GoldCategoryResource extends Resource
                 Forms\Components\TextInput::make('purity_percent')->label('Purity %')->required()->numeric()->minValue(1)->maxValue(100),
             ]),
             Forms\Components\Section::make('Rate')->columns(3)->schema([
-                Forms\Components\Toggle::make('auto_derive')->label('Derive rate from base karat')->live()->inline(false),
+                Forms\Components\Toggle::make('auto_derive')->label('Follow another karat automatically')->default(false)->live()->inline(false)
+                    ->helperText('Leave off to set this karat\'s rate yourself (recommended).'),
                 Forms\Components\Select::make('base_category_id')->label('Base karat')
                     ->relationship('base', 'name', fn ($query, $record) => $query->when($record, fn ($q) => $q->whereKeyNot($record->id)))
                     ->visible(fn (Forms\Get $get) => $get('auto_derive'))->required(fn (Forms\Get $get) => $get('auto_derive')),
@@ -61,7 +62,9 @@ class GoldCategoryResource extends Resource
                 Tables\Columns\TextColumn::make('purity_percent')->label('Purity')->suffix('%'),
                 Tables\Columns\TextColumn::make('rate_per_gram')->label('AED / g')->money('AED')->size('lg')->weight('bold'),
                 Tables\Columns\TextColumn::make('per_tola')->label('AED / tola')->state(fn (GoldCategory $record) => round($record->rate_per_gram * config('shop.rate_units.tola'), 2))->money('AED')->color('gray'),
-                Tables\Columns\TextColumn::make('base.name')->label('Derived from')->placeholder('Base rate')->badge(),
+                Tables\Columns\TextColumn::make('rate_source')->label('Rate set')->badge()
+                    ->state(fn (GoldCategory $record) => $record->auto_derive && $record->base ? 'From '.$record->base->name : 'Manual')
+                    ->color(fn (string $state) => $state === 'Manual' ? 'success' : 'gray'),
                 Tables\Columns\TextColumn::make('products_count')->counts('products')->label('Products'),
                 Tables\Columns\TextColumn::make('rate_updated_at')->label('Last updated')->since()->tooltip(fn ($record) => $record->rate_updated_at?->toDayDateTimeString())
                     ->color(fn (GoldCategory $record) => $record->isStale() ? 'danger' : 'success')
@@ -98,8 +101,7 @@ class GoldCategoryResource extends Resource
                 Notification::make()->success()->title('Rate updated')
                     ->body("{$names}. Recalculating {$result['affected']} product price(s)".($result['batch'] ? ' in the background.' : '.'))
                     ->send();
-            })
-            ->visible(fn (GoldCategory $record) => ! $record->auto_derive);
+            });
     }
 
     public static function getRelations(): array

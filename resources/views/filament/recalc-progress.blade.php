@@ -2,7 +2,7 @@
     <x-filament::section>
       <div wire:poll.{{ $batch && ! $batch->finished() ? "2s" : "10s" }}>
         @if (! $history)
-            <p class="text-sm text-gray-500">No rate changes yet. Use <strong>Update rate</strong> on the base karat (24K); lower karats derive automatically and every product re-prices.</p>
+            <p class="text-sm text-gray-500">No rate changes yet. Use <strong>Update rate</strong> on each karat (or <strong>Fetch rate</strong> for all at once); every product of that karat re-prices.</p>
         @else
             @php($pct = $batch ? $batch->progress() : 100)
             <div class="flex flex-wrap items-center justify-between gap-2 text-sm">

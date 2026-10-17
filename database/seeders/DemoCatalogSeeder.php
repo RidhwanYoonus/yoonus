@@ -23,8 +23,10 @@ class DemoCatalogSeeder extends Seeder
             'name' => 'Shop Admin', 'password' => 'ChangeMe-2026', 'phone' => '+971500000000',
         ])->forceFill(['is_admin' => true])->save();
 
-        // 24K at AED 218.18/g derives 22K = AED 200.00/g (the spec's worked example).
-        app(GoldRateService::class)->updateRate(GoldCategory::where('name', '24K')->firstOrFail(), '218.18', 'gram', null, 'seed');
+        // Each karat is set by hand. 22K at AED 200.00/g reproduces the spec's worked example.
+        foreach (['24K' => '218.18', '22K' => '200.00', '21K' => '190.91', '18K' => '163.64'] as $karat => $rate) {
+            app(GoldRateService::class)->updateRate(GoldCategory::where('name', $karat)->firstOrFail(), $rate, 'gram', null, 'seed');
+        }
 
         $cats = collect([
             ['Rings', 'خواتم'], ['Necklaces', 'قلائد'], ['Bangles', 'أساور'], ['Earrings', 'أقراط'], ['Pendants', 'معلقات'], ['Sets', 'أطقم'],

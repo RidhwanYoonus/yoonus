@@ -1,4 +1,4 @@
-@php($stale = \App\Models\GoldCategory::where('is_active', true)->where('auto_derive', false)->get()->filter->isStale())
+@php($stale = \App\Models\GoldCategory::where('is_active', true)->get()->filter->isStale())
 @if ($stale->isNotEmpty())
     <div class="bg-danger-600 px-4 py-2 text-center text-sm font-medium text-white">
         ⚠ Gold rate for {{ $stale->pluck('name')->join(', ') }} is older than {{ \App\Support\Settings::get('rate_stale_hours', 24) }} hours —

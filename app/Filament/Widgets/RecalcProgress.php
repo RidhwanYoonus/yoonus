@@ -17,13 +17,13 @@ class RecalcProgress extends Widget
 
     public function getViewData(): array
     {
-        $last = GoldRateHistory::whereNotNull('recalc_batch_id')->latest('id')->first();
-        $batch = $last ? Bus::findBatch($last->recalc_batch_id) : null;
+        $last = GoldRateHistory::with('goldCategory', 'changedBy')->latest('id')->first();
+        $batch = $last?->recalc_batch_id ? Bus::findBatch($last->recalc_batch_id) : null;
 
         return [
             'history' => $last,
             'batch' => $batch,
-            'products' => $last ? GoldRateHistory::where('recalc_batch_id', $last->recalc_batch_id)->sum('affected_products') : 0,
+            'products' => $last ? ($last->recalc_batch_id ? GoldRateHistory::where('recalc_batch_id', $last->recalc_batch_id)->sum('affected_products') : $last->affected_products) : 0,
         ];
     }
 }

@@ -8,7 +8,6 @@ use App\Models\GoldCategory;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ShippingZone;
-use App\Pricing\GoldRateService;
 use App\Pricing\Money;
 use App\Shop\CartLine;
 use App\Shop\QuoteBuilder;
@@ -26,7 +25,7 @@ class FixedPriceProductTest extends TestCase
         parent::setUp();
         Mail::fake();
         $this->seed(ReferenceDataSeeder::class);
-        app(GoldRateService::class)->updateRate(GoldCategory::where('name', '24K')->first(), '218.18');
+        $this->setGoldRates(['24K' => '218.18', '22K' => '200.00', '18K' => '163.64']);
     }
 
     private function fixed(array $attrs = []): Product
@@ -47,14 +46,14 @@ class FixedPriceProductTest extends TestCase
         $this->assertSame('50.00', Money::toAed($price->vat));
         $this->assertSame('1050.00', $p->fresh()->cached_sales_price);
 
-        app(GoldRateService::class)->updateRate(GoldCategory::where('name', '24K')->first(), '260');
+        $this->setGoldRates(['24K' => '260', '22K' => '240']);
         $this->assertSame('1050.00', Money::toAed($p->fresh()->price()->total));
     }
 
     public function test_fixed_price_with_a_karat_still_ignores_the_rate(): void
     {
         $p = $this->fixed(['gold_category_id' => GoldCategory::where('name', '18K')->value('id'), 'weight_grams' => 3.5]);
-        app(GoldRateService::class)->updateRate(GoldCategory::where('name', '24K')->first(), '260');
+        $this->setGoldRates(['18K' => '190']);
 
         $this->assertSame('1050.00', $p->fresh()->cached_sales_price);
         $this->assertSame('18K · 3.5 g', $p->fresh()->specLine());
