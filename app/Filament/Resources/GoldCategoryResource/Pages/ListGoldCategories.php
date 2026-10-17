@@ -71,8 +71,8 @@ class ListGoldCategories extends ListRecords
             ])
             ->action(function (array $data) {
                 $service = app(GoldRateService::class);
-                // Base karat first (its change cascades to derived karats), then every karat gets the website's own rate.
-                $categories = GoldCategory::where('is_active', true)->orderBy('auto_derive')->orderByDesc('karat')->get();
+                // Every karat gets the website's own rate, independently.
+                $categories = GoldCategory::where('is_active', true)->orderByDesc('karat')->get();
                 $applied = [];
 
                 try {

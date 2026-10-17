@@ -233,18 +233,12 @@ class AcceptanceTest extends TestCase
     public function test_11b_changing_24k_leaves_other_karats_alone(): void
     {
         $p = $this->product();
+        // Even a karat still flagged as "derived" in an old database must not follow 24K.
+        $this->k22->update(['auto_derive' => true, 'base_category_id' => $this->k24->id]);
         $this->setGoldRates(['24K' => '260']);
 
         $this->assertSame('200.00', $this->k22->fresh()->rate_per_gram);
         $this->assertSame('1155.00', $p->fresh()->cached_sales_price);
-    }
-
-    public function test_11c_derivation_still_works_when_switched_on_for_a_karat(): void
-    {
-        $this->k22->update(['auto_derive' => true, 'base_category_id' => $this->k24->id]);
-        $this->setGoldRates(['24K' => '240']);
-
-        $this->assertSame('220.00', $this->k22->fresh()->rate_per_gram);   // 240 × 22/24
     }
 
     /** 12. Product page carries Schema.org Product + Offer markup in AED. */

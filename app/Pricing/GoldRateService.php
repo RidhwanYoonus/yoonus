@@ -24,16 +24,9 @@ class GoldRateService
         return number_format(round((float) $value / $grams, 2), 2, '.', '');
     }
 
-    /** Lower-karat rate derived from its base: base × (karat / base karat). */
-    public static function derive(GoldCategory $base, GoldCategory $child): string
-    {
-        $fils = Money::divRound(Money::toFils($base->rate_per_gram) * Money::scaled($child->karat, 2), Money::scaled($base->karat, 2));
-
-        return Money::toAed($fils);
-    }
-
     /**
-     * Set a category's rate, cascade it to auto-derived karats, write the audit trail,
+     * Set one karat's rate (every karat is priced independently; retail rates are not a
+     * purity fraction of 24K), write the audit trail,
      * and queue recalculation of every affected product (batches of 500).
      *
      * @return array{history: array<GoldRateHistory>, batch: ?Batch, affected: int}
@@ -95,8 +88,5 @@ class GoldRateService
             'source' => $source,
         ]);
 
-        foreach ($category->derived()->where('auto_derive', true)->get() as $child) {
-            $this->apply($child, self::derive($category, $child), $userId, $source === 'manual' ? 'derived' : $source, $histories);
-        }
     }
 }

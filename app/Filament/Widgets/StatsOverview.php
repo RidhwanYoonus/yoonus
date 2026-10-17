@@ -15,7 +15,7 @@ class StatsOverview extends Base
     {
         $today = Reports::lastDays(1)->kpis();
         $month = Reports::lastDays(30)->kpis();
-        $base = GoldCategory::where('auto_derive', false)->orderByDesc('karat')->first();
+        $base = GoldCategory::orderByDesc('karat')->first();
 
         return [
             Stat::make('Revenue today', 'AED '.number_format($today['revenue'], 2))->description($today['orders'].' paid order(s)'),
