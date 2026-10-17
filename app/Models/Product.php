@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\Localized;
 use App\Pricing\PriceBreakdown;
 use App\Pricing\PricingService;
+use App\Support\Settings;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -106,6 +107,25 @@ class Product extends Model
         $parts = array_filter([$this->goldCategory?->name, $weight]);
 
         return $parts ? implode(' · ', $parts) : (string) $this->category?->localized('name');
+    }
+
+    /**
+     * Making-charge badge for cards, e.g. ['text' => 'Only 1% making', 'highlight' => true].
+     * Null for fixed-price items or when the badge is switched off.
+     */
+    public function makingBadge(): ?array
+    {
+        if ($this->isFixedPrice() || ! Settings::bool('making_badge')) {
+            return null;
+        }
+        $value = (float) $this->manufacturer_charge_value;
+        if ($this->manufacturer_charge_type === self::PER_PIECE) {
+            return ['text' => __('shop.product.making_fixed', ['amount' => number_format($value, $value == floor($value) ? 0 : 2)]), 'highlight' => false];
+        }
+        $pct = rtrim(rtrim(number_format($value, 2), '0'), '.');
+        $low = $value <= (float) Settings::get('making_badge_highlight_below', 5);
+
+        return ['text' => __($value <= 0 ? 'shop.product.making_zero' : ($low ? 'shop.product.making_low' : 'shop.product.making_pct'), ['pct' => $pct]), 'highlight' => $low];
     }
 
     public function inStock(): bool

@@ -6,8 +6,11 @@
                  class="aspect-square w-full object-cover transition duration-700 group-hover:scale-105">
         </a>
         <div class="pointer-events-none absolute inset-x-3 top-3 flex items-start justify-between">
-            <span class="flex flex-col gap-1.5">
+            <span class="flex flex-col items-start gap-1.5">
                 @if ($product->goldCategory)<span class="rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-semibold tracking-wider text-gold-700 shadow-sm">{{ $product->goldCategory->name }}</span>@endif
+                @if ($badge = $product->makingBadge())
+                    <span class="rounded-full px-2.5 py-1 text-[10px] font-semibold shadow-sm {{ $badge['highlight'] ? 'bg-onyx text-gold-300' : 'bg-white/90 text-ink/70' }}">{{ $badge['text'] }}</span>
+                @endif
                 @if ($price->hasDiscount())<span class="rounded-full bg-gold-600 px-2.5 py-1 text-[10px] font-semibold text-white">{{ __('shop.product.save_percent', ['percent' => $price->savingsPercent()]) }}</span>@endif
                 @unless ($product->inStock())<span class="rounded-full bg-onyx/80 px-2.5 py-1 text-[10px] text-ivory">{{ __('shop.product.sold_out') }}</span>@endunless
             </span>

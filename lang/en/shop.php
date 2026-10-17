@@ -60,6 +60,10 @@ return [
         'only_left' => '{1} Only 1 left|[2,*] Only :count left',
         'related' => 'You may also like',
         'fixed_price' => 'Fixed price',
+        'making_low' => 'Only :pct% making',
+        'making_pct' => ':pct% making',
+        'making_zero' => '0% making',
+        'making_fixed' => 'Making AED :amount',
     ],
 
     'breakdown' => [

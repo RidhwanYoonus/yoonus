@@ -169,6 +169,24 @@ class CheckoutFlowTest extends TestCase
         $this->assertSame(['shipped', 'refunded'], $order->fresh()->allowedTransitions());
     }
 
+    public function test_making_charge_badge_and_store_caption(): void
+    {
+        Product::create(['name' => 'Bangle', 'sku' => 'B-2', 'slug' => 'bangle', 'gold_category_id' => GoldCategory::where('name', '22K')->value('id'),
+            'weight_grams' => 10, 'manufacturer_charge_type' => 'PER_PIECE', 'manufacturer_charge_value' => 350, 'stock_qty' => 1]);
+        Product::create(['name' => 'Coin', 'sku' => 'C-1', 'slug' => 'coin', 'gold_category_id' => GoldCategory::where('name', '22K')->value('id'),
+            'weight_grams' => 8, 'manufacturer_charge_type' => 'PERCENTAGE', 'manufacturer_charge_value' => 1, 'stock_qty' => 1]);
+
+        $this->get('/shop')->assertOk()
+            ->assertSee('10% making')          // the 5 g band at 10%
+            ->assertSee('Only 1% making')      // low charges are highlighted
+            ->assertSee('Making AED 350');
+        $this->get('/')->assertSee('Order direct from the factory · Collect from our premium retail store');
+        $this->get('/?lang=ar')->assertSee('مصنعية');
+
+        Settings::set(['making_badge' => false]);
+        $this->get('/shop')->assertDontSee('Only 1% making');
+    }
+
     public function test_tiered_and_free_shipping_coupons(): void
     {
         Coupon::create(['code' => 'FREESHIP', 'name' => 'Free', 'type' => 'free_shipping', 'scope' => 'cart', 'stackable' => true]);

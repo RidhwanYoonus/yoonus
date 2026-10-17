@@ -19,7 +19,7 @@
 
         <a href="{{ route('home') }}" class="text-center leading-none">
             <span class="font-display block max-w-[52vw] truncate whitespace-nowrap text-lg text-gold-700 sm:max-w-none sm:text-2xl sm:tracking-[0.08em] lg:text-[1.9rem]">{{ \App\Support\Seo::storeName() }}</span>
-            <span class="mt-1 hidden text-[10px] uppercase tracking-[0.45em] text-muted lg:block">{{ __('shop.home.eyebrow') }}</span>
+            <span class="mt-1.5 hidden text-[10px] uppercase tracking-[0.3em] text-muted lg:block">{{ \App\Support\Settings::get($rtl ? 'store_caption_ar' : 'store_caption') }}</span>
         </a>
 
         <div class="flex items-center justify-end gap-0.5 sm:gap-1">

@@ -41,7 +41,10 @@
             @endif
             <p class="mt-1 text-xs text-muted">SKU {{ $product->sku }} @if($product->hallmark_ref) · {{ __('shop.product.hallmark') }} {{ $product->hallmark_ref }} @endif</p>
 
-            <div class="mt-6 flex flex-wrap items-baseline gap-3 price">
+            @if ($badge = $product->makingBadge())
+                <span class="mt-4 inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ $badge['highlight'] ? 'bg-onyx text-gold-300' : 'bg-sand text-ink/70' }}">{{ $badge['text'] }}</span>
+            @endif
+            <div class="mt-4 flex flex-wrap items-baseline gap-3 price">
                 <span class="text-3xl font-semibold text-gold-700">{{ $fmt($price->taxable) }}</span>
                 @if ($price->hasDiscount())
                     <s class="text-lg text-muted">{{ $fmt($price->subtotal) }}</s>

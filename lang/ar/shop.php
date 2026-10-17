@@ -60,6 +60,10 @@ return [
         'only_left' => '{1} بقيت قطعة واحدة فقط|{2} بقيت قطعتان فقط|[3,*] بقي :count فقط',
         'related' => 'قد يعجبك أيضًا',
         'fixed_price' => 'سعر ثابت',
+        'making_low' => 'مصنعية :pct% فقط',
+        'making_pct' => 'مصنعية :pct%',
+        'making_zero' => 'بدون مصنعية',
+        'making_fixed' => 'مصنعية :amount د.إ',
     ],
 
     'breakdown' => [

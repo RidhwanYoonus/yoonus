@@ -34,7 +34,14 @@
         <div class="pointer-events-none absolute -bottom-48 start-[-10%] h-[30rem] w-[30rem] rounded-full bg-gold-700/20 blur-3xl"></div>
         <div class="container-x relative grid items-center gap-6 py-10 sm:gap-10 sm:py-20 lg:grid-cols-[1.1fr_1fr] lg:py-28">
             <div>
-                <p class="eyebrow text-gold-300">{{ __('shop.home.eyebrow') }}</p>
+                @php($caption = \App\Support\Settings::get(app()->getLocale() === 'ar' ? 'store_caption_ar' : 'store_caption'))
+                @if ($caption)
+                    <p class="inline-flex items-center gap-2 rounded-full border border-gold-400/40 bg-gold-500/10 px-4 py-1.5 text-xs text-gold-300 sm:text-sm">
+                        <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72m-13.5 8.65h3.75a.75.75 0 00.75-.75V13.5a.75.75 0 00-.75-.75H6.75a.75.75 0 00-.75.75v3.75c0 .415.336.75.75.75z"/></svg>
+                        {{ $caption }}
+                    </p>
+                @endif
+                <p class="eyebrow mt-5 text-gold-300">{{ __('shop.home.eyebrow') }}</p>
                 <h1 class="font-display mt-3 text-[2.6rem] leading-[1.08] sm:mt-4 sm:text-6xl lg:text-7xl">{{ __('shop.home.headline') }}</h1>
                 <p class="mt-4 max-w-xl text-sm leading-relaxed text-ivory/70 sm:mt-6 sm:text-base">{{ __('shop.home.subline') }}</p>
                 <div class="mt-6 flex flex-wrap gap-3 sm:mt-8">

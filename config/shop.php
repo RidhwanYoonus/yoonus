@@ -26,6 +26,10 @@ return [
         'store_email' => env('SHOP_EMAIL', 'hello@example.ae'),
         'whatsapp_number' => env('SHOP_WHATSAPP', '971500000000'),
         'whatsapp_button' => true,
+        'store_caption' => 'Order direct from the factory · Collect from our premium retail store',
+        'store_caption_ar' => 'اطلب مباشرة من المصنع · واستلم من متجرنا الفاخر',
+        'making_badge' => true,
+        'making_badge_highlight_below' => 5,   // % making charge at or below this gets the gold "Only X% making" badge
 
         'default_vat_percent' => 5.00,
         'rounding_mode' => 'fils',          // fils | quarter | dirham
