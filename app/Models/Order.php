@@ -27,6 +27,7 @@ class Order extends Model
         'paid' => ['packed', 'cancelled', 'refunded'],
         'packed' => ['ready', 'refunded'],
         'ready' => ['delivered', 'cancelled', 'refunded'],
+        'shipped' => ['delivered', 'refunded'],   // pickup orders marked "shipped" before this pipeline existed
         'delivered' => ['refunded'],
         'cancelled' => [],
         'refunded' => [],
