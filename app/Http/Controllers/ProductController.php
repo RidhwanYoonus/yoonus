@@ -6,6 +6,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Review;
 use App\Support\Images;
+use App\Support\JewelleryArt;
 use App\Support\Seo;
 use App\Support\Settings;
 use Illuminate\Http\Request;
@@ -61,25 +62,13 @@ class ProductController extends Controller
         return back()->with('status', __('shop.reviews.thanks'));
     }
 
-    /** Elegant SVG stand-in until real product photography is uploaded. */
+    /** Drawn stand-in (ring, necklace, bangle…) until real product photography is uploaded. */
     public function placeholder(string $product)
     {
-        $p = Product::where('slug', $product)->first();
-        $label = e($p?->goldCategory?->name ?? 'Gold');
-        $hue = $p ? (crc32($p->slug) % 30) + 35 : 45;
-        $svg = <<<SVG
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600">
-  <defs>
-    <radialGradient id="bg" cx="50%" cy="40%" r="75%"><stop offset="0" stop-color="#fffaf0"/><stop offset="1" stop-color="#efe3c8"/></radialGradient>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="hsl({$hue},75%,62%)"/><stop offset=".5" stop-color="hsl({$hue},80%,45%)"/><stop offset="1" stop-color="hsl({$hue},70%,30%)"/></linearGradient>
-  </defs>
-  <rect width="600" height="600" fill="url(#bg)"/>
-  <ellipse cx="300" cy="300" rx="150" ry="150" fill="none" stroke="url(#g)" stroke-width="34"/>
-  <ellipse cx="300" cy="300" rx="150" ry="150" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="4" transform="translate(-6,-6)"/>
-  <path d="M300 112 l26 40 h-52z" fill="#dfeef7" stroke="#9fb9c9" stroke-width="2"/>
-  <text x="300" y="540" font-family="Georgia,serif" font-size="28" fill="#8a6d2b" text-anchor="middle" letter-spacing="6">{$label}</text>
-</svg>
-SVG;
+        $p = Product::with('category', 'goldCategory')->where('slug', $product)->first();
+        $type = JewelleryArt::typeFor($p?->category?->slug, $p?->name);
+        $hue = $p ? 38 + (crc32($p->slug) % 12) : 42;
+        $svg = JewelleryArt::product($type, $p?->stone_type, $hue, $p?->goldCategory?->name ?? '');
 
         return response($svg, 200, ['Content-Type' => 'image/svg+xml', 'Cache-Control' => 'public, max-age=86400']);
     }

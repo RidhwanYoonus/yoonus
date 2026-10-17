@@ -36,7 +36,7 @@
 @utility no-scrollbar { scrollbar-width: none; &::-webkit-scrollbar { display: none; } }
 @utility pb-safe { padding-bottom: env(safe-area-inset-bottom); }
 
-@utility container-x { @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8; }
+@utility container-x { @apply mx-auto w-full max-w-[90rem] px-4 sm:px-6 lg:px-10; }
 @utility btn { @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-medium tracking-wide transition focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 focus-visible:ring-offset-2 disabled:opacity-50; }
 @utility btn-gold { @apply btn bg-gold-600 text-white hover:bg-gold-700 shadow-sm; }
 @utility btn-dark { @apply btn bg-onyx text-ivory hover:bg-black; }

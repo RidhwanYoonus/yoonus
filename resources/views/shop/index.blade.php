@@ -1,20 +1,28 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-x py-10">
-    <nav class="text-xs text-muted" aria-label="breadcrumb"><a href="{{ route('home') }}">{{ __('shop.nav.home') }}</a> / {{ $category?->localized('name') ?? __('shop.nav.shop') }}</nav>
-    <h1 class="font-display mt-2 text-4xl">{{ $category?->localized('name') ?? __('shop.nav.shop') }}</h1>
-    @if ($category?->localized('description'))<p class="mt-2 max-w-2xl text-muted">{{ $category->localized('description') }}</p>@endif
-
-    <div class="mt-8 grid gap-8 lg:grid-cols-[240px_1fr]" x-data="{ filters: false }">
+<section class="border-b border-line bg-gradient-to-b from-sand/70 to-ivory">
+    <div class="container-x py-10 text-center sm:py-14">
+        <nav class="text-xs text-muted" aria-label="breadcrumb"><a href="{{ route('home') }}" class="hover:text-gold-700">{{ __('shop.nav.home') }}</a> <span class="mx-1">/</span> {{ $category?->localized('name') ?? __('shop.nav.shop') }}</nav>
+        <h1 class="font-display mt-3 text-4xl sm:text-5xl">{{ $category?->localized('name') ?? __('shop.nav.shop') }}</h1>
+        @if ($category?->localized('description'))<p class="mx-auto mt-3 max-w-2xl text-muted">{{ $category->localized('description') }}</p>@endif
+    </div>
+</section>
+<div class="container-x py-8 sm:py-10">
+    <div class="grid gap-8 lg:grid-cols-[260px_1fr]" x-data="{ filters: false }">
         <button class="btn-outline lg:hidden" @click="filters = !filters">{{ __('shop.filters.title') }}</button>
-        <form method="GET" class="space-y-6 text-sm" :class="filters ? '' : 'hidden lg:block'">
+        <form method="GET" class="card h-fit space-y-6 p-5 text-sm lg:sticky lg:top-36" :class="filters ? '' : 'hidden lg:block'">
             @if (request('q'))<input type="hidden" name="q" value="{{ request('q') }}">@endif
             <fieldset>
                 <legend class="label">{{ __('shop.filters.karat') }}</legend>
-                @foreach ($karats as $k)
-                    <label class="flex items-center gap-2 py-1"><input type="checkbox" name="karat[]" value="{{ $k->id }}" @checked(in_array($k->id, $filters['karat'] ?? [])) class="accent-gold-600"> {{ $k->name }}</label>
-                @endforeach
+                <div class="flex flex-wrap gap-2">
+                    @foreach ($karats as $k)
+                        <label class="cursor-pointer">
+                            <input type="checkbox" name="karat[]" value="{{ $k->id }}" @checked(in_array($k->id, $filters['karat'] ?? [])) class="peer sr-only">
+                            <span class="inline-block rounded-full border border-line px-3.5 py-1.5 text-xs transition peer-checked:border-gold-600 peer-checked:bg-gold-600 peer-checked:text-white peer-focus-visible:ring-2 peer-focus-visible:ring-gold-300 hover:border-gold-400">{{ $k->name }}</span>
+                        </label>
+                    @endforeach
+                </div>
             </fieldset>
             @unless ($category)
                 <fieldset>
@@ -53,7 +61,7 @@
 
         <div>
             <p class="text-sm text-muted">{{ trans_choice('shop.filters.count', $products->total(), ['count' => $products->total()]) }}</p>
-            <div class="mt-4 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3">
+            <div class="mt-4 grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 md:grid-cols-3 xl:grid-cols-4">
                 @forelse ($products as $product)
                     @include('partials.product-card')
                 @empty
