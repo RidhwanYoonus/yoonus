@@ -83,6 +83,29 @@ class WebsiteGoldRatesTest extends TestCase
         $this->assertSame('website', GoldRateHistory::latest('id')->first()->source);
     }
 
+    public function test_pasting_the_rate_card_fills_the_rates_when_the_site_cannot_be_reached(): void
+    {
+        $this->seed(ReferenceDataSeeder::class);
+        Http::fake(['*' => Http::response('', 500)]);
+        $admin = User::factory()->create();
+        $admin->forceFill(['is_admin' => true])->save();
+        $this->actingAs($admin);
+
+        $copied = "TODAY'S SUGGESTED RETAIL GOLD JEWELLERY PRICE\nRATES IN AED / GRAM\n24K GOLD\tAED 502.00\n22K GOLD\tAED 464.75\n21K GOLD\tAED 445.75\n18K GOLD\tAED 382.00\n14K GOLD\tAED 298.00\nUpdated 9 minutes ago";
+
+        Livewire::test(ListGoldCategories::class)
+            ->mountAction('fetchWebsiteRates')
+            ->setActionData(['pasted' => $copied])
+            ->assertActionDataSet(['rate_24K' => '502.00', 'rate_22K' => '464.75', 'rate_21K' => '445.75', 'rate_18K' => '382.00'])
+            ->setActionData(['mode' => 'each'])
+            ->callMountedAction()
+            ->assertHasNoActionErrors();
+
+        $this->assertSame('502.00', GoldCategory::where('name', '24K')->value('rate_per_gram'));
+        $this->assertSame('464.75', GoldCategory::where('name', '22K')->value('rate_per_gram'));
+        $this->assertSame('382.00', GoldCategory::where('name', '18K')->value('rate_per_gram'));
+    }
+
     public function test_admin_button_can_use_website_rate_for_every_karat(): void
     {
         $this->seed(ReferenceDataSeeder::class);

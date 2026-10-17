@@ -25,19 +25,7 @@ class WebsiteGoldRates
     public function fetch(?string $url = null): array
     {
         $url ??= self::url();
-        try {
-            $html = Http::timeout(20)
-                // Ship our own Mozilla CA list so HTTPS works on Windows/XAMPP PHP without php.ini edits.
-                ->withOptions(['verify' => resource_path('certs/cacert.pem')])
-                ->withHeaders([
-                    'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36',
-                    'Accept' => 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',
-                    'Accept-Language' => 'en-AE,en;q=0.9',
-                ])
-                ->get($url)->throw()->body();
-        } catch (Throwable $e) {
-            throw new RuntimeException("Could not open {$url}: ".$e->getMessage(), previous: $e);
-        }
+        $html = $this->download($url);
 
         $rates = $this->parse($html);
         if (! isset($rates['24K']) && ! isset($rates['22K'])) {
@@ -45,6 +33,37 @@ class WebsiteGoldRates
         }
 
         return $rates;
+    }
+
+    /**
+     * Try the Windows/OS certificate store first (the one Chrome trusts, including antivirus HTTPS
+     * scanners), then the Mozilla list shipped in resources/certs. Both verify the certificate.
+     */
+    private function download(string $url): string
+    {
+        $attempts = [];
+        if (defined('CURLSSLOPT_NATIVE_CA')) {
+            $attempts['system certificate store'] = ['verify' => true, 'curl' => [CURLOPT_SSL_OPTIONS => CURLSSLOPT_NATIVE_CA]];
+        }
+        $attempts['bundled certificate list'] = ['verify' => resource_path('certs/cacert.pem')];
+
+        $errors = [];
+        foreach ($attempts as $label => $options) {
+            try {
+                return Http::timeout(20)
+                    ->withOptions($options)
+                    ->withHeaders([
+                        'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36',
+                        'Accept' => 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',
+                        'Accept-Language' => 'en-AE,en;q=0.9',
+                    ])
+                    ->get($url)->throw()->body();
+            } catch (Throwable $e) {
+                $errors[] = "{$label}: ".$e->getMessage();
+            }
+        }
+
+        throw new RuntimeException("Could not open {$url} (".implode(' | ', $errors).')');
     }
 
     /** @return array<string,string> */

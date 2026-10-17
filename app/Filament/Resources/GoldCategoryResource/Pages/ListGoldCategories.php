@@ -50,8 +50,17 @@ class ListGoldCategories extends ListRecords
             ->form([
                 Forms\Components\Placeholder::make('status')->hiddenLabel()
                     ->content(fn (Forms\Get $get) => $get('error')
-                        ? '⚠ '.$get('error').' You can still type the rates below by hand.'
+                        ? '⚠ '.$get('error').' Use "Paste from website" below instead, or type the rates by hand.'
                         : 'Rates read at '.$get('fetched_at').'. Empty boxes were not found on the page.'),
+                Forms\Components\Textarea::make('pasted')->label('Paste from website')->rows(3)
+                    ->placeholder('On dubaicityofgold.com, select the rate card (24K GOLD … 18K GOLD), press Ctrl+C, then click here and press Ctrl+V.')
+                    ->live(debounce: 300)
+                    ->afterStateUpdated(function (?string $state, Forms\Set $set) {
+                        foreach (app(WebsiteGoldRates::class)->parse(nl2br(e((string) $state))) as $karat => $value) {
+                            $set("rate_{$karat}", $value);
+                        }
+                    })
+                    ->dehydrated(false),
                 Forms\Components\Hidden::make('error'),
                 Forms\Components\Hidden::make('fetched_at'),
                 Forms\Components\Grid::make(4)->schema(
