@@ -89,6 +89,6 @@ class User extends Authenticatable implements FilamentUser
     /** Saved proof of identity that can be reused at checkout (still valid). */
     public function hasValidSavedId(): bool
     {
-        return $this->id_saved_at && $this->id_front_path && (! $this->id_expiry || $this->id_expiry->isFuture());
+        return $this->id_saved_at && $this->id_number && (! $this->id_expiry || $this->id_expiry->isFuture());
     }
 }

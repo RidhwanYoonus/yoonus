@@ -274,7 +274,7 @@ return [
         'title' => 'Identity verification',
         'intro' => 'For your security, high-value jewellery is only handed over to the buyer. Please add a valid ID — our staff will check it on delivery.',
         'type' => 'ID type', 'number' => 'ID number', 'expiry' => 'Expiry date',
-        'front' => 'Photo of ID (front)', 'back' => 'Photo of ID (back, optional)',
+        'front' => 'Photo of ID (front, optional)', 'back' => 'Photo of ID (back, optional)',
         'types' => ['emirates_id' => 'Emirates ID', 'passport' => 'Passport', 'gcc_id' => 'GCC national ID', 'driving_licence' => 'UAE driving licence'],
         'use_saved' => 'Use my saved ID', 'use_new' => 'Use a different ID', 'expires' => 'expires :date',
         'save' => 'Save my ID for faster checkout next time',
@@ -283,6 +283,7 @@ return [
         'invalid_eid' => 'Enter the 15-digit Emirates ID number starting with 784 (e.g. 784-1990-1234567-1).',
         'invalid_number' => 'Enter the ID number exactly as shown on the document.',
         'remove' => 'Remove saved ID',
+        'upload_failed' => 'The photo could not be uploaded — it may be larger than :max. Try a smaller photo, or leave it empty.',
         'on_file' => 'ID on file: :id',
     ],
 

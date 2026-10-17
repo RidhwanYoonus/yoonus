@@ -87,7 +87,10 @@ class CheckoutController extends Controller
             'loyalty_points' => 'nullable|integer|min:0',
             'notes' => 'nullable|string|max:500',
             'save_address' => 'nullable|boolean',
-        ] + $this->idRules($request));
+        ] + $this->idRules($request), [
+            'id_front.uploaded' => __('shop.id.upload_failed', ['max' => ini_get('upload_max_filesize')]),
+            'id_back.uploaded' => __('shop.id.upload_failed', ['max' => ini_get('upload_max_filesize')]),
+        ]);
 
         if ($this->ratesBlocked()) {
             return back()->withInput()->withErrors(['checkout' => __('shop.checkout.rates_stale')]);
@@ -219,7 +222,7 @@ class CheckoutController extends Controller
             'id_type' => ['required', Rule::in(IdDocument::TYPES)],
             'id_number' => ['required', 'string', 'max:32', IdDocument::numberRule($request->input('id_type'))],
             'id_expiry' => ['required', 'date', 'after:today'],
-            'id_front' => ['required', ...$file],
+            'id_front' => ['nullable', ...$file],
             'id_back' => ['nullable', ...$file],
             'save_id' => 'nullable|boolean',
         ];
@@ -245,7 +248,7 @@ class CheckoutController extends Controller
         $number = IdDocument::normalise($request->input('id_type'), $request->input('id_number'));
 
         return ['type' => $request->input('id_type'), 'number' => $number, 'last4' => IdDocument::last4($number), 'expiry' => $request->input('id_expiry'),
-            'front' => IdDocument::store($request->file('id_front')),
+            'front' => $request->hasFile('id_front') ? IdDocument::store($request->file('id_front')) : null,
             'back' => $request->hasFile('id_back') ? IdDocument::store($request->file('id_back')) : null, 'saved' => false];
     }
 

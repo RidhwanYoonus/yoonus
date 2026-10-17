@@ -182,10 +182,10 @@ class OrderResource extends Resource
                 Infolists\Components\TextEntry::make('id_expiry')->label('ID expiry')->date('d M Y')->visible(fn (Order $record) => $record->hasIdDocument())
                     ->color(fn (Order $record) => $record->id_expiry?->isPast() ? 'danger' : null)
                     ->suffix(fn (Order $record) => $record->id_expiry?->isPast() ? ' (expired)' : ''),
-                Infolists\Components\TextEntry::make('id_front_path')->label('ID photos')->visible(fn (Order $record) => (bool) $record->id_front_path)
-                    ->formatStateUsing(fn (Order $record) => new \Illuminate\Support\HtmlString(
-                        '<a class="text-primary-600 underline" target="_blank" href="'.e(route('admin.id-document', ['order', $record->id, 'front'])).'">Front</a>'
-                        .($record->id_back_path ? ' · <a class="text-primary-600 underline" target="_blank" href="'.e(route('admin.id-document', ['order', $record->id, 'back'])).'">Back</a>' : ''))),
+                Infolists\Components\TextEntry::make('id_photos')->label('ID photos')->visible(fn (Order $record) => $record->hasIdDocument())
+                    ->state(fn (Order $record) => collect(['front' => $record->id_front_path, 'back' => $record->id_back_path])->filter()
+                        ->map(fn ($path, $side) => '<a class="text-primary-600 underline" target="_blank" href="'.e(route('admin.id-document', ['order', $record->id, $side])).'">'.ucfirst($side).'</a>')
+                        ->implode(' · ') ?: 'Not uploaded')->html(),
                 Infolists\Components\TextEntry::make('handover_verified_via')->label('Handover')
                     ->state(fn (Order $record) => match (true) {
                         $record->handover_verified_via === 'otp' => 'Verified by code · '.$record->handover_verified_at?->format('d M H:i'),

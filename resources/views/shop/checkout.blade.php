@@ -124,7 +124,7 @@
                             @error('id_expiry')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror</div>
                         <div class="hidden sm:block"></div>
                         <div><label class="label" for="id_front">{{ __('shop.id.front') }}</label>
-                            <input id="id_front" type="file" name="id_front" accept="image/*,.pdf" class="input file:mr-3 file:rounded-full file:border-0 file:bg-sand file:px-3 file:py-1 file:text-xs" :required="needed && !useSaved" :disabled="!needed || useSaved">
+                            <input id="id_front" type="file" name="id_front" accept="image/*,.pdf" class="input file:mr-3 file:rounded-full file:border-0 file:bg-sand file:px-3 file:py-1 file:text-xs" :disabled="!needed || useSaved">
                             @error('id_front')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror</div>
                         <div><label class="label" for="id_back">{{ __('shop.id.back') }}</label>
                             <input id="id_back" type="file" name="id_back" accept="image/*,.pdf" class="input file:mr-3 file:rounded-full file:border-0 file:bg-sand file:px-3 file:py-1 file:text-xs" :disabled="!needed || useSaved">

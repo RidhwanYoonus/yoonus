@@ -54,7 +54,7 @@ class IdVerificationAndHandoverTest extends TestCase
         $this->post('/cart/add/band');
         $this->get('/checkout')->assertSee('Identity verification')->assertSee('enctype="multipart/form-data"', false);
 
-        $this->post('/checkout', $this->delivery())->assertSessionHasErrors(['id_number', 'id_front', 'id_expiry']);
+        $this->post('/checkout', $this->delivery())->assertSessionHasErrors(['id_number', 'id_expiry'])->assertSessionDoesntHaveErrors('id_front');
         $this->post('/checkout', $this->delivery($this->idFields(['id_number' => '123-456'])))->assertSessionHasErrors('id_number');
         $this->post('/checkout', $this->delivery($this->idFields(['id_expiry' => now()->subDay()->toDateString()])))->assertSessionHasErrors('id_expiry');
         $this->assertSame(0, Order::count());
@@ -66,6 +66,16 @@ class IdVerificationAndHandoverTest extends TestCase
         $this->assertStringNotContainsString('784199012345671', DB::table('orders')->value('id_number'));   // encrypted at rest
         Storage::disk('local')->assertExists($order->id_front_path);
         $this->assertStringNotContainsString('id_number', json_encode($order->toArray()));
+    }
+
+    public function test_id_photos_are_optional(): void
+    {
+        $this->post('/cart/add/band');
+        $fields = $this->idFields();
+        unset($fields['id_front']);
+        $this->post('/checkout', $this->delivery($fields))->assertSessionHasNoErrors();
+        $this->assertNull(Order::sole()->id_front_path);
+        $this->assertSame('5671', Order::sole()->id_last4);
     }
 
     public function test_logged_in_customer_can_save_id_and_reuse_it(): void
@@ -96,7 +106,7 @@ class IdVerificationAndHandoverTest extends TestCase
         $pickup['expected_total'] = $this->postJson('/checkout/quote', $pickup)->json('grand_total_raw');
 
         Settings::set(['id_verification' => 'all']);
-        $this->post('/checkout', $pickup)->assertSessionHasErrors('id_front');
+        $this->post('/checkout', $pickup)->assertSessionHasErrors('id_number');
         Settings::set(['id_verification' => 'delivery']);
         $this->post('/checkout', $pickup)->assertSessionHasNoErrors();
     }
