@@ -122,7 +122,12 @@ class OrderResource extends Resource
             Forms\Components\TextInput::make('handover_code')->label('Customer\'s 6-digit handover code')
                 ->inputMode('numeric')->maxLength(6)->autocomplete(false)
                 ->visible(fn (Forms\Get $get) => $show($get) && ! $get('override'))->required(fn (Forms\Get $get) => $show($get) && ! $get('override'))
-                ->helperText($record->handover_otp_sent_at ? 'Sent '.$record->handover_otp_sent_at->diffForHumans().' to the customer\'s email and WhatsApp.' : 'No code sent yet — use "Send handover code" first.'),
+                ->helperText(fn () => match (true) {
+                    (bool) ($test = HandoverOtp::testCode($record)) => new \Illuminate\Support\HtmlString('<span style="color:#b45309;font-weight:600">TEST MODE — this PC does not send email/WhatsApp yet, so the customer did not receive it. Code: <span style="font-family:monospace;font-size:1.1em">'.e($test).'</span></span>'),
+                    HandoverOtp::testMode() => 'TEST MODE — press "Resend handover code" to get a code you can see here.',
+                    (bool) $record->handover_otp_sent_at => 'Sent '.$record->handover_otp_sent_at->diffForHumans().' to the customer\'s email and WhatsApp.',
+                    default => 'No code sent yet — use "Send handover code" first.',
+                }),
             Forms\Components\Checkbox::make('id_checked')->label('I checked the customer\'s ID matches: '.IdDocument::masked($record->id_type, $record->id_last4).' ('.$record->customer_name.')')
                 ->visible(fn (Forms\Get $get) => $show($get) && $record->hasIdDocument())->accepted(fn (Forms\Get $get) => $show($get) && $record->hasIdDocument()),
             Forms\Components\Toggle::make('override')->label('Customer can\'t receive the code — override')->live()

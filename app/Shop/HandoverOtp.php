@@ -7,6 +7,7 @@ use App\Messaging\Messenger;
 use App\Models\Order;
 use App\Models\User;
 use App\Support\Settings;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use RuntimeException;
 
@@ -36,9 +37,27 @@ class HandoverOtp
         return $status === ($order->isPickup() ? 'ready' : 'shipped');
     }
 
+    /**
+     * Neither email nor WhatsApp can reach the customer (e.g. testing on a PC with MAIL_MAILER=log and
+     * no Twilio). Staff are then shown the code so the flow can still be tried end to end.
+     */
+    public static function testMode(): bool
+    {
+        return in_array(config('mail.default'), ['log', 'array'], true)
+            && ! (Settings::get('twilio_sid') && Settings::get('twilio_token') && Settings::get('twilio_whatsapp_from'));
+    }
+
+    public static function testCode(Order $order): ?string
+    {
+        return self::testMode() ? Cache::get("handover-test-code.{$order->id}") : null;
+    }
+
     public function issue(Order $order): void
     {
         $code = (string) random_int(100000, 999999);
+        if (self::testMode()) {
+            Cache::put("handover-test-code.{$order->id}", $code, now()->addDays(3));
+        }
         $order->forceFill([
             'handover_otp_hash' => Hash::make($code),
             'handover_otp_sent_at' => now(),
@@ -70,6 +89,7 @@ class HandoverOtp
             throw new RuntimeException("Wrong code — do not hand over the order. {$left} attempt(s) left.");
         }
         $order->forceFill(['handover_verified_via' => 'otp', 'handover_verified_at' => now(), 'handover_otp_hash' => null])->save();
+        Cache::forget("handover-test-code.{$order->id}");
     }
 
     /** Manager override when the customer cannot receive the code (logged with reason). */

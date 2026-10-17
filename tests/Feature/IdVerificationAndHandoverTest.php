@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\ShippingZone;
 use App\Models\User;
+use App\Shop\HandoverOtp;
 use App\Shop\OrderService;
 use App\Support\Settings;
 use Database\Seeders\ReferenceDataSeeder;
@@ -158,5 +159,21 @@ class IdVerificationAndHandoverTest extends TestCase
         $svc->transition($second->refresh(), 'shipped');
         $svc->transition($second->refresh(), 'delivered');
         $this->assertNull($second->fresh()->handover_otp_hash);
+    }
+
+    public function test_staff_see_the_code_in_test_mode_only(): void
+    {
+        $order = $this->placeDeliveryOrder();
+        app(OrderService::class)->transition($order, 'packed');
+        app(OrderService::class)->transition($order->refresh(), 'shipped');
+        $this->assertTrue(HandoverOtp::testMode());   // tests use the array mailer and no Twilio
+        $code = HandoverOtp::testCode($order->refresh());
+        $this->assertMatchesRegularExpression('/^\d{6}$/', (string) $code);
+        $this->actingAs(User::factory()->create(['is_admin' => true]))->get('/admin/orders/'.$order->id)->assertOk();
+        app(HandoverOtp::class)->verify($order, $code);
+        $this->assertNull(HandoverOtp::testCode($order));
+
+        config(['mail.default' => 'smtp']);
+        $this->assertFalse(HandoverOtp::testMode());
     }
 }
