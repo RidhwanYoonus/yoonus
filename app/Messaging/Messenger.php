@@ -18,7 +18,9 @@ class Messenger
         }
         try {
             Mail::to($to)->send($message);
-            NotificationLog::create(['channel' => 'email', 'recipient' => $to, 'template' => $template, 'status' => 'sent', 'body' => $message->subjectLine]);
+            // With the "log" mailer (e.g. a test PC) the email only lands in storage/logs, so don't count it as sent.
+            $status = config('mail.default') === 'log' ? 'logged' : 'sent';
+            NotificationLog::create(['channel' => 'email', 'recipient' => $to, 'template' => $template, 'status' => $status, 'body' => $message->subjectLine]);
 
             return true;
         } catch (Throwable $e) {
