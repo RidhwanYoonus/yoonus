@@ -195,8 +195,7 @@ class OrderService
 
     public function transition(Order $order, string $to, ?User $by = null, ?string $note = null): Order
     {
-        $codShortcut = $order->payment_method === 'cod' && $order->status === 'pending' && $to === 'packed';
-        if (! $order->canTransitionTo($to) && ! $codShortcut) {
+        if (! $order->canTransitionTo($to)) {
             throw new RuntimeException("Cannot move order from {$order->status} to {$to}.");
         }
         if ($to === 'paid') {

@@ -129,7 +129,7 @@ return [
         'start_failed' => 'We could not start the payment. Your order is saved — please try again or contact us on WhatsApp.',
     ],
     'pay_status' => ['unpaid' => 'Awaiting payment', 'paid' => 'Paid', 'cod' => 'Pay on delivery', 'refunded' => 'Refunded'],
-    'status' => ['pending' => 'Placed', 'paid' => 'Paid', 'packed' => 'Packed', 'shipped' => 'Shipped', 'delivered' => 'Delivered', 'cancelled' => 'Cancelled', 'refunded' => 'Refunded'],
+    'status' => ['pending' => 'Placed', 'paid' => 'Paid', 'packed' => 'Packed', 'shipped' => 'Shipped', 'ready' => 'Ready for pickup', 'delivered' => 'Delivered', 'collected' => 'Collected', 'cancelled' => 'Cancelled', 'refunded' => 'Refunded'],
 
     'order' => [
         'title' => 'Order :number', 'number' => 'Order :number', 'item' => 'Item', 'total' => 'Total',
@@ -208,6 +208,8 @@ return [
         'paid' => ['subject' => 'Payment confirmed — order :number', 'body' => 'Payment received for :total. Your tax invoice is attached.'],
         'packed' => ['subject' => 'Order :number is packed', 'body' => 'Your jewellery has been inspected and packed with care.'],
         'shipped' => ['subject' => 'Order :number is on its way', 'body' => 'Your order has been dispatched. Tracking: :tracking'],
+        'ready' => ['subject' => 'Order :number is ready to collect', 'body' => 'Your jewellery is ready at :branch. Please bring your order number and a photo ID when you collect it.'],
+        'collected' => ['subject' => 'Order :number collected', 'body' => 'Thank you for collecting your order. We hope you love it!'],
         'delivered' => ['subject' => 'Order :number delivered', 'body' => 'We hope you love it. Thank you for shopping with us!'],
         'cancelled' => ['subject' => 'Order :number cancelled', 'body' => 'Your order has been cancelled. Contact us if you have any questions.'],
         'refunded' => ['subject' => 'Refund for order :number', 'body' => 'Your refund has been processed.'],

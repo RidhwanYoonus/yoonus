@@ -5,16 +5,16 @@
     <h1 class="font-display text-4xl">{{ __('shop.order.number', ['number' => $order->number]) }}</h1>
     <p class="mt-1 text-sm text-muted">{{ $order->created_at->locale(app()->getLocale())->isoFormat('LLL') }}</p>
 
-    @php($steps = ['pending', 'paid', 'packed', 'shipped', 'delivered'])
+    @php($steps = $order->steps())
     @php($current = array_search($order->status, $steps))
     @if ($current !== false)
         <ol class="mt-8 grid grid-cols-5 gap-2 text-center text-xs">
             @foreach ($steps as $i => $s)
-                <li><span class="mx-auto flex h-8 w-8 items-center justify-center rounded-full {{ $i <= $current ? 'bg-gold-600 text-white' : 'bg-sand text-muted' }}">{{ $i + 1 }}</span><span class="mt-2 block">{{ __('shop.status.'.$s) }}</span></li>
+                <li><span class="mx-auto flex h-8 w-8 items-center justify-center rounded-full {{ $i <= $current ? 'bg-gold-600 text-white' : 'bg-sand text-muted' }}">{{ $i + 1 }}</span><span class="mt-2 block">{{ $order->statusLabel($s) }}</span></li>
             @endforeach
         </ol>
     @else
-        <p class="mt-6 rounded-xl bg-sand px-4 py-3 text-sm">{{ __('shop.status.'.$order->status) }}</p>
+        <p class="mt-6 rounded-xl bg-sand px-4 py-3 text-sm">{{ $order->statusLabel() }}</p>
     @endif
 
     @if ($order->tracking_number)

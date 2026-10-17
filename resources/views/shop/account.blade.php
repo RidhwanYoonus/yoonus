@@ -25,7 +25,7 @@
                 <thead class="bg-sand/60 text-xs uppercase tracking-wider text-muted"><tr><th class="px-4 py-3 text-start">#</th><th class="px-4 py-3 text-start">{{ __('shop.account.date') }}</th><th class="px-4 py-3 text-start">{{ __('shop.account.status') }}</th><th class="px-4 py-3 text-end">{{ __('shop.order.total') }}</th></tr></thead>
                 <tbody class="divide-y divide-line">
                     @forelse ($orders as $o)
-                        <tr><td class="px-4 py-3"><a href="{{ route('order.show', $o->number) }}" class="text-gold-700 underline">{{ $o->number }}</a></td><td class="px-4 py-3">{{ $o->created_at->locale(app()->getLocale())->isoFormat('ll') }}</td><td class="px-4 py-3">{{ __('shop.status.'.$o->status) }}</td><td class="price px-4 py-3 text-end">{{ Money::format(Money::toFils($o->grand_total)) }}</td></tr>
+                        <tr><td class="px-4 py-3"><a href="{{ route('order.show', $o->number) }}" class="text-gold-700 underline">{{ $o->number }}</a></td><td class="px-4 py-3">{{ $o->created_at->locale(app()->getLocale())->isoFormat('ll') }}</td><td class="px-4 py-3">{{ $o->statusLabel() }}</td><td class="price px-4 py-3 text-end">{{ Money::format(Money::toFils($o->grand_total)) }}</td></tr>
                     @empty
                         <tr><td colspan="4" class="px-4 py-8 text-center text-muted">{{ __('shop.account.no_orders') }}</td></tr>
                     @endforelse

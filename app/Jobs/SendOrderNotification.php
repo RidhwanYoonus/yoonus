@@ -31,10 +31,12 @@ class SendOrderNotification implements ShouldQueue
                 'name' => $order->customer_name,
                 'total' => Money::format(Money::toFils($order->grand_total)),
                 'tracking' => $order->tracking_number ?: '—',
+                'branch' => $order->pickupBranch?->localized('name') ?? '',
             ];
-            $subject = __("shop.notify.{$this->event}.subject", $vars);
-            $body = __("shop.notify.{$this->event}.body", $vars);
-            if ($subject === "shop.notify.{$this->event}.subject") {
+            $event = $order->isPickup() && $this->event === 'delivered' ? 'collected' : $this->event;
+            $subject = __("shop.notify.{$event}.subject", $vars);
+            $body = __("shop.notify.{$event}.body", $vars);
+            if ($subject === "shop.notify.{$event}.subject") {
                 return;   // no template for this status
             }
 

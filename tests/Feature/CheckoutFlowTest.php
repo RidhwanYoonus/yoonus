@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\Branch;
 use App\Models\Coupon;
 use App\Models\GoldCategory;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ShippingZone;
 use App\Payments\StripeGateway;
+use App\Shop\OrderService;
 use App\Support\Settings;
 use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -129,6 +131,42 @@ class CheckoutFlowTest extends TestCase
         $this->assertStringContainsString('Making charge (10%)', $html);
         $this->assertStringContainsString('AED 200.00', $html);                   // making for 2 pieces
         $this->assertSame(1, substr_count($html, 'Making charge'));               // the watch has no breakdown
+    }
+
+    public function test_store_pickup_orders_go_ready_then_collected_never_shipped(): void
+    {
+        $branch = Branch::create(['name' => 'Gold Souk', 'emirate' => 'Dubai', 'address' => 'Deira']);
+        $this->post('/cart/add/band');
+        $form = ['email' => 'p@example.com', 'phone' => '+971501234567', 'name' => 'P', 'fulfilment' => 'pickup', 'pickup_branch_id' => $branch->id, 'payment_method' => 'card'];
+        $form['expected_total'] = $this->postJson('/checkout/quote', $form)->json('grand_total_raw');
+        $this->post('/checkout', $form)->assertSessionHasNoErrors();
+        $order = Order::sole();
+        $this->assertTrue($order->isPickup());
+        $service = app(OrderService::class);
+
+        $service->transition($order, 'paid');
+        $order->refresh();
+        $service->transition($order, 'packed');
+        $order->refresh();
+        $this->assertSame(['ready', 'refunded'], $order->allowedTransitions());   // no "shipped" for pickup
+        $service->transition($order, 'ready');
+        $order->refresh();
+        $this->assertSame('Ready for pickup', $order->statusLabel());
+        $service->transition($order, 'delivered');
+        $this->assertSame('Collected', $order->fresh()->statusLabel());
+
+        $this->expectException(\RuntimeException::class);
+        $service->transition($order->fresh(), 'shipped');
+    }
+
+    public function test_delivery_orders_still_ship(): void
+    {
+        $this->post('/cart/add/band');
+        $this->post('/checkout', $this->form());
+        $order = Order::sole();
+        $this->assertContains('packed', $order->allowedTransitions());   // COD can be packed before payment
+        app(OrderService::class)->transition($order, 'packed');
+        $this->assertSame(['shipped', 'refunded'], $order->fresh()->allowedTransitions());
     }
 
     public function test_tiered_and_free_shipping_coupons(): void

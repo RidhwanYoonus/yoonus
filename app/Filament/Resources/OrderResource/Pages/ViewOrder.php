@@ -21,13 +21,12 @@ class ViewOrder extends ViewRecord
         return [
             OrderResource::invoiceAction(),
             Actions\Action::make('advance')->label('Update status')->icon('heroicon-o-arrow-right-circle')
-                ->visible(fn (Order $record) => ! empty(Order::TRANSITIONS[$record->status]))
+                ->visible(fn (Order $record) => $record->allowedTransitions() !== [])
                 ->form(fn (Order $record) => [
-                    Forms\Components\Select::make('status')->required()->options(collect(Order::TRANSITIONS[$record->status])
-                        ->when($record->payment_method === 'cod' && $record->status === 'pending', fn ($options) => $options->push('packed'))
-                        ->mapWithKeys(fn ($s) => [$s => ucfirst($s)])),
-                    Forms\Components\TextInput::make('tracking_carrier')->default($record->tracking_carrier),
-                    Forms\Components\TextInput::make('tracking_number')->default($record->tracking_number),
+                    Forms\Components\Select::make('status')->required()
+                        ->options(collect($record->allowedTransitions())->mapWithKeys(fn ($s) => [$s => $record->statusLabel($s)])),
+                    Forms\Components\TextInput::make('tracking_carrier')->default($record->tracking_carrier)->visible(! $record->isPickup()),
+                    Forms\Components\TextInput::make('tracking_number')->default($record->tracking_number)->visible(! $record->isPickup()),
                     Forms\Components\TextInput::make('note')->maxLength(255),
                 ])
                 ->action(function (Order $record, array $data) {

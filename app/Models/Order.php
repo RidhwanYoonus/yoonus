@@ -8,14 +8,25 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Order extends Model
 {
-    public const STATUSES = ['pending', 'paid', 'packed', 'shipped', 'delivered', 'cancelled', 'refunded'];
+    public const STATUSES = ['pending', 'paid', 'packed', 'shipped', 'ready', 'delivered', 'cancelled', 'refunded'];
 
-    /** Allowed forward moves in the fulfilment pipeline. */
+    /** Home delivery: Pending → Paid → Packed → Shipped → Delivered. */
     public const TRANSITIONS = [
         'pending' => ['paid', 'cancelled'],
         'paid' => ['packed', 'cancelled', 'refunded'],
         'packed' => ['shipped', 'refunded'],
         'shipped' => ['delivered', 'refunded'],
+        'delivered' => ['refunded'],
+        'cancelled' => [],
+        'refunded' => [],
+    ];
+
+    /** Store pickup: Pending → Paid → Packed → Ready for pickup → Collected (stored as "delivered"). */
+    public const PICKUP_TRANSITIONS = [
+        'pending' => ['paid', 'cancelled'],
+        'paid' => ['packed', 'cancelled', 'refunded'],
+        'packed' => ['ready', 'refunded'],
+        'ready' => ['delivered', 'cancelled', 'refunded'],
         'delivered' => ['refunded'],
         'cancelled' => [],
         'refunded' => [],
@@ -71,9 +82,42 @@ class Order extends Model
         return $this->hasMany(Payment::class);
     }
 
+    public function isPickup(): bool
+    {
+        return $this->fulfilment === 'pickup';
+    }
+
+    /** Next statuses allowed from the current one, for this order's fulfilment type. */
+    public function allowedTransitions(): array
+    {
+        $next = ($this->isPickup() ? self::PICKUP_TRANSITIONS : self::TRANSITIONS)[$this->status] ?? [];
+        // Cash on delivery is paid at the door, so it can be packed before it is paid.
+        if ($this->payment_method === 'cod' && $this->status === 'pending') {
+            array_splice($next, 1, 0, ['packed']);
+        }
+
+        return $next;
+    }
+
     public function canTransitionTo(string $status): bool
     {
-        return in_array($status, self::TRANSITIONS[$this->status] ?? [], true);
+        return in_array($status, $this->allowedTransitions(), true);
+    }
+
+    /** Status name for staff and customers; "delivered" reads as "Collected" for pickup orders. */
+    public function statusLabel(?string $status = null): string
+    {
+        $status ??= $this->status;
+
+        return __('shop.status.'.($this->isPickup() && $status === 'delivered' ? 'collected' : $status));
+    }
+
+    /** The customer-facing progress steps for this order. */
+    public function steps(): array
+    {
+        return $this->isPickup()
+            ? ['pending', 'paid', 'packed', 'ready', 'delivered']
+            : ['pending', 'paid', 'packed', 'shipped', 'delivered'];
     }
 
     public function isPaid(): bool

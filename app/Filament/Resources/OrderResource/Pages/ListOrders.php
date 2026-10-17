@@ -13,8 +13,8 @@ class ListOrders extends ListRecords
     public function getTabs(): array
     {
         $tabs = ['all' => Tab::make('All')];
-        foreach (['pending', 'paid', 'packed', 'shipped', 'delivered'] as $s) {
-            $tabs[$s] = Tab::make(ucfirst($s))->modifyQueryUsing(fn ($query) => $query->where('status', $s));
+        foreach (['pending', 'paid', 'packed', 'shipped', 'ready', 'delivered'] as $s) {
+            $tabs[$s] = Tab::make($s === 'delivered' ? 'Delivered / collected' : __('shop.status.'.$s))->modifyQueryUsing(fn ($query) => $query->where('status', $s));
         }
 
         return $tabs;

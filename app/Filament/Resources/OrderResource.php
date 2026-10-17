@@ -47,7 +47,7 @@ class OrderResource extends Resource
     public static function statusColor(string $status): string
     {
         return match ($status) {
-            'pending' => 'warning', 'paid' => 'info', 'packed' => 'primary', 'shipped' => 'primary',
+            'pending' => 'warning', 'paid' => 'info', 'packed' => 'primary', 'shipped' => 'primary', 'ready' => 'primary',
             'delivered' => 'success', default => 'danger',
         };
     }
@@ -60,15 +60,18 @@ class OrderResource extends Resource
                 Tables\Columns\TextColumn::make('number')->searchable()->weight('bold')->copyable(),
                 Tables\Columns\TextColumn::make('created_at')->label('Date')->dateTime('d M Y H:i')->sortable(),
                 Tables\Columns\TextColumn::make('customer_name')->searchable(['customer_name', 'email', 'phone'])->description(fn (Order $record) => $record->phone),
-                Tables\Columns\TextColumn::make('status')->badge()->color(fn (string $state) => self::statusColor($state)),
+                Tables\Columns\TextColumn::make('status')->badge()->color(fn (string $state) => self::statusColor($state))
+                    ->formatStateUsing(fn (Order $record) => $record->statusLabel()),
                 Tables\Columns\TextColumn::make('payment_method')->label('Payment')->badge()->color('gray')
                     ->description(fn (Order $record) => $record->payment_status),
-                Tables\Columns\TextColumn::make('fulfilment')->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('fulfilment')->badge()->color('gray')
+                    ->formatStateUsing(fn (string $state) => $state === 'pickup' ? 'Store pickup' : 'Delivery'),
                 Tables\Columns\TextColumn::make('grand_total')->money('AED')->sortable()->weight('bold'),
                 Tables\Columns\TextColumn::make('invoice_number')->toggleable()->placeholder('—'),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('status')->options(array_combine(Order::STATUSES, array_map('ucfirst', Order::STATUSES)))->multiple(),
+                Tables\Filters\SelectFilter::make('status')->options(collect(Order::STATUSES)->mapWithKeys(fn ($s) => [$s => __('shop.status.'.$s)])->all())->multiple(),
+                Tables\Filters\SelectFilter::make('fulfilment')->options(['delivery' => 'Delivery', 'pickup' => 'Store pickup']),
                 Tables\Filters\SelectFilter::make('payment_method')->options(['card' => 'Card', 'tabby' => 'Tabby', 'tamara' => 'Tamara', 'cod' => 'Cash on delivery', 'giftcard' => 'Gift card']),
                 Tables\Filters\Filter::make('created_at')->form([
                     Forms\Components\DatePicker::make('from'), Forms\Components\DatePicker::make('until'),
@@ -84,19 +87,18 @@ class OrderResource extends Resource
     {
         return Tables\Actions\Action::make('advance')->label('Update status')->icon('heroicon-o-arrow-right-circle')
             ->form(fn (Order $record) => [
-                Forms\Components\Select::make('status')->required()->options(collect(Order::TRANSITIONS[$record->status])
-                    ->when($record->payment_method === 'cod' && $record->status === 'pending', fn ($options) => $options->push('packed'))
-                    ->mapWithKeys(fn ($s) => [$s => ucfirst($s)])),
-                Forms\Components\TextInput::make('tracking_carrier')->placeholder('Aramex, Emirates Post…')->default($record->tracking_carrier),
-                Forms\Components\TextInput::make('tracking_number')->default($record->tracking_number),
+                Forms\Components\Select::make('status')->required()
+                    ->options(collect($record->allowedTransitions())->mapWithKeys(fn ($s) => [$s => $record->statusLabel($s)])),
+                Forms\Components\TextInput::make('tracking_carrier')->placeholder('Aramex, Emirates Post…')->default($record->tracking_carrier)->visible(! $record->isPickup()),
+                Forms\Components\TextInput::make('tracking_number')->default($record->tracking_number)->visible(! $record->isPickup()),
                 Forms\Components\TextInput::make('note')->maxLength(255),
             ])
-            ->visible(fn (Order $record) => ! empty(Order::TRANSITIONS[$record->status]))
+            ->visible(fn (Order $record) => $record->allowedTransitions() !== [])
             ->action(function (Order $record, array $data) {
                 try {
                     $record->update(array_filter(['tracking_carrier' => $data['tracking_carrier'] ?? null, 'tracking_number' => $data['tracking_number'] ?? null]));
                     app(OrderService::class)->transition($record, $data['status'], Auth::user(), $data['note'] ?? null);
-                    Notification::make()->success()->title("Order {$record->number} → {$data['status']}")->send();
+                    Notification::make()->success()->title("Order {$record->number} → ".$record->fresh()->statusLabel())->send();
                 } catch (Throwable $e) {
                     Notification::make()->danger()->title($e->getMessage())->send();
                 }
@@ -108,14 +110,17 @@ class OrderResource extends Resource
         return $infolist->columns(3)->schema([
             Infolists\Components\Section::make('Order')->columnSpan(2)->columns(3)->schema([
                 Infolists\Components\TextEntry::make('number')->weight('bold'),
-                Infolists\Components\TextEntry::make('status')->badge()->color(fn (string $state) => self::statusColor($state)),
+                Infolists\Components\TextEntry::make('status')->badge()->color(fn (string $state) => self::statusColor($state))
+                    ->formatStateUsing(fn (Order $record) => $record->statusLabel()),
+                Infolists\Components\TextEntry::make('fulfilment')->badge()->color('gray')
+                    ->formatStateUsing(fn (Order $record) => $record->isPickup() ? 'Store pickup: '.($record->pickupBranch?->name ?? '') : 'Home delivery'),
                 Infolists\Components\TextEntry::make('created_at')->dateTime(),
                 Infolists\Components\TextEntry::make('payment_method')->badge(),
                 Infolists\Components\TextEntry::make('payment_status')->badge(),
                 Infolists\Components\TextEntry::make('payment_reference')->placeholder('—')->copyable(),
                 Infolists\Components\TextEntry::make('invoice_number')->placeholder('Issued on payment'),
                 Infolists\Components\TextEntry::make('coupon_code')->placeholder('—'),
-                Infolists\Components\TextEntry::make('tracking_number')->placeholder('—')->prefix(fn (Order $record) => $record->tracking_carrier ? $record->tracking_carrier.' ' : ''),
+                Infolists\Components\TextEntry::make('tracking_number')->visible(fn (Order $record) => ! $record->isPickup())->placeholder('—')->prefix(fn (Order $record) => $record->tracking_carrier ? $record->tracking_carrier.' ' : ''),
                 Infolists\Components\TextEntry::make('notes')->columnSpanFull()->placeholder('—'),
             ]),
             Infolists\Components\Section::make('Customer')->columnSpan(1)->schema([
