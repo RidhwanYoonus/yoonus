@@ -179,7 +179,7 @@ class CheckoutFlowTest extends TestCase
         $this->get('/shop')->assertOk()
             ->assertSee('10% making')          // the 5 g band at 10%
             ->assertSee('Only 1% making')      // low charges are highlighted
-            ->assertSee('Making AED 350');
+            ->assertDontSee('Making AED 350');
         $this->get('/')->assertSee('Order direct from the factory · Collect from our premium retail store');
         $this->get('/?lang=ar')->assertSee('مصنعية');
 

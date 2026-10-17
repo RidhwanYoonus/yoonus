@@ -115,13 +115,11 @@ class Product extends Model
      */
     public function makingBadge(): ?array
     {
-        if ($this->isFixedPrice() || ! Settings::bool('making_badge')) {
+        // Only gold-weight (percentage) making is advertised; fixed-price and per-piece items show none.
+        if ($this->isFixedPrice() || $this->manufacturer_charge_type === self::PER_PIECE || ! Settings::bool('making_badge')) {
             return null;
         }
         $value = (float) $this->manufacturer_charge_value;
-        if ($this->manufacturer_charge_type === self::PER_PIECE) {
-            return ['text' => __('shop.product.making_fixed', ['amount' => number_format($value, $value == floor($value) ? 0 : 2)]), 'highlight' => false];
-        }
         $pct = rtrim(rtrim(number_format($value, 2), '0'), '.');
         $low = $value <= (float) Settings::get('making_badge_highlight_below', 5);
 
