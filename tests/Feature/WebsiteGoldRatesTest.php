@@ -64,22 +64,23 @@ class WebsiteGoldRatesTest extends TestCase
         (new WebsiteGoldRates)->fetch('https://dubaicityofgold.com/');
     }
 
-    public function test_admin_button_fetches_and_applies_24k_with_derivation(): void
+    public function test_button_sets_every_karat_including_14k_to_the_website_rate(): void
     {
         $this->seed(ReferenceDataSeeder::class);
-        Http::fake(['dubaicityofgold.com/*' => Http::response(self::layouts()['table'][0])]);
+        GoldCategory::create(['name' => '14K', 'karat' => 14, 'purity_percent' => 58.50, 'auto_derive' => true, 'base_category_id' => GoldCategory::where('name', '24K')->value('id')]);
+        Http::fake(['dubaicityofgold.com/*' => Http::response(self::layouts()['dubaicityofgold'][0])]);
         $admin = User::factory()->create();
         $admin->forceFill(['is_admin' => true])->save();
         $this->actingAs($admin);
 
         Livewire::test(ListGoldCategories::class)
             ->mountAction('fetchWebsiteRates')
-            ->assertActionDataSet(['rate_24K' => '386.75', 'rate_22K' => '358.00'])
+            ->assertActionDataSet(['rate_24K' => '386.75', 'rate_22K' => '358.00', 'rate_14K' => '229.50'])
             ->callMountedAction()
             ->assertHasNoActionErrors();
 
-        $this->assertSame('386.75', GoldCategory::where('name', '24K')->value('rate_per_gram'));
-        $this->assertSame('354.52', GoldCategory::where('name', '22K')->value('rate_per_gram'));   // 386.75 × 22/24
+        $rates = GoldCategory::pluck('rate_per_gram', 'name')->all();
+        $this->assertSame(['24K' => '386.75', '22K' => '358.00', '21K' => '343.25', '18K' => '294.25', '14K' => '229.50'], $rates);
         $this->assertSame('website', GoldRateHistory::latest('id')->first()->source);
     }
 
@@ -97,30 +98,11 @@ class WebsiteGoldRatesTest extends TestCase
             ->mountAction('fetchWebsiteRates')
             ->setActionData(['pasted' => $copied])
             ->assertActionDataSet(['rate_24K' => '502.00', 'rate_22K' => '464.75', 'rate_21K' => '445.75', 'rate_18K' => '382.00'])
-            ->setActionData(['mode' => 'each'])
             ->callMountedAction()
             ->assertHasNoActionErrors();
 
         $this->assertSame('502.00', GoldCategory::where('name', '24K')->value('rate_per_gram'));
         $this->assertSame('464.75', GoldCategory::where('name', '22K')->value('rate_per_gram'));
         $this->assertSame('382.00', GoldCategory::where('name', '18K')->value('rate_per_gram'));
-    }
-
-    public function test_admin_button_can_use_website_rate_for_every_karat(): void
-    {
-        $this->seed(ReferenceDataSeeder::class);
-        Http::fake(['dubaicityofgold.com/*' => Http::response(self::layouts()['table'][0])]);
-        $admin = User::factory()->create();
-        $admin->forceFill(['is_admin' => true])->save();
-        $this->actingAs($admin);
-
-        Livewire::test(ListGoldCategories::class)
-            ->mountAction('fetchWebsiteRates')
-            ->setActionData(['mode' => 'each'])
-            ->callMountedAction()
-            ->assertHasNoActionErrors();
-
-        $this->assertSame('358.00', GoldCategory::where('name', '22K')->value('rate_per_gram'));
-        $this->assertSame('294.25', GoldCategory::where('name', '18K')->value('rate_per_gram'));
     }
 }

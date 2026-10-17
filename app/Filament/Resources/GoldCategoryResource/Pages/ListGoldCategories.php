@@ -26,34 +26,34 @@ class ListGoldCategories extends ListRecords
         ];
     }
 
-    /** Pull today's rates from the configured website, let the admin check them, then apply. */
+    /**
+     * Pull today's rates from the configured website for every active karat, let the admin
+     * check them, then set each karat to the website's rate.
+     */
     private function fetchFromWebsiteAction(): Actions\Action
     {
-        $karats = GoldCategory::where('is_active', true)->orderByDesc('karat')->get()
-            ->filter(fn (GoldCategory $c) => in_array((int) $c->karat, WebsiteGoldRates::KARATS, true));
-
         return Actions\Action::make('fetchWebsiteRates')
             ->label('Fetch rate from Dubai City of Gold')
             ->icon('heroicon-o-cloud-arrow-down')
             ->modalHeading('Today\'s gold rate from the website')
-            ->modalDescription(fn () => 'Source: '.WebsiteGoldRates::url().' — check the numbers before applying.')
+            ->modalDescription(fn () => 'Source: '.WebsiteGoldRates::url().' — check the numbers, then apply. Each karat is set to the website\'s rate.')
             ->modalSubmitActionLabel('Apply rates')
             ->fillForm(function () {
                 try {
                     $rates = app(WebsiteGoldRates::class)->fetch();
 
-                    return ['error' => null, 'mode' => 'base', 'fetched_at' => now()->format('d M Y, H:i')] + collect($rates)->mapWithKeys(fn ($v, $k) => ["rate_{$k}" => $v])->all();
+                    return ['error' => null, 'fetched_at' => now()->format('d M Y, H:i')] + collect($rates)->mapWithKeys(fn ($v, $k) => ["rate_{$k}" => $v])->all();
                 } catch (Throwable $e) {
-                    return ['error' => $e->getMessage(), 'mode' => 'base'];
+                    return ['error' => $e->getMessage()];
                 }
             })
-            ->form([
+            ->form(fn () => [
                 Forms\Components\Placeholder::make('status')->hiddenLabel()
                     ->content(fn (Forms\Get $get) => $get('error')
                         ? '⚠ '.$get('error').' Use "Paste from website" below instead, or type the rates by hand.'
-                        : 'Rates read at '.$get('fetched_at').'. Empty boxes were not found on the page.'),
+                        : 'Rates read at '.$get('fetched_at').'. Empty boxes were not found on the page — leave them empty to keep the current rate.'),
                 Forms\Components\Textarea::make('pasted')->label('Paste from website')->rows(3)
-                    ->placeholder('On dubaicityofgold.com, select the rate card (24K GOLD … 18K GOLD), press Ctrl+C, then click here and press Ctrl+V.')
+                    ->placeholder('On dubaicityofgold.com, select the rate card (24K GOLD … 14K GOLD), press Ctrl+C, then click here and press Ctrl+V.')
                     ->live(debounce: 300)
                     ->afterStateUpdated(function (?string $state, Forms\Set $set) {
                         foreach (app(WebsiteGoldRates::class)->parse(nl2br(e((string) $state))) as $karat => $value) {
@@ -63,47 +63,40 @@ class ListGoldCategories extends ListRecords
                     ->dehydrated(false),
                 Forms\Components\Hidden::make('error'),
                 Forms\Components\Hidden::make('fetched_at'),
-                Forms\Components\Grid::make(4)->schema(
-                    collect(WebsiteGoldRates::KARATS)->map(fn ($k) => Forms\Components\TextInput::make("rate_{$k}K")
-                        ->label("{$k}K (AED/g)")->numeric()->minValue(1)->prefix('AED'))->all()
+                Forms\Components\Grid::make(['default' => 2, 'md' => 5])->schema(
+                    collect(WebsiteGoldRates::karats())->map(fn ($k) => Forms\Components\TextInput::make("rate_{$k}K")
+                        ->label("{$k}K (AED/g)")->numeric()->minValue(1)->prefix('AED')
+                        ->placeholder(fn () => GoldCategory::where('karat', $k)->value('rate_per_gram')))->all()
                 ),
-                Forms\Components\Radio::make('mode')->label('How to apply')->required()->options([
-                    'base' => 'Use the 24K rate and derive 22K/21K/18K by purity (recommended)',
-                    'each' => 'Use the website\'s rate for every karat',
-                ]),
             ])
-            ->action(function (array $data) use ($karats) {
+            ->action(function (array $data) {
                 $service = app(GoldRateService::class);
-                $base = GoldCategory::where('auto_derive', false)->orderByDesc('karat')->first();
-                $value24 = $data['rate_24K'] ?? null;
-                if (! $value24 && ! empty($data['rate_22K'])) {
-                    $value24 = round((float) $data['rate_22K'] * 24 / 22, 2);   // derive 24K from 22K if only 22K was found
-                }
-                if (! $base || ! $value24) {
-                    Notification::make()->danger()->title('A 24K (or 22K) rate is needed.')->send();
+                // Base karat first (its change cascades to derived karats), then every karat gets the website's own rate.
+                $categories = GoldCategory::where('is_active', true)->orderBy('auto_derive')->orderByDesc('karat')->get();
+                $applied = [];
+
+                try {
+                    foreach ($categories as $cat) {
+                        $value = $data['rate_'.(int) $cat->karat.'K'] ?? null;
+                        if (is_numeric($value) && (float) $value > 0) {
+                            $service->updateRate($cat->fresh(), $value, 'gram', Auth::id(), 'website');
+                            $applied[] = "{$cat->name} AED ".number_format((float) $value, 2);
+                        }
+                    }
+                } catch (Throwable $e) {
+                    Notification::make()->danger()->title($e->getMessage())->send();
 
                     return;
                 }
 
-                try {
-                    $service->updateRate($base, $value24, 'gram', Auth::id(), 'website');
-                    $applied = ["{$base->name} AED {$value24}"];
+                if (! $applied) {
+                    Notification::make()->warning()->title('No rates to apply — fill in at least one karat.')->send();
 
-                    if ($data['mode'] === 'each') {
-                        foreach ($karats as $cat) {
-                            $v = $data['rate_'.(int) $cat->karat.'K'] ?? null;
-                            if ($v && $cat->id !== $base->id) {
-                                $service->updateRate($cat->fresh(), $v, 'gram', Auth::id(), 'website');
-                                $applied[] = "{$cat->name} AED {$v}";
-                            }
-                        }
-                    }
-
-                    Notification::make()->success()->title('Gold rates updated from website')
-                        ->body(implode(' · ', $applied).'. Product prices are being recalculated.')->send();
-                } catch (Throwable $e) {
-                    Notification::make()->danger()->title($e->getMessage())->send();
+                    return;
                 }
+
+                Notification::make()->success()->title('Gold rates updated from website')
+                    ->body(implode(' · ', $applied).'. Product prices are being recalculated.')->send();
             });
     }
 

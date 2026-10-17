@@ -2,6 +2,7 @@
 
 namespace App\Pricing;
 
+use App\Models\GoldCategory;
 use App\Support\Settings;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -15,6 +16,14 @@ use Throwable;
 class WebsiteGoldRates
 {
     public const KARATS = [24, 22, 21, 18];
+
+    /** Karats to look for: every active karat set up in the Gold rate manager (e.g. 24, 22, 21, 18, 14). */
+    public static function karats(): array
+    {
+        $karats = GoldCategory::where('is_active', true)->pluck('karat')->map(fn ($k) => (int) $k)->filter()->unique()->sortDesc()->values()->all();
+
+        return $karats ?: self::KARATS;
+    }
 
     public static function url(): string
     {
@@ -67,13 +76,14 @@ class WebsiteGoldRates
     }
 
     /** @return array<string,string> */
-    public function parse(string $html): array
+    public function parse(string $html, ?array $karats = null): array
     {
+        $karats ??= self::karats();
         // First the visible text, then (for pages that ship rates as JSON in a script) everything.
         $visible = $this->toText(preg_replace('#<(script|style|noscript)\b[^>]*>.*?</\1>#is', ' ', $html));
-        $rates = $this->extract($visible);
+        $rates = $this->extract($visible, $karats);
         if (count($rates) < 2) {
-            $rates += $this->extract($this->toText($html));
+            $rates += $this->extract($this->toText($html), $karats);
         }
 
         return $this->sane($rates);
@@ -87,10 +97,10 @@ class WebsiteGoldRates
         return preg_replace('/\s+/u', ' ', $text);
     }
 
-    private function extract(string $text): array
+    private function extract(string $text, array $karats): array
     {
         $rates = [];
-        foreach (self::KARATS as $k) {
+        foreach ($karats as $k) {
             // "24K", "24 KT", "24 Karat", "24 Carat", "24ct", "Gold 24", "\"gold24\":" … then the first price-like number.
             $label = "(?:(?<![\\d.]){$k}\\s*(?:k\\b|kt\\b|karat|carat|ct\\b|ق|عيار)|gold[_\\s-]?{$k}(?!\\d)|عيار\\s*{$k}(?!\\d))";
             $pattern = "/{$label}[^\\d]{0,80}?(\\d{2,4}(?:,\\d{3})*(?:\\.\\d{1,3})?)/iu";
