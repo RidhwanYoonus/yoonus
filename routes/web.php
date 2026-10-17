@@ -71,3 +71,7 @@ Route::get('/sitemap.xml', [FeedController::class, 'sitemap'])->name('sitemap');
 Route::get('/robots.txt', [FeedController::class, 'robots']);
 Route::get('/feed/google.xml', [FeedController::class, 'google'])->name('feed.google');
 Route::get('/feed/meta.xml', [FeedController::class, 'meta'])->name('feed.meta');
+
+// One-click "artisan migrate" for the admin banner shown when an update added new migrations.
+Route::post('/admin/update-database', \App\Http\Controllers\Admin\DatabaseUpdateController::class)
+    ->middleware('auth')->name('admin.update-database');

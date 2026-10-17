@@ -38,7 +38,7 @@ class AdminPanelProvider extends PanelProvider
             ->navigationItems([
                 NavigationItem::make('View shop')->url('/', shouldOpenInNewTab: true)->icon('heroicon-o-arrow-top-right-on-square')->sort(99),
             ])
-            ->renderHook(PanelsRenderHook::BODY_START, fn () => view('filament.stale-rate-banner'))
+            ->renderHook(PanelsRenderHook::BODY_START, fn () => view('filament.database-update-banner')->render().view('filament.stale-rate-banner')->render())
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([Pages\Dashboard::class])

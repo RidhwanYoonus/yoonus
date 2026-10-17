@@ -12,15 +12,28 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('products', function (Blueprint $table) {
-            $table->string('pricing_type', 16)->default('GOLD_RATE')->after('gold_category_id');
-            $table->decimal('fixed_price', 12, 2)->nullable()->after('pricing_type');
-        });
+        // Guarded so a half-finished earlier run can simply be re-run.
+        if (! Schema::hasColumn('products', 'pricing_type')) {
+            Schema::table('products', function (Blueprint $table) {
+                $table->string('pricing_type', 16)->default('GOLD_RATE')->after('gold_category_id');
+            });
+        }
+        if (! Schema::hasColumn('products', 'fixed_price')) {
+            Schema::table('products', function (Blueprint $table) {
+                $table->decimal('fixed_price', 12, 2)->nullable()->after('pricing_type');
+            });
+        }
 
-        Schema::table('products', function (Blueprint $table) {
-            $table->foreignId('gold_category_id')->nullable()->change();
-            $table->decimal('weight_grams', 8, 3)->default(0)->change();
-        });
+        try {
+            Schema::table('products', function (Blueprint $table) {
+                $table->foreignId('gold_category_id')->nullable()->change();
+                $table->decimal('weight_grams', 8, 3)->default(0)->change();
+            });
+        } catch (\Throwable $e) {
+            // Some MariaDB builds refuse to alter a foreign-key column; fixed pricing still works,
+            // a karat is just required when creating a product.
+            report($e);
+        }
     }
 
     public function down(): void

@@ -9,6 +9,9 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasColumn('orders', 'payment_fee')) {
+            return;
+        }
         Schema::table('orders', function (Blueprint $table) {
             $table->decimal('payment_fee', 12, 2)->default(0)->after('shipping_vat');
             $table->decimal('payment_fee_vat', 12, 2)->default(0)->after('payment_fee');
