@@ -40,9 +40,7 @@ class PaymentController extends Controller
             $request->session()->push('orders', $order);
         }
         try {
-            if ($gateway !== 'stripe') {
-                $this->gateways->for($gateway)->confirm($request);
-            }
+            $this->gateways->for($gateway)->confirm($request);
         } catch (Throwable $e) {
             Log::warning("Payment return check failed for {$order}", ['error' => $e->getMessage()]);
         }

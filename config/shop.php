@@ -55,6 +55,8 @@ return [
         'mettpay_merchant_key' => null,
         'mettpay_merchant_secret' => null,
         'mettpay_status_url' => null,
+        'stripe_secret_key' => null,
+        'stripe_webhook_secret' => null,
         'tabby_enabled' => true,
         'tabby_min' => 100,
         'tabby_max' => 15000,

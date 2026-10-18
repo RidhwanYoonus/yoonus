@@ -78,7 +78,7 @@ class Settings extends Page implements HasForms
                 ]),
                 Forms\Components\Tabs\Tab::make('Payments')->icon('heroicon-o-credit-card')->columns(3)->schema([
                     Forms\Components\Select::make('card_gateway')->options(['mock' => 'Test mode (simulated)', 'mettpay' => 'Mettpay (PayBy)', 'telr' => 'Telr', 'stripe' => 'Stripe'])->required()->live()
-                        ->helperText('API keys are set in the server .env file.'),
+                        ->helperText('Mettpay and Stripe keys go in the section below. Telr keys are set in the server .env file.'),
                     Forms\Components\Section::make('Mettpay (PayBy) card payments')->columns(2)->columnSpanFull()
                         ->visible(fn (Forms\Get $get) => $get('card_gateway') === 'mettpay')
                         ->description('From your Mettpay merchant portal. Test card: 5123 4500 0000 0008 · 05/31 · CVV 100.')
@@ -88,6 +88,15 @@ class Settings extends Page implements HasForms
                             $text('mettpay_api_url', 'Create-order URL')->url()->placeholder(\App\Payments\MettpayGateway::DEFAULT_URL),
                             $text('mettpay_status_url', 'Payment status URL (optional)')->url()
                                 ->helperText('Ask Mettpay for their payment-status (or "query order") API. With it, paid orders are confirmed automatically; without it, staff confirm each payment in the Mettpay dashboard. Use {id} where the order number goes.'),
+                        ]),
+                    Forms\Components\Section::make('Stripe card payments')->columns(2)->columnSpanFull()
+                        ->visible(fn (Forms\Get $get) => $get('card_gateway') === 'stripe')
+                        ->description(new \Illuminate\Support\HtmlString('From <a href="https://dashboard.stripe.com/apikeys" target="_blank" class="underline">dashboard.stripe.com → Developers → API keys</a>. Use the test keys (sk_test_…) first; test card 4242 4242 4242 4242, any future date, any CVC.'))
+                        ->schema([
+                            $secret('stripe_secret_key', 'Secret key')->placeholder('sk_test_… or sk_live_…')
+                                ->helperText('The "Secret key" (starts with sk_), not the publishable key (pk_).'),
+                            $secret('stripe_webhook_secret', 'Webhook signing secret (optional)')->placeholder('whsec_…')
+                                ->helperText(fn () => 'Recommended once the site is online: in Stripe → Developers → Webhooks add '.route('payments.webhook', 'stripe').' with the event checkout.session.completed, then paste its signing secret here.'),
                         ]),
                     Forms\Components\Toggle::make('applepay_enabled')->label('Apple Pay')->inline(false)
                         ->helperText('Shown on iPhone, iPad and Mac (Safari). Turn Apple Pay on in your Telr / Stripe account too.'),
@@ -238,6 +247,18 @@ class Settings extends Page implements HasForms
                             ->persistent()->send();
                     } catch (\Throwable $e) {
                         Notification::make()->danger()->title('Mettpay test failed')->body($e->getMessage())->persistent()->send();
+                    }
+                }),
+            \Filament\Actions\Action::make('testStripe')->label('Test Stripe')->icon('heroicon-o-credit-card')->color('gray')
+                ->visible(fn () => Store::get('card_gateway') === 'stripe')
+                ->modalDescription('Save your settings first. This checks your secret key with Stripe. Nothing is charged.')
+                ->action(function () {
+                    try {
+                        $mode = \App\Payments\StripeGateway::testConnection();
+                        Notification::make()->success()->title('Stripe key works ('.$mode.' mode)')
+                            ->body($mode === 'test' ? 'Place an order with card 4242 4242 4242 4242, any future expiry, any CVC.' : 'Live mode: real cards will be charged.')->persistent()->send();
+                    } catch (\Throwable $e) {
+                        Notification::make()->danger()->title('Stripe test failed')->body($e->getMessage())->persistent()->send();
                     }
                 }),
             \Filament\Actions\Action::make('testWhatsApp')->label('Send test WhatsApp')->icon('heroicon-o-chat-bubble-oval-left')->color('gray')
