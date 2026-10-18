@@ -30,7 +30,7 @@ class ShippingZoneResource extends Resource
         return $form->schema([
             Forms\Components\TextInput::make('code')->required()->unique(ignoreRecord: true)->alphaDash(),
             Forms\Components\TextInput::make('name')->required(),
-            Forms\Components\TextInput::make('name_ar')->extraInputAttributes(['dir' => 'rtl']),
+            Forms\Components\TextInput::make('name_ar')->extraInputAttributes(['dir' => 'rtl'])->hintAction(\App\Filament\Support\ArabicField::translate('name', 'name_ar')),
             Forms\Components\TextInput::make('flat_rate')->label('Flat rate (excl. VAT)')->numeric()->prefix('AED')->required()->default(0),
             Forms\Components\TextInput::make('free_above')->label('Free delivery above (goods excl. VAT)')->numeric()->prefix('AED')->helperText('Leave empty for never free.'),
             Forms\Components\TextInput::make('eta_days')->label('Delivery days')->numeric()->default(2),

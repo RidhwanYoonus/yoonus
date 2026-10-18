@@ -46,17 +46,23 @@ class Settings extends Page implements HasForms
         return $form->statePath('data')->schema([
             Forms\Components\Tabs::make()->tabs([
                 Forms\Components\Tabs\Tab::make('Store & tax')->icon('heroicon-o-building-office')->columns(2)->schema([
-                    $text('store_name')->required(), $text('store_name_ar', 'Store name (Arabic)')->extraInputAttributes(['dir' => 'rtl']),
+                    $text('store_name')->required(), $text('store_name_ar', 'Store name (Arabic)')->extraInputAttributes(['dir' => 'rtl'])->hintAction(\App\Filament\Support\ArabicField::translate('store_name', 'store_name_ar')),
                     $text('store_legal_name', 'Legal name (on invoices)')->required(),
                     $text('store_trn', 'TRN')->required()->length(15)->numeric()->helperText('15-digit UAE Tax Registration Number, printed on every tax invoice.'),
                     $text('store_address', 'Address')->required()->columnSpanFull(),
                     $text('store_phone', 'Phone'), $text('store_email', 'Email')->email(),
                     $text('store_caption', 'Caption (English)')->helperText('Shown under the logo and on the homepage, e.g. "Order direct from the factory · Collect from our premium retail store".')->columnSpanFull(),
-                    $text('store_caption_ar', 'Caption (Arabic)')->extraInputAttributes(['dir' => 'rtl'])->columnSpanFull(),
+                    $text('store_caption_ar', 'Caption (Arabic)')->extraInputAttributes(['dir' => 'rtl'])->hintAction(\App\Filament\Support\ArabicField::translate('store_caption', 'store_caption_ar'))->columnSpanFull(),
                     Forms\Components\Toggle::make('making_badge')->label('Show making-charge badge on products')->inline(false),
                     Forms\Components\TextInput::make('making_badge_highlight_below')->label('Highlight as "Only X% making" at or below')->numeric()->suffix('%'),
                     $text('whatsapp_number', 'WhatsApp number')->helperText('International format, e.g. 971501234567'),
                     Forms\Components\Toggle::make('whatsapp_button')->label('Floating WhatsApp button')->inline(false),
+                    Forms\Components\Section::make('Arabic translation (the "Translate from English" buttons)')->columns(3)->collapsible()->schema([
+                        Forms\Components\Select::make('translation_provider')->label('Translate with')->live()
+                            ->options(['auto' => 'Automatic (best service with a key, else free)', 'mymemory' => 'Free (MyMemory, no account)', 'google' => 'Google Translate (API key)', 'deepl' => 'DeepL (API key, best quality)']),
+                        $secret('google_translate_key', 'Google Cloud Translation API key')->visible(fn (Forms\Get $get) => in_array($get('translation_provider'), ['auto', 'google'], true)),
+                        $secret('deepl_key', 'DeepL API key')->visible(fn (Forms\Get $get) => in_array($get('translation_provider'), ['auto', 'deepl'], true)),
+                    ]),
                 ]),
                 Forms\Components\Tabs\Tab::make('Pricing')->icon('heroicon-o-calculator')->columns(2)->schema([
                     Forms\Components\TextInput::make('default_vat_percent')->label('Default VAT %')->numeric()->required()->suffix('%'),
@@ -94,7 +100,7 @@ class Settings extends Page implements HasForms
                         ->helperText('Switch off to pause delivery (holidays, busy days). Customers can then only collect from the store.'),
                     Forms\Components\Toggle::make('pickup_enabled')->label('Store pickup available')->inline(false),
                     $text('delivery_off_message', 'Message while delivery is paused (English)')->columnSpanFull()->visible(fn (Forms\Get $get) => ! $get('delivery_enabled')),
-                    $text('delivery_off_message_ar', 'Message while delivery is paused (Arabic)')->extraInputAttributes(['dir' => 'rtl'])->columnSpanFull()->visible(fn (Forms\Get $get) => ! $get('delivery_enabled')),
+                    $text('delivery_off_message_ar', 'Message while delivery is paused (Arabic)')->extraInputAttributes(['dir' => 'rtl'])->hintAction(\App\Filament\Support\ArabicField::translate('delivery_off_message', 'delivery_off_message_ar'))->columnSpanFull()->visible(fn (Forms\Get $get) => ! $get('delivery_enabled')),
                     Forms\Components\Select::make('id_verification')->label('Proof of ID at checkout')->required()
                         ->options(['delivery' => 'Required for home delivery', 'all' => 'Required for every order (delivery and pickup)', 'off' => 'Not required'])
                         ->helperText('Customers enter their ID type, number and expiry and upload a photo as the last step before payment. They can save it for next time.'),

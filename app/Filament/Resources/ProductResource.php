@@ -59,14 +59,14 @@ class ProductResource extends Resource
                 Forms\Components\Section::make('Details')->columns(2)->schema([
                     Forms\Components\TextInput::make('name')->label('Name (English)')->required()->maxLength(255)
                         ->live(onBlur: true)->afterStateUpdated(fn (Forms\Set $set, ?string $state, string $operation) => $operation === 'create' ? $set('slug', Str::slug((string) $state)) : null),
-                    Forms\Components\TextInput::make('name_ar')->label('Name (Arabic)')->extraInputAttributes(['dir' => 'rtl'])->maxLength(255),
+                    Forms\Components\TextInput::make('name_ar')->label('Name (Arabic)')->extraInputAttributes(['dir' => 'rtl'])->hintAction(\App\Filament\Support\ArabicField::translate('name', 'name_ar'))->maxLength(255),
                     Forms\Components\TextInput::make('sku')->required()->maxLength(64)->unique(ignoreRecord: true),
                     Forms\Components\TextInput::make('slug')->required()->maxLength(255)->unique(ignoreRecord: true)->helperText('URL: /product/{slug}'),
                     Forms\Components\Select::make('category_id')->relationship('category', 'name')->searchable()->preload()
-                        ->createOptionForm([Forms\Components\TextInput::make('name')->required(), Forms\Components\TextInput::make('name_ar'), Forms\Components\TextInput::make('slug')->required()]),
+                        ->createOptionForm([Forms\Components\TextInput::make('name')->required(), Forms\Components\TextInput::make('name_ar')->label('Name (Arabic)')->extraInputAttributes(['dir' => 'rtl'])->hintAction(\App\Filament\Support\ArabicField::translate('name', 'name_ar')), Forms\Components\TextInput::make('slug')->required()]),
                     Forms\Components\TextInput::make('hallmark_ref')->label('UAE hallmark reference')->maxLength(64),
                     Forms\Components\Textarea::make('description')->label('Description (English)')->rows(4),
-                    Forms\Components\Textarea::make('description_ar')->label('Description (Arabic)')->rows(4)->extraInputAttributes(['dir' => 'rtl']),
+                    Forms\Components\Textarea::make('description_ar')->label('Description (Arabic)')->rows(4)->extraInputAttributes(['dir' => 'rtl'])->hintAction(\App\Filament\Support\ArabicField::translate('description', 'description_ar')),
                 ]),
                 Forms\Components\Section::make('Pricing')->columns(3)->schema([
                     Forms\Components\ToggleButtons::make('pricing_type')->label('How is this product priced?')->inline()->required()->default('GOLD_RATE')->live()->columnSpanFull()

@@ -31,11 +31,11 @@ class CampaignResource extends Resource
         return $form->schema([
             Forms\Components\TextInput::make('name')->required()->placeholder('Ramadan, Eid, DSF, National Day…')->live(onBlur: true)
                 ->afterStateUpdated(fn (Forms\Set $set, ?string $state, string $operation) => $operation === 'create' ? $set('slug', Str::slug((string) $state)) : null),
-            Forms\Components\TextInput::make('name_ar')->extraInputAttributes(['dir' => 'rtl']),
+            Forms\Components\TextInput::make('name_ar')->extraInputAttributes(['dir' => 'rtl'])->hintAction(\App\Filament\Support\ArabicField::translate('name', 'name_ar')),
             Forms\Components\TextInput::make('slug')->required()->unique(ignoreRecord: true),
             Forms\Components\TextInput::make('link_url')->placeholder('/shop?karat[]=2'),
             Forms\Components\TextInput::make('headline'),
-            Forms\Components\TextInput::make('headline_ar')->extraInputAttributes(['dir' => 'rtl']),
+            Forms\Components\TextInput::make('headline_ar')->extraInputAttributes(['dir' => 'rtl'])->hintAction(\App\Filament\Support\ArabicField::translate('headline', 'headline_ar')),
             Forms\Components\DateTimePicker::make('starts_at')->required()->default(now()),
             Forms\Components\DateTimePicker::make('ends_at')->required()->after('starts_at'),
             Forms\Components\FileUpload::make('banner_image')->image()->disk('public')->directory('campaigns')->columnSpanFull(),

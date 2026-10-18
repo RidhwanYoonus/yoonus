@@ -31,11 +31,11 @@ class CategoryResource extends Resource
         return $form->schema([
             Forms\Components\TextInput::make('name')->required()->live(onBlur: true)
                 ->afterStateUpdated(fn (Forms\Set $set, ?string $state, string $operation) => $operation === 'create' ? $set('slug', Str::slug((string) $state)) : null),
-            Forms\Components\TextInput::make('name_ar')->label('Name (Arabic)')->extraInputAttributes(['dir' => 'rtl']),
+            Forms\Components\TextInput::make('name_ar')->label('Name (Arabic)')->extraInputAttributes(['dir' => 'rtl'])->hintAction(\App\Filament\Support\ArabicField::translate('name', 'name_ar')),
             Forms\Components\TextInput::make('slug')->required()->unique(ignoreRecord: true),
             Forms\Components\TextInput::make('sort_order')->numeric()->default(0),
             Forms\Components\Textarea::make('description'),
-            Forms\Components\Textarea::make('description_ar')->extraInputAttributes(['dir' => 'rtl']),
+            Forms\Components\Textarea::make('description_ar')->extraInputAttributes(['dir' => 'rtl'])->hintAction(\App\Filament\Support\ArabicField::translate('description', 'description_ar')),
             Forms\Components\TextInput::make('meta_title')->helperText('Optional — auto-generated if empty'),
             Forms\Components\TextInput::make('meta_description')->maxLength(320),
             Forms\Components\Toggle::make('is_active')->default(true),

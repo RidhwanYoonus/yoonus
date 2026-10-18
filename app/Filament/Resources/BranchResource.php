@@ -29,7 +29,7 @@ class BranchResource extends Resource
     {
         return $form->schema([
             Forms\Components\TextInput::make('name')->required(),
-            Forms\Components\TextInput::make('name_ar')->extraInputAttributes(['dir' => 'rtl']),
+            Forms\Components\TextInput::make('name_ar')->extraInputAttributes(['dir' => 'rtl'])->hintAction(\App\Filament\Support\ArabicField::translate('name', 'name_ar')),
             Forms\Components\Select::make('emirate')->required()->options(array_combine($e = ['Dubai', 'Abu Dhabi', 'Sharjah', 'Ajman', 'Umm Al Quwain', 'Ras Al Khaimah', 'Fujairah'], $e)),
             Forms\Components\TextInput::make('phone'),
             Forms\Components\TextInput::make('address')->required()->columnSpanFull(),

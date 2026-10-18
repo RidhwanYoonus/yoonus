@@ -87,6 +87,9 @@ return [
         'twilio_sid' => null,
         'twilio_token' => null,
         'twilio_whatsapp_from' => null,
+        'translation_provider' => 'auto',      // auto | mymemory | google | deepl
+        'google_translate_key' => null,
+        'deepl_key' => null,
         'whatsapp_provider' => 'meta',          // meta (WhatsApp Cloud API) | twilio
         'meta_wa_phone_number_id' => null,
         'meta_wa_token' => null,
