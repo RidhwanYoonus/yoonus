@@ -33,7 +33,11 @@
             @if ($order->shipping_address)
                 <div class="card p-4"><p class="label">{{ __('shop.checkout.delivery') }}</p><p>{{ $order->shipping_address['name'] }}<br>{{ $order->shipping_address['line1'] }} {{ $order->shipping_address['line2'] }}<br>{{ $order->shipping_address['city'] }}, {{ $order->shipping_address['zone'] }}</p></div>
             @endif
-            <div class="card p-4"><p class="label">{{ __('shop.checkout.payment') }}</p><p>{{ __('shop.pay.'.$order->payment_method) }} — {{ __('shop.pay_status.'.$order->payment_status) }}</p></div>
+            <div class="card p-4"><p class="label">{{ __('shop.checkout.payment') }}</p><p>{{ __('shop.pay.'.$order->payment_method) }} — {{ __('shop.pay_status.'.$order->payment_status) }}</p>
+                @if ($order->payment_status === 'unpaid' && $order->status === 'pending' && in_array($order->payment_method, ['card', 'applepay', 'googlepay', 'tabby', 'tamara'], true))
+                    <form method="POST" action="{{ route('order.pay', $order->number) }}" class="mt-3">@csrf<button class="btn-gold w-full">{{ __('shop.pay.pay_now', ['amount' => \App\Pricing\Money::format(\App\Pricing\Money::toFils($order->amount_due))]) }}</button></form>
+                @endif
+            </div>
             @if ($order->invoice_number)<a href="{{ route('order.invoice', $order->number) }}" class="btn-outline w-full">{{ __('shop.order.download_invoice') }}</a>@endif
         </div>
     </div>

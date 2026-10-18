@@ -52,11 +52,7 @@ class MettpayGateway implements PaymentGateway
         [$first, $last] = array_pad(explode(' ', trim($order->customer_name), 2), 2, '');
         $back = fn (string $result) => URL::signedRoute('payments.return', ['gateway' => 'mettpay', 'order' => $order->number, 'result' => $result]);
 
-        $res = SecureHttp::send(fn ($http) => $http->withHeaders([
-            'merchantKey' => Settings::get('mettpay_merchant_key'),
-            'merchantSecret' => Settings::get('mettpay_merchant_secret'),
-            'Accept' => 'application/json',
-        ])->asJson()->post((string) Settings::get('mettpay_api_url', self::DEFAULT_URL), [
+        $res = SecureHttp::send(fn ($http) => $http->withHeaders(self::headers())->asJson()->post((string) Settings::get('mettpay_api_url', self::DEFAULT_URL), [
             'order' => [
                 'id' => $order->number,
                 'amount' => round((float) $order->amount_due, 2),
@@ -77,13 +73,41 @@ class MettpayGateway implements PaymentGateway
         $json = $res->json() ?? [];
         if ($res->failed() || ! ($url = self::findUrl($json))) {
             $code = self::findValue($json, ['message', 'msg', 'code', 'error']) ?? 'HTTP '.$res->status();
-            throw new RuntimeException(self::ERRORS[$code] ?? 'Mettpay could not start the payment: '.mb_substr(is_string($code) ? $code : json_encode($code), 0, 200).' — '.mb_substr($res->body(), 0, 300));
+            throw new RuntimeException((self::ERRORS[$code] ?? 'Mettpay could not start the payment.').' (HTTP '.$res->status().') Mettpay replied: '.mb_substr($res->body() ?: '(empty)', 0, 300));
         }
 
         $order->update(['payment_reference' => (string) (self::findValue($json, ['orderNo', 'orderId', 'merchantOrderNo', 'reference', 'token', 'id']) ?? $order->number)]);
         Payment::updateOrCreate(['gateway' => 'mettpay', 'reference' => $order->payment_reference], ['order_id' => $order->id, 'status' => 'started', 'amount' => $order->amount_due, 'payload' => $json]);
 
         return $url;
+    }
+
+    /** Settings → "Test Mettpay": AED 1.00 test order; returns the payment page URL or throws Mettpay's reply. */
+    public static function testConnection(): array
+    {
+        if (! self::configured()) {
+            throw new RuntimeException('Enter the merchant key and secret and click Save settings first.');
+        }
+        $id = 'TEST-'.now()->format('YmdHis');
+        $res = SecureHttp::send(fn ($http) => $http->withHeaders(self::headers())->asJson()->post((string) Settings::get('mettpay_api_url', self::DEFAULT_URL), [
+            'order' => ['id' => $id, 'amount' => 1.00, 'remarks' => 'Connection test', 'returnUrl' => url('/'), 'returnSuccUrl' => url('/'), 'returnErrorUrl' => url('/')],
+            'customer' => ['email' => (string) Settings::get('store_email'), 'firstName' => 'Test', 'lastName' => 'Order', 'mobilePhone' => '+971500000000', 'phone' => '+971500000000'],
+        ]));
+        $json = $res->json() ?? [];
+        if ($res->failed() || ! ($url = self::findUrl($json))) {
+            throw new RuntimeException('HTTP '.$res->status().' — '.(self::ERRORS[self::findValue($json, ['message', 'msg', 'code', 'error'])] ?? '').' Mettpay replied: '.mb_substr($res->body() ?: '(empty)', 0, 500));
+        }
+
+        return ['url' => $url, 'response' => $json];
+    }
+
+    private static function headers(): array
+    {
+        return [
+            'merchantKey' => trim((string) Settings::get('mettpay_merchant_key')),
+            'merchantSecret' => trim((string) Settings::get('mettpay_merchant_secret')),
+            'Accept' => 'application/json',
+        ];
     }
 
     /** Called when the shopper comes back to returnSuccUrl (signed link). */

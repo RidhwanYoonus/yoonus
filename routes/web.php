@@ -46,6 +46,7 @@ Route::post('/webhooks/{gateway}', [PaymentController::class, 'webhook'])->name(
 Route::get('/track', [OrderController::class, 'track'])->name('order.track');
 Route::get('/orders/{order}', [OrderController::class, 'show'])->name('order.show');
 Route::get('/orders/{order}/invoice', [OrderController::class, 'invoice'])->name('order.invoice');
+Route::post('/orders/{order}/pay', [CheckoutController::class, 'retry'])->middleware('throttle:10,10')->name('order.pay');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');

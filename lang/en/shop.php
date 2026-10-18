@@ -132,6 +132,7 @@ return [
 
     'pay' => [
         'not_completed' => 'The card payment was not completed. You can try again from your order page or choose another payment method.',
+        'pay_now' => 'Pay now · :amount',
         'applepay' => 'Apple Pay', 'applepay_note' => 'Pay with Face ID or Touch ID', 'googlepay' => 'Google Pay', 'googlepay_note' => 'Pay with your Google account',
         'card' => 'Credit / debit card', 'card_note' => 'Visa, Mastercard',
         'fee_note' => ':fee payment fee',

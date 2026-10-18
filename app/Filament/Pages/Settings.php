@@ -83,7 +83,7 @@ class Settings extends Page implements HasForms
                         ->visible(fn (Forms\Get $get) => $get('card_gateway') === 'mettpay')
                         ->description('From your Mettpay merchant portal. Test card: 5123 4500 0000 0008 · 05/31 · CVV 100.')
                         ->schema([
-                            $text('mettpay_merchant_key', 'Merchant key')->placeholder('live-…'),
+                            $text('mettpay_merchant_key', 'Merchant key')->placeholder('live-P762B55IY')->helperText('Enter it exactly as Mettpay gave it, including "live-" (or "test-") at the start.'),
                             $secret('mettpay_merchant_secret', 'Merchant secret'),
                             $text('mettpay_api_url', 'Create-order URL')->url()->placeholder(\App\Payments\MettpayGateway::DEFAULT_URL),
                             $text('mettpay_status_url', 'Payment status URL (optional)')->url()
@@ -224,6 +224,20 @@ class Settings extends Page implements HasForms
                             : Notification::make()->success()->title('Test email sent to '.$data['to'])->send();
                     } catch (\Throwable $e) {
                         Notification::make()->danger()->title('Email failed')->body($e->getMessage())->persistent()->send();
+                    }
+                }),
+            \Filament\Actions\Action::make('testMettpay')->label('Test Mettpay')->icon('heroicon-o-credit-card')->color('gray')
+                ->visible(fn () => Store::get('card_gateway') === 'mettpay')
+                ->requiresConfirmation()->modalHeading('Test Mettpay connection')
+                ->modalDescription('Save your settings first. This creates a test payment of AED 1.00 at Mettpay and shows their exact reply. Nothing is charged unless you pay it.')
+                ->action(function () {
+                    try {
+                        $result = \App\Payments\MettpayGateway::testConnection();
+                        Notification::make()->success()->title('Mettpay accepted the test payment')
+                            ->body(new \Illuminate\Support\HtmlString('Open the card page and use the test card 5123 4500 0000 0008 · 05/31 · 100:<br><a href="'.e($result['url']).'" target="_blank" class="underline font-semibold">Open Mettpay payment page →</a>'))
+                            ->persistent()->send();
+                    } catch (\Throwable $e) {
+                        Notification::make()->danger()->title('Mettpay test failed')->body($e->getMessage())->persistent()->send();
                     }
                 }),
             \Filament\Actions\Action::make('testWhatsApp')->label('Send test WhatsApp')->icon('heroicon-o-chat-bubble-oval-left')->color('gray')

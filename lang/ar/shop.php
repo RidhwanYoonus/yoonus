@@ -132,6 +132,7 @@ return [
 
     'pay' => [
         'not_completed' => 'لم تكتمل عملية الدفع بالبطاقة. يمكنك المحاولة مرة أخرى من صفحة الطلب أو اختيار طريقة دفع أخرى.',
+        'pay_now' => 'ادفع الآن · :amount',
         'applepay' => 'Apple Pay', 'applepay_note' => 'ادفع باستخدام بصمة الوجه أو الإصبع', 'googlepay' => 'Google Pay', 'googlepay_note' => 'ادفع باستخدام حساب Google',
         'card' => 'بطاقة ائتمان / خصم', 'card_note' => 'فيزا، ماستركارد',
         'fee_note' => 'رسوم دفع :fee',

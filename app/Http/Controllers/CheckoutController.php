@@ -159,9 +159,35 @@ class CheckoutController extends Controller
         try {
             return redirect()->away($this->gateways->for($order->payment_method)->start($order));
         } catch (Throwable $e) {
-            Log::error('Payment start failed', ['order' => $order->number, 'error' => $e->getMessage()]);
+            return self::paymentStartFailed($request, $order, $e);
+        }
+    }
 
-            return redirect()->route('order.show', $order->number)->withErrors(['payment' => __('shop.pay.start_failed')]);
+    /** Customers see a short message; admins/staff also see the provider's exact reason, to fix setup. */
+    public static function paymentStartFailed(Request $request, Order $order, Throwable $e)
+    {
+        Log::error('Payment start failed', ['order' => $order->number, 'error' => $e->getMessage()]);
+        $message = __('shop.pay.start_failed');
+        if ($request->user()?->canAccessPanel(\Filament\Facades\Filament::getPanel('admin'))) {
+            $message .= ' [Admin only — reason: '.mb_substr($e->getMessage(), 0, 400).']';
+        }
+
+        return redirect()->route('order.show', $order->number)->withErrors(['payment' => $message]);
+    }
+
+    /** "Pay now" on the order page: try the card payment again for an unpaid order. */
+    public function retry(Request $request, string $order)
+    {
+        $order = Order::where('number', $order)->firstOrFail();
+        abort_unless(OrderController::canView($request, $order), 403);
+        if ($order->isPaid() || ! in_array($order->payment_method, ['card', 'applepay', 'googlepay', 'tabby', 'tamara'], true) || $order->status === 'cancelled') {
+            return redirect()->route('order.show', $order->number);
+        }
+
+        try {
+            return redirect()->away($this->gateways->for($order->payment_method)->start($order));
+        } catch (Throwable $e) {
+            return self::paymentStartFailed($request, $order, $e);
         }
     }
 

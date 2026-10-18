@@ -91,4 +91,33 @@ class MettpayGatewayTest extends TestCase
         $res->assertRedirect();
         $this->followRedirects($res)->assertSee(__('shop.pay.start_failed'));
     }
+
+    public function test_admin_sees_the_exact_reason_and_customers_can_pay_again(): void
+    {
+        Http::fake(['application.mettpay.com/*' => Http::sequence()
+            ->push(['code' => 403, 'message' => 'UNAUTHORIZED'], 403)
+            ->push(['data' => ['paymentUrl' => 'https://pay.mettpay.com/retry']])]);
+        $this->actingAs(\App\Models\User::factory()->create(['is_admin' => true]));
+        $res = $this->placeCardOrder();
+        $this->followRedirects($res)->assertSee('Admin only — reason')->assertSee('UNAUTHORIZED')->assertSee('Pay now');
+
+        $order = Order::sole();
+        $this->post(route('order.pay', $order->number))->assertRedirect('https://pay.mettpay.com/retry');
+    }
+
+    public function test_settings_test_button_reports_mettpay_reply(): void
+    {
+        Http::fake(['application.mettpay.com/*' => Http::sequence()
+            ->push(['data' => ['paymentUrl' => 'https://pay.mettpay.com/test']])
+            ->push('Unauthorized', 401)]);
+        $this->assertSame('https://pay.mettpay.com/test', \App\Payments\MettpayGateway::testConnection()['url']);
+        Http::assertSent(fn (Request $r) => (float) $r['order']['amount'] === 1.0 && str_starts_with($r['order']['id'], 'TEST-'));
+
+        try {
+            \App\Payments\MettpayGateway::testConnection();
+            $this->fail('should throw');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('HTTP 401', $e->getMessage());
+        }
+    }
 }
