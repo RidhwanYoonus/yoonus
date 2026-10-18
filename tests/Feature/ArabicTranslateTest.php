@@ -44,13 +44,28 @@ class ArabicTranslateTest extends TestCase
     public function test_translate_button_fills_arabic_name_on_product_form(): void
     {
         $this->seed(ReferenceDataSeeder::class);
-        Http::fake(['api.mymemory.translated.net/*' => Http::response(['responseStatus' => 200, 'responseData' => ['translatedText' => 'خاتم كلاسيكي']])]);
+        Settings::set(['translation_provider' => 'google', 'google_translate_key' => 'k']);
+        Http::fake(['translation.googleapis.com/*' => Http::response(['data' => ['translations' => [['translatedText' => 'خاتم كلاسيكي']]]])]);
         $this->actingAs(User::factory()->create(['is_admin' => true]));
 
         Livewire::test(CreateProduct::class)
             ->fillForm(['name' => 'Classic Ring'])
             ->callFormComponentAction('name_ar', 'translate_name_ar')
             ->assertFormSet(['name_ar' => 'خاتم كلاسيكي']);
+
+        // Dictionary words are filled instantly, without any service.
+        Livewire::test(CreateProduct::class)->fillForm(['name' => 'Necklaces'])
+            ->callFormComponentAction('name_ar', 'translate_name_ar')->assertFormSet(['name_ar' => 'قلائد']);
+    }
+
+    public function test_free_translate_button_runs_in_the_browser(): void
+    {
+        $this->seed(ReferenceDataSeeder::class);
+        Http::fake();
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+        $page = Livewire::test(CreateProduct::class)->fillForm(['name' => 'Classic Ring'])->callFormComponentAction('name_ar', 'translate_name_ar');
+        Http::assertNothingSent();
+        $this->assertStringContainsString('Classic Ring', json_encode($page->effects['xjs'] ?? [], JSON_UNESCAPED_UNICODE));
     }
 
     public function test_when_server_cannot_connect_the_browser_translates_instead(): void
@@ -73,7 +88,8 @@ class ArabicTranslateTest extends TestCase
         $karat = \App\Models\GoldCategory::where('name', '22K')->value('id');
         $blank = \App\Models\Product::create(['name' => 'Gold Ring', 'description' => 'Hallmarked', 'sku' => 'T-1', 'slug' => 't-1', 'gold_category_id' => $karat, 'weight_grams' => 2, 'stock_qty' => 1]);
         $done = \App\Models\Product::create(['name' => 'Bangle', 'name_ar' => 'سوار يدوي', 'sku' => 'T-2', 'slug' => 't-2', 'gold_category_id' => $karat, 'weight_grams' => 2, 'stock_qty' => 1]);
-        Http::fake(['api.mymemory.translated.net/*' => fn (Request $r) => Http::response(['responseStatus' => 200, 'responseData' => ['translatedText' => 'AR:'.$r['q']]])]);
+        Settings::set(['translation_provider' => 'google', 'google_translate_key' => 'k']);
+        Http::fake(['translation.googleapis.com/*' => fn (Request $r) => Http::response(['data' => ['translations' => [['translatedText' => 'AR:'.$r['q']]]]])]);
         $this->actingAs(User::factory()->create(['is_admin' => true]));
 
         Livewire::test(\App\Filament\Resources\ProductResource\Pages\ListProducts::class)->callAction('translateMissingArabic');
@@ -81,6 +97,19 @@ class ArabicTranslateTest extends TestCase
         $this->assertSame('AR:Gold Ring', $blank->fresh()->name_ar);
         $this->assertSame('AR:Hallmarked', $blank->fresh()->description_ar);
         $this->assertSame('سوار يدوي', $done->fresh()->name_ar);   // untouched
+    }
+
+    public function test_free_bulk_translation_runs_in_the_browser_without_server_waits(): void
+    {
+        $this->seed(ReferenceDataSeeder::class);
+        $karat = \App\Models\GoldCategory::where('name', '22K')->value('id');
+        $p = \App\Models\Product::create(['name' => 'Twisted Pair', 'sku' => 'T-3', 'slug' => 't-3', 'gold_category_id' => $karat, 'weight_grams' => 2, 'stock_qty' => 1]);
+        Http::fake();
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+
+        $page = Livewire::test(\App\Filament\Resources\ProductResource\Pages\ListProducts::class)->callAction('translateMissingArabic');
+        Http::assertNothingSent();
+        $this->assertStringContainsString('Twisted Pair', json_encode($page->effects['xjs'] ?? [], JSON_UNESCAPED_UNICODE));
     }
 
     public function test_bulk_button_hands_over_to_browser_when_server_cannot_connect(): void

@@ -43,9 +43,36 @@ trait TranslatesMissingArabic
 
                     return;
                 }
+                // The free service works from the browser even when this PC's PHP cannot make secure
+                // connections, and the browser has no 30-second limit — so bulk jobs go there directly.
+                // Dictionary words (Rings, Necklaces, your own list…) are filled straight away.
+                $known = 0;
+                foreach ($jobs as $i => $job) {
+                    if (($ar = \App\Support\JewelleryGlossary::lookup($job['text'])) !== null) {
+                        $known += (int) $this->saveMissingArabic($job['id'], $job['field'], $ar, $overwrite);
+                        unset($jobs[$i]);
+                    }
+                }
+                if ($jobs === []) {
+                    Notification::make()->success()->title("Translated {$known} field(s) — please check the Arabic")->send();
+
+                    return;
+                }
+                if (Translator::provider() === 'mymemory' || \App\Support\SecureHttp::isDown()) {
+                    $this->js($this->browserTranslateScript(array_values($jobs), $known, $overwrite));
+
+                    return;
+                }
+                @set_time_limit(180);
+                $started = microtime(true);
                 $done = 0;
                 try {
                     foreach ($jobs as $i => $job) {
+                        if (microtime(true) - $started > 20) {
+                            Notification::make()->success()->title("Translated {$done} field(s) so far — click the button again to continue")->persistent()->send();
+
+                            return;
+                        }
                         $this->saveMissingArabic($job['id'], $job['field'], Translator::toArabic($job['text']), $overwrite);
                         $done++;
                         unset($jobs[$i]);

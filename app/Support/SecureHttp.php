@@ -17,6 +17,8 @@ class SecureHttp
 {
     private const CACHE_KEY = 'secure_http.working_setup';
 
+    private const DOWN_KEY = 'secure_http.down';
+
     /** @return array<string,array> */
     public static function setups(): array
     {
@@ -32,8 +34,17 @@ class SecureHttp
     }
 
     /** @param callable(PendingRequest): mixed $send */
+    /** True for 10 minutes after every setup failed, so callers skip straight to their fallback. */
+    public static function isDown(): bool
+    {
+        return (bool) Cache::get(self::DOWN_KEY);
+    }
+
     public static function send(callable $send): mixed
     {
+        if (self::isDown()) {
+            throw new RuntimeException('Secure connection failed — it did not work a few minutes ago, so it was skipped.');
+        }
         $setups = self::setups();
         $remembered = Cache::get(self::CACHE_KEY);
         if ($remembered && isset($setups[$remembered])) {
@@ -43,7 +54,7 @@ class SecureHttp
         $errors = [];
         foreach ($setups as $label => $options) {
             try {
-                $result = $send(Http::timeout(20)->withOptions($options));
+                $result = $send(Http::connectTimeout(4)->timeout(8)->withOptions($options));
                 Cache::forever(self::CACHE_KEY, $label);
 
                 return $result;
@@ -52,6 +63,7 @@ class SecureHttp
             }
         }
 
+        Cache::put(self::DOWN_KEY, true, now()->addMinutes(10));
         throw new RuntimeException('Secure connection failed — '.implode(' | ', $errors));
     }
 

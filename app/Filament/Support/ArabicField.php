@@ -22,6 +22,16 @@ class ArabicField
             ->icon('heroicon-o-language')
             ->color('primary')
             ->action(function (Get $get, Set $set, Component $component, $livewire) use ($englishField, $arabicField) {
+                $english = trim((string) $get($englishField));
+                // Free service: let the browser do it (works even when this PC's PHP cannot make
+                // secure connections, and never hits PHP's time limit). Dictionary words stay instant.
+                if ($english !== '' && \App\Support\JewelleryGlossary::lookup($english) === null
+                    && (Translator::provider() === 'mymemory' || \App\Support\SecureHttp::isDown())) {
+                    $livewire->js(self::browserScript($english, $component->getStatePath()));
+
+                    return;
+                }
+                @set_time_limit(120);
                 try {
                     $set($arabicField, Translator::toArabic($get($englishField)));
                     Notification::make()->success()->title('Translated — please check the Arabic before saving')->send();
