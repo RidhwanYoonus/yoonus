@@ -215,6 +215,7 @@ return [
     ],
 
     'notify' => [
+        'invoice_link' => 'Download your tax invoice:',
         'view_order' => 'View your order',
         'placed' => ['subject' => 'Order :number received', 'body' => 'Thank you, :name. We have received your order (:total).'],
         'paid' => ['subject' => 'Payment confirmed — order :number', 'body' => 'Payment received for :total. Your tax invoice is attached.'],

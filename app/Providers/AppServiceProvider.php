@@ -27,6 +27,13 @@ class AppServiceProvider extends ServiceProvider
         if ($this->app->isProduction()) {
             URL::forceScheme('https');
         }
+        try {
+            \App\Support\MailSettings::apply();
+        } catch (\Throwable) {
+            // Fresh install before migrations: keep the .env mail settings.
+        }
+        // Long-running queue workers pick up email settings changed in the admin before each job.
+        \Illuminate\Support\Facades\Queue::before(fn () => \App\Support\MailSettings::apply());
 
         RateLimiter::for('login', fn (Request $r) => [
             Limit::perMinute(5)->by(strtolower((string) $r->input('email')).'|'.$r->ip()),

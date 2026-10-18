@@ -36,6 +36,11 @@ class Messenger
         return $this->whatsapp->send($phone, $body, $template);
     }
 
+    public function whatsappDocument(?string $phone, string $pdf, string $filename, string $caption, string $template): bool
+    {
+        return $this->whatsapp->sendDocument($phone, $pdf, $filename, $caption, $template);
+    }
+
     /** Run a callback with the app locale switched (for the recipient's language). */
     public static function inLocale(string $locale, callable $fn): mixed
     {

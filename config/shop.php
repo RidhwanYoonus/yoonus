@@ -87,6 +87,22 @@ return [
         'twilio_sid' => null,
         'twilio_token' => null,
         'twilio_whatsapp_from' => null,
+        'whatsapp_provider' => 'meta',          // meta (WhatsApp Cloud API) | twilio
+        'meta_wa_phone_number_id' => null,
+        'meta_wa_token' => null,
+        'meta_wa_api_version' => 'v21.0',
+        'meta_wa_template' => null,             // approved Utility template with one body variable {{1}}
+        'meta_wa_invoice_template' => null,     // approved template with a Document header + body {{1}}
+        'meta_wa_template_lang' => 'en',
+        'whatsapp_send_invoice' => true,
+        'mail_mailer' => null,                  // smtp to send real email; empty = use the .env setting
+        'mail_host' => null,
+        'mail_port' => 587,
+        'mail_username' => null,
+        'mail_password' => null,
+        'mail_encryption' => 'tls',
+        'mail_from_address' => null,
+        'mail_from_name' => null,
         'mailchimp_api_key' => null,
         'mailchimp_list_id' => null,
         'klaviyo_api_key' => null,

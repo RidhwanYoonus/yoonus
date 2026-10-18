@@ -46,7 +46,13 @@ class SendOrderNotification implements ShouldQueue
                 $order->locale, $pdf, $pdf ? $invoices->filename($order) : null,
             ), 'order_'.$this->event);
 
-            $messenger->whatsapp($order->phone, $subject."\n".$body, 'order_'.$this->event);
+            if ($pdf && \App\Support\Settings::bool('whatsapp_send_invoice')) {
+                // Tax invoice PDF on WhatsApp too, with a download link as a fallback.
+                $link = URL::signedRoute('order.invoice', ['order' => $order->number]);
+                $messenger->whatsappDocument($order->phone, $pdf, $invoices->filename($order), $subject."\n".$body."\n".__('shop.notify.invoice_link').' '.$link, 'order_'.$this->event);
+            } else {
+                $messenger->whatsapp($order->phone, $subject."\n".$body, 'order_'.$this->event);
+            }
         });
     }
 }

@@ -123,15 +123,85 @@ class Settings extends Page implements HasForms
                     $text('onesignal_app_id', 'OneSignal App ID (web push)'),
                     $secret('onesignal_api_key', 'OneSignal REST API key'),
                 ]),
-                Forms\Components\Tabs\Tab::make('Messaging')->icon('heroicon-o-chat-bubble-oval-left')->columns(2)->schema([
-                    $text('twilio_sid', 'Twilio Account SID'), $secret('twilio_token', 'Twilio Auth token'),
-                    $text('twilio_whatsapp_from', 'WhatsApp sender number')->helperText('Approved WhatsApp Business number on Twilio. Without it, messages are logged only.'),
-                    Forms\Components\Placeholder::make('wa_hint')->label('')->content('Abandoned-cart (1h/24h/72h), order status and gold-drop messages use this sender.'),
-                    $secret('mailchimp_api_key', 'Mailchimp API key'), $text('mailchimp_list_id', 'Mailchimp audience ID'),
-                    $secret('klaviyo_api_key', 'Klaviyo private API key'), $text('klaviyo_list_id', 'Klaviyo list ID'),
+                Forms\Components\Tabs\Tab::make('WhatsApp')->icon('heroicon-o-chat-bubble-oval-left')->columns(2)->schema([
+                    Forms\Components\Select::make('whatsapp_provider')->label('Send WhatsApp through')->live()->required()
+                        ->options(['meta' => 'Meta — WhatsApp Business (Cloud API), recommended', 'twilio' => 'Twilio']),
+                    Forms\Components\Toggle::make('whatsapp_send_invoice')->label('Send the tax invoice PDF on WhatsApp when an order is paid')->inline(false),
+                    Forms\Components\Section::make('Meta WhatsApp Cloud API')->columns(2)->visible(fn (Forms\Get $get) => $get('whatsapp_provider') !== 'twilio')
+                        ->description('From developers.facebook.com → your app → WhatsApp → API Setup. See the setup guide below.')
+                        ->schema([
+                            $text('meta_wa_phone_number_id', 'Phone number ID')->helperText('The long number under "From" in API Setup — not your phone number.'),
+                            $secret('meta_wa_token', 'Permanent access token')->helperText('System user token from Business Settings → System users (starts with EAA…).'),
+                            $text('meta_wa_template', 'Message template name')->placeholder('store_update')
+                                ->helperText('Approved Utility template whose body is e.g. "{{1}}". Needed for messages to customers who have not written to you in the last 24 hours.'),
+                            $text('meta_wa_invoice_template', 'Invoice template name')->placeholder('order_invoice')
+                                ->helperText('Approved template with a Document header and body "{{1}}". Used to send the invoice PDF.'),
+                            $text('meta_wa_template_lang', 'Template language code')->placeholder('en')->helperText('Exactly as in WhatsApp Manager, e.g. en, en_US or ar.'),
+                            $text('meta_wa_api_version', 'Graph API version')->placeholder('v21.0'),
+                        ]),
+                    Forms\Components\Section::make('Twilio')->columns(3)->visible(fn (Forms\Get $get) => $get('whatsapp_provider') === 'twilio')->schema([
+                        $text('twilio_sid', 'Account SID'), $secret('twilio_token', 'Auth token'),
+                        $text('twilio_whatsapp_from', 'WhatsApp sender number'),
+                    ]),
+                    Forms\Components\Placeholder::make('wa_hint')->label('')->columnSpanFull()
+                        ->content('Sent automatically: order updates, the paid tax invoice, handover codes, abandoned-cart reminders and gold-drop alerts. Use "Send test WhatsApp" above to check.'),
+                ]),
+                Forms\Components\Tabs\Tab::make('Email')->icon('heroicon-o-envelope')->columns(2)->schema([
+                    Forms\Components\Select::make('mail_mailer')->label('Send email')->live()
+                        ->options(['smtp' => 'Through my email provider (SMTP)', 'log' => 'Not yet — keep emails in the log (testing)'])
+                        ->helperText('Works with Google Workspace / Gmail, Microsoft 365 / Outlook, Zoho, your web host\'s email, Brevo, Mailgun and others.'),
+                    $text('mail_from_address', 'Send from (email address)')->email()->placeholder('orders@yourshop.ae'),
+                    $text('mail_from_name', 'Sender name')->placeholder('Your Jewellery Shop'),
+                    Forms\Components\Section::make('SMTP server')->columns(3)->visible(fn (Forms\Get $get) => $get('mail_mailer') === 'smtp')
+                        ->description('Gmail / Google Workspace: smtp.gmail.com · 587 · TLS, password = an App password. Microsoft 365: smtp.office365.com · 587 · TLS. Zoho: smtp.zoho.com · 465 · SSL.')
+                        ->schema([
+                            $text('mail_host', 'SMTP host')->placeholder('smtp.gmail.com'),
+                            Forms\Components\TextInput::make('mail_port')->label('Port')->numeric()->placeholder('587'),
+                            Forms\Components\Select::make('mail_encryption')->label('Security')->options(['tls' => 'TLS (port 587)', 'ssl' => 'SSL (port 465)', 'none' => 'None']),
+                            $text('mail_username', 'Username')->placeholder('orders@yourshop.ae'),
+                            $secret('mail_password', 'Password / app password'),
+                        ]),
+                    Forms\Components\Placeholder::make('mail_hint')->label('')->columnSpanFull()
+                        ->content('Sent automatically: order confirmation and status emails (the tax invoice PDF is attached when paid), handover codes, newsletter confirmation, abandoned-cart reminders and gold-drop alerts.'),
+                    $secret('mailchimp_api_key', 'Mailchimp API key (optional)'), $text('mailchimp_list_id', 'Mailchimp audience ID'),
+                    $secret('klaviyo_api_key', 'Klaviyo private API key (optional)'), $text('klaviyo_list_id', 'Klaviyo list ID'),
                 ]),
             ])->persistTabInQueryString(),
         ]);
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            \Filament\Actions\Action::make('testEmail')->label('Send test email')->icon('heroicon-o-envelope')->color('gray')
+                ->form([Forms\Components\TextInput::make('to')->label('Send to')->email()->required()->default(fn () => auth()->user()?->email)])
+                ->modalDescription('Save your settings first. The test uses the saved email settings.')
+                ->action(function (array $data) {
+                    try {
+                        \App\Support\MailSettings::apply();
+                        \Illuminate\Support\Facades\Mail::to($data['to'])->send(new \App\Mail\ShopMessage('Test email from '.Store::get('store_name'), ['Your shop can send email. 🎉']));
+                        config('mail.default') === 'log'
+                            ? Notification::make()->warning()->title('Email is still in test mode')->body('Choose "Through my email provider (SMTP)" in Settings → Email and save.')->send()
+                            : Notification::make()->success()->title('Test email sent to '.$data['to'])->send();
+                    } catch (\Throwable $e) {
+                        Notification::make()->danger()->title('Email failed')->body($e->getMessage())->persistent()->send();
+                    }
+                }),
+            \Filament\Actions\Action::make('testWhatsApp')->label('Send test WhatsApp')->icon('heroicon-o-chat-bubble-oval-left')->color('gray')
+                ->form([Forms\Components\TextInput::make('to')->label('Mobile number')->required()->placeholder('+971 50 123 4567')])
+                ->modalDescription('Save your settings first. Tip: send "hi" from that phone to your business WhatsApp first, so the test arrives even without an approved template.')
+                ->action(function (array $data) {
+                    if (! \App\Messaging\WhatsApp::configured()) {
+                        Notification::make()->warning()->title('WhatsApp is not set up yet')->body('Fill in Settings → WhatsApp and save.')->send();
+
+                        return;
+                    }
+                    $ok = app(\App\Messaging\WhatsApp::class)->send($data['to'], 'Test message from '.Store::get('store_name').' ✅', 'test');
+                    $error = \App\Models\NotificationLog::where('template', 'test')->latest('id')->value('error');
+                    $ok ? Notification::make()->success()->title('Test WhatsApp sent')->send()
+                        : Notification::make()->danger()->title('WhatsApp failed')->body($error)->persistent()->send();
+                }),
+        ];
     }
 
     public function save(): void

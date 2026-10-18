@@ -43,8 +43,7 @@ class HandoverOtp
      */
     public static function testMode(): bool
     {
-        return in_array(config('mail.default'), ['log', 'array'], true)
-            && ! (Settings::get('twilio_sid') && Settings::get('twilio_token') && Settings::get('twilio_whatsapp_from'));
+        return in_array(config('mail.default'), ['log', 'array'], true) && ! \App\Messaging\WhatsApp::configured();
     }
 
     public static function testCode(Order $order): ?string
