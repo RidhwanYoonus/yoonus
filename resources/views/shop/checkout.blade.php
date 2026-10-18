@@ -209,6 +209,16 @@
                     <div class="flex justify-between font-semibold" x-show="q.gift_card"><dt>{{ __('shop.checkout.amount_due') }}</dt><dd x-text="q.amount_due"></dd></div>
                 </dl>
                 <p class="mt-3 text-xs text-muted">{{ __('shop.checkout.vat_note') }}</p>
+                @if (\App\Support\Settings::bool('require_terms_acceptance'))
+                    <label class="mt-4 flex items-start gap-2.5 rounded-xl border border-line bg-sand/50 p-3 text-xs leading-relaxed">
+                        <input type="checkbox" name="accept_terms" value="1" required class="mt-0.5 h-4 w-4 shrink-0 accent-gold-600" @checked(old('accept_terms'))>
+                        <span>{!! __('shop.policy.agree', [
+                            'terms' => '<a href="'.route('policy.show', 'terms-and-conditions').'" target="_blank" class="underline">'.e(\App\Support\Policies::title('terms')).'</a>',
+                            'refund' => '<a href="'.route('policy.show', 'refund-policy').'" target="_blank" class="underline">'.e(\App\Support\Policies::title('refund')).'</a>',
+                        ]) !!}</span>
+                    </label>
+                    @error('accept_terms')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror
+                @endif
                 <button class="btn-gold mt-5 hidden h-11 w-full lg:flex" @disabled($blocked) :disabled="loading">{{ __('shop.checkout.place') }}</button>
             </div>
         </aside>

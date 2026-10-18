@@ -83,13 +83,24 @@ Route::get('/feed/meta.xml', [FeedController::class, 'meta'])->name('feed.meta')
 
 // One-click "artisan migrate" for the admin banner shown when an update added new migrations.
 Route::post('/admin/update-database', \App\Http\Controllers\Admin\DatabaseUpdateController::class)
-    ->middleware('auth')->name('admin.update-database');
+    ->middleware(['auth', \App\Http\Middleware\AdminSecurity::class])->name('admin.update-database');
 
 // Live video call with staff (per product, switchable in the admin).
 Route::post('/product/{product}/video-call', [\App\Http\Controllers\VideoCallController::class, 'store'])->middleware('throttle:5,10')->name('video-call.store');
 Route::get('/video-call/{call}', [\App\Http\Controllers\VideoCallController::class, 'show'])->name('video-call.show');
 Route::get('/video-call/{call}/status', [\App\Http\Controllers\VideoCallController::class, 'status'])->name('video-call.status');
 Route::get('/admin/video-calls/{id}/join', \App\Http\Controllers\Admin\VideoCallJoinController::class)
-    ->middleware('auth')->whereNumber('id')->name('admin.video-call.join');
+    ->middleware(['auth', \App\Http\Middleware\AdminSecurity::class])->whereNumber('id')->name('admin.video-call.join');
 Route::get('/admin/id-documents/{owner}/{id}/{side}', \App\Http\Controllers\Admin\IdDocumentController::class)
-    ->middleware('auth')->whereIn('owner', ['order', 'user'])->whereNumber('id')->whereIn('side', ['front', 'back'])->name('admin.id-document');
+    ->middleware(['auth', \App\Http\Middleware\AdminSecurity::class])->whereIn('owner', ['order', 'user'])->whereNumber('id')->whereIn('side', ['front', 'back'])->name('admin.id-document');
+
+// Admin two-step sign-in (Settings → Security). Outside /admin so the panel's own check doesn't loop.
+Route::middleware('auth')->prefix('admin-verify')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\TwoFactorController::class, 'show'])->name('admin.two-factor');
+    Route::post('/', [\App\Http\Controllers\Admin\TwoFactorController::class, 'verify'])->middleware('throttle:10,10')->name('admin.two-factor.verify');
+    Route::post('/resend', [\App\Http\Controllers\Admin\TwoFactorController::class, 'resend'])->middleware('throttle:3,10')->name('admin.two-factor.resend');
+});
+
+// Terms, no refund / no exchange, privacy and delivery policies (Settings → Policies to edit).
+Route::get('/{slug}', [\App\Http\Controllers\PolicyController::class, 'show'])
+    ->whereIn('slug', array_column(\App\Support\Policies::PAGES, 'slug'))->name('policy.show');

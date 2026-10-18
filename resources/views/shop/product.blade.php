@@ -81,6 +81,7 @@
                     <input id="qty" type="number" name="qty" value="1" min="1" max="{{ $product->stock_qty }}" class="input w-20 text-center">
                     <button class="btn-gold h-11 flex-1">{{ __('shop.product.add_to_cart') }}</button>
                 </form>
+                <p class="mt-2 text-xs text-muted">🔒 <a href="{{ route('policy.show', 'refund-policy') }}" class="underline decoration-dotted">{{ __('shop.policy.note') }}</a></p>
                 @unless ($deliveryEnabled)<p class="mt-2 text-xs text-gold-700">{{ __('shop.pickup.only_pickup') }}</p>@endunless
                 @if ($product->isLowStock())<p class="mt-2 text-xs text-red-700">{{ trans_choice('shop.product.only_left', $product->stock_qty, ['count' => $product->stock_qty]) }}</p>@endif
             @else

@@ -179,8 +179,8 @@ return [
     */
 
     'custom' => [
-        'attribute-name' => [
-            'rule-name' => 'custom-message',
+        'accept_terms' => [
+            'accepted' => 'Please confirm that you agree to the Terms & Conditions and the No Refund & No Exchange Policy.',
         ],
     ],
 

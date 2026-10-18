@@ -22,6 +22,30 @@ class AppServiceProvider extends ServiceProvider
         $this->app->scoped(CartService::class);
     }
 
+    /** Sign-ins (shop and admin), wrong passwords and lockouts go to Settings → Security log. */
+    private function logSignIns(): void
+    {
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Failed::class, fn ($e) => \App\Support\SecurityLog::record('login_failed', $e->user, (string) ($e->credentials['email'] ?? '')));
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Lockout::class, fn ($e) => \App\Support\SecurityLog::record('lockout', email: (string) $e->request->input('email', $e->request->input('data.email'))));
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Logout::class, fn ($e) => $e->user ? \App\Support\SecurityLog::record('logout', $e->user) : null);
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Login::class, function ($e) {
+            if (! $e->user instanceof \App\Models\User || ! ($e->user->is_admin || $e->user->is_staff)) {
+                \App\Support\SecurityLog::record('login', $e->user);
+
+                return;
+            }
+            $new = \App\Support\SecurityLog::isNewDevice($e->user);
+            \App\Support\SecurityLog::record('admin_login', $e->user);
+            if ($new) {
+                \App\Support\SecurityLog::record('new_device', $e->user);
+                app(\App\Messaging\Messenger::class)->email($e->user->email, new \App\Mail\ShopMessage('New sign-in to your shop admin', [
+                    'Someone signed in to the admin panel with your account from IP '.request()->ip().' ('.mb_substr((string) request()->userAgent(), 0, 120).') at '.now()->format('d M Y, H:i').'.',
+                    'If this was not you, change your password immediately and turn on two-step sign-in under Settings → Security.',
+                ]), 'admin_new_device');
+            }
+        });
+    }
+
     public function boot(): void
     {
         if ($this->app->isProduction()) {
@@ -44,10 +68,16 @@ class AppServiceProvider extends ServiceProvider
         // Long-running queue workers pick up email settings changed in the admin before each job.
         \Illuminate\Support\Facades\Queue::before(fn () => \App\Support\MailSettings::apply());
 
+        $lockedOut = function (Request $r, array $headers) {
+            \App\Support\SecurityLog::record('lockout', email: (string) $r->input('email'));
+
+            return back()->withInput($r->only('email'))->withErrors(['email' => __('auth.throttle', ['seconds' => $headers['Retry-After'] ?? 60])]);
+        };
         RateLimiter::for('login', fn (Request $r) => [
-            Limit::perMinute(5)->by(strtolower((string) $r->input('email')).'|'.$r->ip()),
-            Limit::perMinute(20)->by($r->ip()),
+            Limit::perMinute(5)->by(strtolower((string) $r->input('email')).'|'.$r->ip())->response($lockedOut),
+            Limit::perMinute(20)->by($r->ip())->response($lockedOut),
         ]);
+        $this->logSignIns();
         RateLimiter::for('checkout', fn (Request $r) => Limit::perMinute(60)->by($r->user()?->id ?: $r->ip()));
 
         // A product edit (e.g. switching making charge % ↔ per piece) re-prices it immediately.

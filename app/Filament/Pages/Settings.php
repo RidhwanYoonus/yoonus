@@ -146,6 +146,34 @@ class Settings extends Page implements HasForms
                             $secret('google_client_secret', 'Client secret'),
                         ]),
                 ]),
+                Forms\Components\Tabs\Tab::make('Security')->icon('heroicon-o-shield-check')->columns(2)
+                    ->visible(fn () => (bool) auth()->user()?->is_admin)->schema([
+                    Forms\Components\Toggle::make('admin_two_factor')->label('Two-step sign-in for admin & staff')->inline(false)
+                        ->helperText('After the password, a 6-digit code is emailed (and WhatsApped if the staff member has a mobile number). Press "Send test email" first so you are not locked out. Locked out? Run: php artisan shop:two-factor off'),
+                    Forms\Components\TextInput::make('admin_idle_minutes')->label('Sign out admin after inactivity')->numeric()->minValue(0)->maxValue(720)->suffix('minutes')
+                        ->helperText('0 = never. 15–30 minutes is recommended, especially on a shared shop computer.'),
+                    Forms\Components\Placeholder::make('security_notes')->hiddenLabel()->columnSpanFull()->content(new \Illuminate\Support\HtmlString(
+                        '<ul class="list-disc ps-5 text-sm text-gray-600 dark:text-gray-400 space-y-1">'
+                        .'<li>Every sign-in, wrong password and blocked attempt is recorded in <strong>Settings → Security log</strong>. Admins get an email when their account signs in from a new device.</li>'
+                        .'<li>Logins are blocked for a minute after 5 wrong passwords. Customer passwords need 8+ characters with upper- and lower-case letters and a number.</li>'
+                        .'<li>Card numbers never touch this website — customers type them on the Mettpay / Stripe / Telr page. ID photos are stored privately and only admins can open them.</li>'
+                        .'</ul>')),
+                ]),
+                Forms\Components\Tabs\Tab::make('Policies')->icon('heroicon-o-document-text')->columns(3)->schema([
+                    Forms\Components\Toggle::make('require_terms_acceptance')->label('Customer must tick "I agree" at checkout')->inline(false)
+                        ->helperText('The date, time and IP of the agreement are saved on the order — useful proof if a customer disputes a card payment.'),
+                    $text('policy_emirate', 'Emirate for courts / governing law')->placeholder('Dubai'),
+                    Forms\Components\TextInput::make('policy_report_hours')->label('Hours to report a wrong / damaged item')->numeric()->minValue(1)->suffix('hours'),
+                    Forms\Components\Placeholder::make('policy_help')->hiddenLabel()->columnSpanFull()->content(new \Illuminate\Support\HtmlString(
+                        'Ready-made English and Arabic texts are shown automatically with your store name, address, TRN, email and phone from "Store & tax". '
+                        .'To use your own wording, write it below — leave a box empty to keep the ready-made text. Pages: '
+                        .collect(\App\Support\Policies::PAGES)->map(fn ($p) => '<a href="'.route('policy.show', $p['slug']).'" target="_blank" class="underline">'.e($p['en']).'</a>')->implode(' · ')
+                        .'<br><strong>Please have a UAE lawyer review the final texts before going live.</strong>')),
+                    ...collect(\App\Support\Policies::PAGES)->map(fn ($p, $k) => Forms\Components\Section::make($p['en'])->collapsed()->columnSpanFull()->columns(2)->schema([
+                        Forms\Components\RichEditor::make("policy_{$k}_en")->label('English (optional)')->toolbarButtons(['h2', 'h3', 'bold', 'italic', 'bulletList', 'orderedList', 'link', 'undo', 'redo']),
+                        Forms\Components\RichEditor::make("policy_{$k}_ar")->label('Arabic (optional)')->extraInputAttributes(['dir' => 'rtl'])->toolbarButtons(['h2', 'h3', 'bold', 'italic', 'bulletList', 'orderedList', 'link', 'undo', 'redo']),
+                    ]))->values()->all(),
+                ]),
                 Forms\Components\Tabs\Tab::make('Video calls')->icon('heroicon-o-video-camera')->columns(2)->schema([
                     Forms\Components\Toggle::make('video_call_enabled')->label('Live video call button on products')->inline(false)
                         ->helperText('Can also be switched off per product (Products → edit → Stock & visibility).'),

@@ -14,7 +14,7 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
         // Checkout tests that are not about it skip mobile verification; PhoneVerificationTest turns it on.
-        config(['shop.defaults.phone_verification' => false]);
+        config(['shop.defaults.phone_verification' => false, 'shop.defaults.require_terms_acceptance' => false]);
     }
 
     /** Set karat rates by hand, e.g. ['22K' => '200.00']. */

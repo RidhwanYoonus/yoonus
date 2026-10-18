@@ -1,0 +1,15 @@
+# Safety net when this folder itself is reachable on the web (e.g. XAMPP htdocs):
+# only public/ is served; .env, source code, logs and the database are never downloadable.
+Options -Indexes
+
+<FilesMatch "^\.|\.(env|log|sqlite|sql|bak|zip|bat|lock|md|ya?ml|sh|neon|dist)$">
+    Require all denied
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(app|bootstrap|config|database|deploy|lang|resources|routes|scripts|storage|tests|vendor|node_modules)(/|$) - [F,L]
+    RewriteRule ^(composer|package|phpunit|artisan|vite) - [F,L]
+    RewriteCond %{REQUEST_URI} !/public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>

@@ -41,7 +41,7 @@ class AuthController extends Controller
             'name' => 'required|string|max:120',
             'email' => 'required|email:rfc|max:191|unique:users,email',
             'phone' => ['nullable', 'string', 'max:32', 'regex:/^[+0-9 ()-]{7,}$/'],
-            'password' => ['required', 'confirmed', Password::min(8)->letters()->numbers()],
+            'password' => ['required', 'confirmed', Password::min(8)->letters()->mixedCase()->numbers()->when(app()->isProduction(), fn ($rule) => $rule->uncompromised())],
             'referral_code' => 'nullable|string|max:16',
             'marketing_opt_in' => 'nullable|boolean',
         ]);

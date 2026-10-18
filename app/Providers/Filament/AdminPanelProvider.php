@@ -29,6 +29,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->profile()
             ->brandName(fn () => Settings::get('store_name').' · Admin')
             ->colors(['primary' => Color::hex('#b8954a'), 'gray' => Color::Stone])
             ->font('Inter')
@@ -54,6 +55,6 @@ class AdminPanelProvider extends PanelProvider
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
             ])
-            ->authMiddleware([Authenticate::class]);
+            ->authMiddleware([Authenticate::class, \App\Http\Middleware\AdminSecurity::class], isPersistent: true);
     }
 }

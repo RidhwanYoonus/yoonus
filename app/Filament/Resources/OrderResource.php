@@ -167,6 +167,8 @@ class OrderResource extends Resource
                 Infolists\Components\TextEntry::make('payment_method')->badge(),
                 Infolists\Components\TextEntry::make('payment_status')->badge(),
                 Infolists\Components\TextEntry::make('payment_reference')->placeholder('—')->copyable(),
+                Infolists\Components\TextEntry::make('terms_accepted_at')->label('Agreed to terms / no-refund policy')->dateTime('d M Y, H:i')->placeholder('—')
+                    ->helperText(fn (Order $record) => $record->terms_accepted_at ? 'IP '.$record->terms_accepted_ip.' · policy version '.$record->terms_version : null),
                 Infolists\Components\TextEntry::make('invoice_number')->placeholder('Issued on payment'),
                 Infolists\Components\TextEntry::make('coupon_code')->placeholder('—'),
                 Infolists\Components\TextEntry::make('tracking_number')->visible(fn (Order $record) => ! $record->isPickup())->placeholder('—')->prefix(fn (Order $record) => $record->tracking_carrier ? $record->tracking_carrier.' ' : ''),

@@ -18,6 +18,9 @@ class FeedController extends Controller
                 ['loc' => route('home'), 'priority' => '1.0', 'changefreq' => 'daily'],
                 ['loc' => route('shop.index'), 'priority' => '0.9', 'changefreq' => 'daily'],
             ]);
+            foreach (\App\Support\Policies::PAGES as $page) {
+                $urls->push(['loc' => route('policy.show', $page['slug']), 'priority' => '0.3', 'changefreq' => 'yearly']);
+            }
             Category::where('is_active', true)->get()->each(fn ($c) => $urls->push(['loc' => route('category.show', $c), 'lastmod' => $c->updated_at, 'priority' => '0.8', 'changefreq' => 'weekly']));
             Product::active()->select('slug', 'updated_at', 'price_calculated_at')->cursor()->each(fn ($p) => $urls->push([
                 'loc' => route('product.show', $p), 'lastmod' => max($p->updated_at, $p->price_calculated_at ?? $p->updated_at), 'priority' => '0.7', 'changefreq' => 'daily',

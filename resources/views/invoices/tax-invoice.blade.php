@@ -125,6 +125,7 @@
 </table>
 
 <p class="muted" style="margin-top:24px">Discounts are applied before VAT; VAT is charged on the discounted goods, delivery and payment fee in accordance with UAE Federal Decree-Law No. 8 of 2017 on VAT. Gold prices reflect the rate per gram at the time of purchase as shown above.</p>
+<p class="muted"><strong>All sales are final — no refund, no return, no exchange</strong>, except for a wrong, damaged or defective item reported within {{ \App\Support\Settings::get('policy_report_hours', 48) }} hours of handover. Full policy: {{ route('policy.show', 'refund-policy') }}</p>
 <p class="muted">This is a computer-generated tax invoice.</p>
 </body>
 </html>

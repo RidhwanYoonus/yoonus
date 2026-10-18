@@ -87,6 +87,7 @@ class CheckoutController extends Controller
             'pickup_branch_id' => 'required_if:fulfilment,pickup|nullable|exists:branches,id',
             'payment_method' => ['required', Rule::in(['applepay', 'googlepay', 'card', 'tabby', 'tamara', 'cod', 'giftcard'])],
             'expected_total' => 'required|numeric',
+            'accept_terms' => [\App\Support\Settings::bool('require_terms_acceptance') ? 'accepted' : 'nullable'],
             'coupon' => 'nullable|string|max:32',
             'gift_card' => 'nullable|string|max:24',
             'loyalty_points' => 'nullable|integer|min:0',
@@ -134,6 +135,10 @@ class CheckoutController extends Controller
             }
 
             return back()->withInput()->withErrors(['checkout' => $e->getMessage()]);
+        }
+        if ($request->boolean('accept_terms')) {
+            // Proof for card disputes: when, from where, and which policy version the customer agreed to.
+            $order->forceFill(['terms_accepted_at' => now(), 'terms_accepted_ip' => $request->ip(), 'terms_version' => \App\Support\Policies::UPDATED])->save();
         }
         if ($id && ! $id['saved'] && $request->user() && $request->boolean('save_id')) {
             $request->user()->forceFill([

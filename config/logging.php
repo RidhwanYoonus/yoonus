@@ -52,6 +52,15 @@ return [
 
     'channels' => [
 
+        'security' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/security.log'),
+            'level' => 'info',
+            'days' => 180,
+            'replace_placeholders' => true,
+        ],
+
+
         'stack' => [
             'driver' => 'stack',
             'channels' => explode(',', (string) env('LOG_STACK', 'single')),

@@ -243,6 +243,14 @@ return [
         'addresses' => 'Address book', 'add_address' => 'Add address', 'address_saved' => 'Address saved.',
     ],
 
+    'policy' => [
+        'all' => 'Policies', 'legal' => 'Policies',
+        'updated' => 'Last updated :date',
+        'final_sale' => 'All sales are final — gold and jewellery cannot be refunded, returned or exchanged once paid, except for a wrong, damaged or defective item.',
+        'note' => 'All sales final · no refund or exchange',
+        'agree' => 'I have read and agree to the :terms and the :refund (all sales final — no refund or exchange).',
+    ],
+
     'footer' => [
         'about' => 'Fine gold and diamond jewellery, priced live from the daily gold rate with every charge shown.',
         'help' => 'Help', 'visit' => 'Visit us', 'trn' => 'TRN',
