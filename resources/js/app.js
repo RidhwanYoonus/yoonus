@@ -41,6 +41,33 @@ Alpine.data('themeToggle', () => ({
     },
 }));
 
+// Mobile verification: send a WhatsApp code, then confirm it.
+Alpine.data('phoneVerify', (cfg) => ({
+    phone: '', code: '', sent: false, busy: false, message: '', error: false, testCode: '', verified: cfg.verified || [],
+    norm(p) {
+        let d = String(p || '').replace(/\D+/g, '');
+        if (d.startsWith('00')) d = d.slice(2); else if (d.startsWith('05') && d.length === 10) d = '971' + d.slice(1);
+        return d ? '+' + d : '';
+    },
+    isVerified() { return this.phone && this.verified.includes(this.norm(this.phone)); },
+    async post(url, body) {
+        const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': cfg.csrf }, body: JSON.stringify(body) });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(j.message || (j.errors ? Object.values(j.errors)[0][0] : 'Error'));
+        return j;
+    },
+    async send() {
+        this.busy = true; this.error = false;
+        try { const j = await this.post(cfg.send, { phone: this.phone }); this.sent = true; this.message = j.message; this.testCode = j.test_code || ''; }
+        catch (e) { this.error = true; this.message = e.message; } finally { this.busy = false; }
+    },
+    async check() {
+        this.busy = true; this.error = false;
+        try { const j = await this.post(cfg.check, { phone: this.phone, code: this.code }); this.verified.push(j.phone); this.message = j.message; this.testCode = ''; this.$dispatch('phone-verified', j.phone); }
+        catch (e) { this.error = true; this.message = e.message; } finally { this.busy = false; }
+    },
+}));
+
 Alpine.data('checkout', (cfg) => ({
     form: cfg.form, q: cfg.quote, loading: false, timer: null,
     init() {

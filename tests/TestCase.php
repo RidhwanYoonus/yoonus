@@ -10,6 +10,13 @@ use Illuminate\Support\Facades\Storage;
 
 abstract class TestCase extends BaseTestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Checkout tests that are not about it skip mobile verification; PhoneVerificationTest turns it on.
+        config(['shop.defaults.phone_verification' => false]);
+    }
+
     /** Set karat rates by hand, e.g. ['22K' => '200.00']. */
     protected function setGoldRates(array $rates): void
     {

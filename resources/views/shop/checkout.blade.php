@@ -93,6 +93,17 @@
                 </div>
             </section>
 
+            @if ($phoneVerification)
+                <section class="card p-4 sm:p-6">
+                    <div class="flex items-start gap-3">
+                        <svg class="mt-1 h-6 w-6 shrink-0 text-gold-700" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3"/></svg>
+                        <div><h2 class="font-display text-2xl">{{ __('shop.verify.title') }}</h2><p class="mt-1 text-sm text-muted">{{ __('shop.verify.checkout_intro') }}</p></div>
+                    </div>
+                    <div class="mt-4">@include('partials.phone-verify', ['phoneModel' => 'form.phone', 'verifiedPhones' => $verifiedPhones])</div>
+                    @error('phone_verification')<p class="mt-2 text-sm text-red-700">{{ $message }}</p>@enderror
+                </section>
+            @endif
+
             @if ($idMode !== 'off')
                 @php($savedId = auth()->user()?->hasValidSavedId() ? auth()->user() : null)
                 <section class="card p-4 sm:p-6" x-data="{ mode: @js($idMode), useSaved: @js((bool) $savedId && old('use_saved_id', '1') === '1'), get needed() { return this.mode === 'all' || (this.mode === 'delivery' && this.form.fulfilment === 'delivery') } }" x-show="needed" x-cloak>

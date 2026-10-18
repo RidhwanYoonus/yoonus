@@ -3,6 +3,12 @@
 
 @section('content')
 <div class="container-x py-12">
+    @if (\App\Shop\PhoneVerification::enabled() && ! auth()->user()->phone_verified_at)
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gold-400 bg-gold-300/20 px-4 py-3 text-sm">
+            <span>📱 {{ __('shop.verify.title') }} — <span class="font-medium">{{ auth()->user()->phone ?: '—' }}</span> <span class="badge bg-sand text-muted">{{ __('shop.verify.account_badge') }}</span></span>
+            <a href="{{ route('phone.verify') }}" class="btn-gold h-9 px-4 text-xs">{{ __('shop.verify.account_cta') }}</a>
+        </div>
+    @endif
     <div class="flex flex-wrap items-end justify-between gap-4">
         <div><p class="eyebrow">{{ __('shop.nav.account') }}</p><h1 class="font-display mt-2 text-4xl">{{ __('shop.account.hello', ['name' => $user->name]) }}</h1></div>
         <form method="POST" action="{{ route('logout') }}">@csrf<button class="btn-outline">{{ __('shop.auth.logout') }}</button></form>

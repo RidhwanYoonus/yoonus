@@ -229,6 +229,7 @@ return [
     ],
 
     'auth' => [
+        'google' => 'Continue with Google', 'or' => 'or', 'google_failed' => 'Google sign-in did not work. Please try again or use your email.', 'google_staff' => 'Staff accounts sign in with email and password.',
         'login' => 'Sign in', 'logout' => 'Sign out', 'register' => 'Create account', 'password' => 'Password', 'password_confirm' => 'Confirm password',
         'remember' => 'Keep me signed in', 'no_account' => 'New here?', 'marketing' => 'Send me offers and new arrivals',
         'welcome' => 'Welcome! Your account is ready.',
@@ -297,5 +298,19 @@ return [
         'pickup_body' => 'Hi :name, your order :number is ready. Show this code at the store when you collect it: :code',
         'warning' => 'Never share this code by phone or before you have the order in your hands. Please also have your ID ready.',
         'sent_note' => 'We\'ve sent a handover code to your email and WhatsApp. Give it to our staff — together with your ID — when you receive your order.',
+    ],
+
+    'verify' => [
+        'eyebrow' => 'Account security', 'title' => 'Verify your mobile number',
+        'intro' => 'We send a 6-digit code to your mobile on WhatsApp. It keeps your orders and deliveries secure.',
+        'checkout_intro' => 'One last step: we send a 6-digit code on WhatsApp to the mobile number above.',
+        'after_signup' => 'You will verify this number with a WhatsApp code after signing up.',
+        'send' => 'Send code on WhatsApp', 'resend' => 'Send a new code', 'code' => '6-digit code', 'confirm' => 'Verify',
+        'sent' => 'Code sent on WhatsApp — it is valid for 10 minutes.', 'done' => 'Mobile number verified. Thank you!',
+        'verified' => 'Verified:', 'wrong' => 'That code is not right — please check and try again.',
+        'expired' => 'The code has expired — please send a new one.', 'too_many' => 'Too many attempts — please wait 10 minutes and try again.',
+        'invalid' => 'Please enter a valid mobile number.', 'required' => 'Please verify your mobile number (WhatsApp code) before placing the order.',
+        'message' => 'Your :store verification code is :code. It is valid for 10 minutes. Do not share it with anyone.',
+        'later' => 'Do it later', 'account_badge' => 'Not verified', 'account_cta' => 'Verify now',
     ],
 ];

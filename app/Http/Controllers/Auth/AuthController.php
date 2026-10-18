@@ -56,10 +56,20 @@ class AuthController extends Controller
         ]);
         $referrals->register($user, $data['referral_code'] ?? null);
 
-        Auth::login($user);
-        $this->keepCart($request);
+        $this->signIn($request, $user);
+
+        // Signed up with a mobile number: confirm it right away (checkout needs a verified number).
+        if ($user->phone && \App\Shop\PhoneVerification::enabled()) {
+            return redirect()->route('phone.verify')->with('status', __('shop.auth.welcome'));
+        }
 
         return redirect()->intended(route('account'))->with('status', __('shop.auth.welcome'));
+    }
+
+    public function signIn(Request $request, User $user): void
+    {
+        Auth::login($user);
+        $this->keepCart($request);
     }
 
     public function logout(Request $request)
@@ -76,7 +86,14 @@ class AuthController extends Controller
     {
         $token = $request->session()->get('cart_token');
         $wishlist = $request->session()->get('wishlist', []);
+        $phones = $request->session()->get('verified_phones', []);
         $request->session()->regenerate();
+        $request->session()->put('verified_phones', $phones);
+        // A number verified as a guest a moment ago counts for the account too.
+        $user = Auth::user();
+        if ($user && ! $user->phone_verified_at && $user->phone && in_array(\App\Shop\PhoneVerification::normalise($user->phone), $phones, true)) {
+            $user->forceFill(['phone_verified_at' => now()])->save();
+        }
         if ($token) {
             $request->session()->put('cart_token', $token);
             Cart::where('token', $token)->update(['user_id' => Auth::id(), 'email' => Auth::user()->email]);

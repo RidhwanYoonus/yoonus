@@ -33,6 +33,7 @@ class User extends Authenticatable implements FilamentUser
             'id_saved_at' => 'datetime',
             'is_admin' => 'boolean',
             'is_staff' => 'boolean',
+            'phone_verified_at' => 'datetime',
             'permissions' => 'array',
             'marketing_opt_in' => 'boolean',
         ];

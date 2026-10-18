@@ -112,6 +112,16 @@ class Settings extends Page implements HasForms
                     Forms\Components\Toggle::make('product_store_map')->label('Show store map on every product page')->inline(false)
                         ->helperText('Google Maps location of each pickup branch. Set the pin under Settings → Branches & pickup.'),
                 ]),
+                Forms\Components\Tabs\Tab::make('Login & verification')->icon('heroicon-o-key')->columns(2)->schema([
+                    Forms\Components\Toggle::make('phone_verification')->label('Customers must verify their mobile before ordering')->inline(false)->columnSpanFull()
+                        ->helperText('A 6-digit code is sent on WhatsApp at the final checkout step (and after signing up). Until WhatsApp is set up, the code is shown on screen for testing.'),
+                    Forms\Components\Section::make('Continue with Google')->columns(2)
+                        ->description(fn () => 'Google Cloud Console → APIs & Services → Credentials → Create OAuth client ID (Web application). Authorised redirect URI: '.route('google.callback'))
+                        ->schema([
+                            $text('google_client_id', 'Client ID')->placeholder('…apps.googleusercontent.com'),
+                            $secret('google_client_secret', 'Client secret'),
+                        ]),
+                ]),
                 Forms\Components\Tabs\Tab::make('Video calls')->icon('heroicon-o-video-camera')->columns(2)->schema([
                     Forms\Components\Toggle::make('video_call_enabled')->label('Live video call button on products')->inline(false)
                         ->helperText('Can also be switched off per product (Products → edit → Stock & visibility).'),

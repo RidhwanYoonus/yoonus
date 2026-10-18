@@ -67,7 +67,10 @@ return [
         'delivery_off_message_ar' => 'التوصيل للمنازل متوقف حالياً — يرجى استلام طلبك من متجرنا.',
         'product_store_map' => true,
         'id_verification' => 'delivery',   // proof of ID at checkout: delivery | all | off
-        'handover_otp' => true,            // customer gives staff a one-time code on delivery / collection
+        'handover_otp' => true,
+        'phone_verification' => true,       // mobile must be verified (WhatsApp code) before placing an order
+        'google_client_id' => null,
+        'google_client_secret' => null,            // customer gives staff a one-time code on delivery / collection
 
         'video_call_enabled' => true,
         'video_call_hours' => 'Daily 10:00 – 22:00',

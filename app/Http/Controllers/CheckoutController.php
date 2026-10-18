@@ -52,6 +52,9 @@ class CheckoutController extends Controller
             'branches' => self::pickupBranches(),
             'deliveryEnabled' => $delivery,
             'idMode' => (string) Settings::get('id_verification', 'delivery'),
+            'phoneVerification' => \App\Shop\PhoneVerification::enabled(),
+            'verifiedPhones' => array_values(array_filter([...$request->session()->get('verified_phones', []),
+                $request->user()?->phone_verified_at ? \App\Shop\PhoneVerification::normalise($request->user()->phone) : null])),
             'addresses' => $request->user()?->addresses ?? collect(),
             'methods' => $this->gateways->available($quote),
             'blocked' => $this->ratesBlocked(),
@@ -94,6 +97,9 @@ class CheckoutController extends Controller
 
         if ($this->ratesBlocked()) {
             return back()->withInput()->withErrors(['checkout' => __('shop.checkout.rates_stale')]);
+        }
+        if (\App\Shop\PhoneVerification::enabled() && ! \App\Shop\PhoneVerification::isVerified($request, $data['phone'])) {
+            return back()->withInput()->withErrors(['phone_verification' => __('shop.verify.required')]);
         }
 
         $this->cart->attachContact($data['email'], $data['phone']);
