@@ -9,7 +9,7 @@
     </div>
 </section>
 <div class="container-x py-8 sm:py-10">
-    <div class="grid gap-8 lg:grid-cols-[260px_1fr]" x-data="{ filters: false }">
+    <div class="grid gap-8 lg:grid-cols-[16rem_1fr] 2xl:grid-cols-[17rem_1fr]" x-data="{ filters: false }">
         <button class="btn-outline lg:hidden" @click="filters = !filters">{{ __('shop.filters.title') }}</button>
         <form method="GET" class="card h-fit space-y-6 p-5 text-sm lg:sticky lg:top-36" :class="filters ? '' : 'hidden lg:block'">
             @if (request('q'))<input type="hidden" name="q" value="{{ request('q') }}">@endif
@@ -61,7 +61,7 @@
 
         <div>
             <p class="text-sm text-muted">{{ trans_choice('shop.filters.count', $products->total(), ['count' => $products->total()]) }}</p>
-            <div class="mt-4 grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 md:grid-cols-3 xl:grid-cols-4">
+            <div class="mt-4 grid-products">
                 @forelse ($products as $product)
                     @include('partials.product-card')
                 @empty

@@ -23,7 +23,7 @@
             <a href="{{ route('shop.index') }}" class="btn-dark mt-6">{{ __('shop.home.cta') }}</a>
         </div>
     @else
-        <div class="mt-8 grid gap-10 lg:grid-cols-[1fr_360px]">
+        <div class="mt-8 grid gap-10 lg:grid-cols-[1fr_23rem]">
             <ul class="divide-y divide-line border-y border-line">
                 @foreach ($lines as $line)
                     <li class="grid grid-cols-[5rem_1fr] gap-x-4 gap-y-3 py-5 sm:grid-cols-[6rem_1fr_auto]">

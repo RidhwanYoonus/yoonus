@@ -139,7 +139,7 @@
         </section>
     @endif
 
-    <section class="mt-20 grid gap-10 lg:grid-cols-[1fr_380px]" id="reviews">
+    <section class="mt-20 grid gap-10 lg:grid-cols-[1fr_24rem]" id="reviews">
         <div>
             <h2 class="font-display text-3xl">{{ __('shop.reviews.title') }}</h2>
             @forelse ($reviews as $r)
@@ -170,7 +170,7 @@
         <div class="container-x flex items-center gap-3 py-3">
             <div class="min-w-0 flex-1">
                 <p class="price truncate font-semibold text-gold-700">{{ $fmt($price->taxable) }}</p>
-                <p class="text-[11px] text-muted">{{ __('shop.product.plus_vat', ['vat' => rtrim(rtrim($price->vatPercent(), '0'), '.')]) }}</p>
+                <p class="text-[0.6875rem] text-muted">{{ __('shop.product.plus_vat', ['vat' => rtrim(rtrim($price->vatPercent(), '0'), '.')]) }}</p>
             </div>
             <a href="{{ \App\Messaging\WhatsApp::link($whatsapp, $enquireText) }}" target="_blank" rel="noopener" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-white" aria-label="{{ __('shop.whatsapp.enquire_cta') }}">
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38a9.9 9.9 0 004.74 1.21c5.46 0 9.91-4.45 9.91-9.91S17.5 2 12.04 2zm5.8 14.02c-.24.68-1.41 1.3-1.95 1.38-.5.07-1.13.1-1.82-.12-.42-.13-.96-.31-1.65-.61-2.9-1.25-4.79-4.17-4.94-4.36-.14-.19-1.18-1.57-1.18-3s.75-2.13 1.02-2.42c.27-.29.58-.36.78-.36h.56c.18 0 .42-.07.66.5.24.58.82 2.01.89 2.16.07.14.12.31.02.5-.1.19-.14.31-.29.48-.14.17-.3.38-.43.5-.14.14-.29.3-.13.59.17.29.74 1.22 1.59 1.98 1.09.97 2.01 1.27 2.3 1.42.29.14.46.12.63-.07.17-.19.72-.84.91-1.13.19-.29.38-.24.65-.14.26.1 1.68.79 1.97.94.29.14.48.21.55.33.07.12.07.7-.17 1.38z"/></svg>
@@ -186,7 +186,7 @@
     @if ($related->isNotEmpty())
         <section class="mt-20">
             <h2 class="font-display text-3xl">{{ __('shop.product.related') }}</h2>
-            <div class="mt-6 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-4">@foreach ($related as $rp)@include('partials.product-card', ['product' => $rp])@endforeach</div>
+            <div class="mt-6 grid-products">@foreach ($related as $rp)@include('partials.product-card', ['product' => $rp])@endforeach</div>
         </section>
     @endif
 </div>

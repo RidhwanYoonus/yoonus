@@ -5,7 +5,7 @@
             ->map(fn ($c) => ['id' => $c->id, 'name' => $c->name, 'rate' => $c->rate_per_gram])->all(),
     ]);
 @endphp
-<div class="bg-onyx text-[11px] text-on-dark/70 sm:text-xs" x-data="rateTicker(@js($rateData), '{{ route('api.rates') }}')">
+<div class="bg-onyx text-[0.6875rem] text-on-dark/70 sm:text-xs" x-data="rateTicker(@js($rateData), '{{ route('api.rates') }}')">
     <div class="container-x no-scrollbar flex items-center gap-x-5 overflow-x-auto whitespace-nowrap py-2 lg:justify-center">
         <span class="flex items-center gap-1.5 font-medium uppercase tracking-[0.2em] text-gold-400">
             <span class="relative flex h-1.5 w-1.5"><span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-gold-400 opacity-60"></span><span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-gold-400"></span></span>

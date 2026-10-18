@@ -42,7 +42,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('checkout.place') }}" enctype="multipart/form-data" class="mt-8 grid gap-10 lg:grid-cols-[1fr_400px]">
+    <form method="POST" action="{{ route('checkout.place') }}" enctype="multipart/form-data" class="mt-8 grid gap-10 lg:grid-cols-[1fr_25rem]">
         @csrf
         <input type="hidden" name="expected_total" :value="q.grand_total_raw">
         <div class="space-y-8">
@@ -195,7 +195,7 @@
         <div class="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-line bg-ivory/95 backdrop-blur lg:hidden">
             <div class="container-x flex items-center gap-3 py-3">
                 <div class="min-w-0 flex-1">
-                    <p class="text-[11px] text-muted">{{ __('shop.checkout.total') }} · {{ __('shop.product.incl_vat', ['vat' => 5]) }}</p>
+                    <p class="text-[0.6875rem] text-muted">{{ __('shop.checkout.total') }} · {{ __('shop.product.incl_vat', ['vat' => 5]) }}</p>
                     <p class="price truncate text-lg font-semibold text-gold-700" x-text="q.gift_card ? q.amount_due : q.grand_total"></p>
                 </div>
                 <button class="btn-gold shrink-0 px-6" @disabled($blocked) :disabled="loading">{{ __('shop.checkout.place') }}</button>

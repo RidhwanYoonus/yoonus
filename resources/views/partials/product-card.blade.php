@@ -7,12 +7,12 @@
         </a>
         <div class="pointer-events-none absolute inset-x-3 top-3 flex items-start justify-between">
             <span class="flex flex-col items-start gap-1.5">
-                @if ($product->goldCategory)<span class="rounded-full bg-card/90 px-2.5 py-1 text-[10px] font-semibold tracking-wider text-gold-700 shadow-sm">{{ $product->goldCategory->name }}</span>@endif
+                @if ($product->goldCategory)<span class="rounded-full bg-card/90 px-2.5 py-1 text-[0.625rem] font-semibold tracking-wider text-gold-700 shadow-sm">{{ $product->goldCategory->name }}</span>@endif
                 @if ($badge = $product->makingBadge())
-                    <span class="rounded-full px-2.5 py-1 text-[10px] font-semibold shadow-sm {{ $badge['highlight'] ? 'bg-onyx text-gold-300' : 'bg-card/90 text-ink/70' }}">{{ $badge['text'] }}</span>
+                    <span class="rounded-full px-2.5 py-1 text-[0.625rem] font-semibold shadow-sm {{ $badge['highlight'] ? 'bg-onyx text-gold-300' : 'bg-card/90 text-ink/70' }}">{{ $badge['text'] }}</span>
                 @endif
-                @if ($price->hasDiscount())<span class="rounded-full bg-gold-silver px-2.5 py-1 text-[10px] font-semibold text-zinc-900">{{ __('shop.product.save_percent', ['percent' => $price->savingsPercent()]) }}</span>@endif
-                @unless ($product->inStock())<span class="rounded-full bg-onyx/80 px-2.5 py-1 text-[10px] text-on-dark">{{ __('shop.product.sold_out') }}</span>@endunless
+                @if ($price->hasDiscount())<span class="rounded-full bg-gold-silver px-2.5 py-1 text-[0.625rem] font-semibold text-zinc-900">{{ __('shop.product.save_percent', ['percent' => $price->savingsPercent()]) }}</span>@endif
+                @unless ($product->inStock())<span class="rounded-full bg-onyx/80 px-2.5 py-1 text-[0.625rem] text-on-dark">{{ __('shop.product.sold_out') }}</span>@endunless
             </span>
         </div>
         <form method="POST" action="{{ route('wishlist.toggle', $product) }}" class="absolute end-3 top-3">
@@ -29,7 +29,7 @@
         @endif
     </div>
     <div class="mt-3 px-1">
-        <p class="text-[11px] uppercase tracking-[0.15em] text-muted">{{ $product->specLine() }}</p>
+        <p class="text-[0.6875rem] uppercase tracking-[0.15em] text-muted">{{ $product->specLine() }}</p>
         <h3 class="mt-1 line-clamp-1 font-medium"><a href="{{ route('product.show', $product) }}" class="hover:text-gold-700">{{ $product->localized('name') }}</a></h3>
         <p class="price mt-1">
             <span class="font-semibold text-gold-700">{{ \App\Pricing\Money::format($price->taxable) }}</span>
@@ -37,6 +37,6 @@
                 <s class="ms-1 text-xs text-muted">{{ \App\Pricing\Money::format($price->subtotal) }}</s>
             @endif
         </p>
-        <p class="text-[11px] text-muted">{{ __('shop.product.plus_vat', ['vat' => rtrim(rtrim($price->vatPercent(), '0'), '.')]) }}</p>
+        <p class="text-[0.6875rem] text-muted">{{ __('shop.product.plus_vat', ['vat' => rtrim(rtrim($price->vatPercent(), '0'), '.')]) }}</p>
     </div>
 </article>

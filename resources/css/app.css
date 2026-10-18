@@ -93,6 +93,9 @@
 }
 
 @layer base {
+    /* Fluid scale: 16px on phones and laptops, growing gently to 19px on large monitors, so every
+       size, gap and width (all in rem) fills the screen at any resolution or zoom. */
+    html { font-size: clamp(16px, 0.42vw + 10px, 19px); }
     html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-feature-settings: 'cv11', 'ss01'; }
     body { @apply bg-ivory text-ink font-sans; transition: background-color .2s ease, color .2s ease; }
     [dir='rtl'] body { font-family: var(--font-arabic); }
@@ -113,7 +116,9 @@
 @utility no-scrollbar { scrollbar-width: none; &::-webkit-scrollbar { display: none; } }
 @utility pb-safe { padding-bottom: env(safe-area-inset-bottom); }
 
-@utility container-x { @apply mx-auto w-full max-w-[90rem] px-4 sm:px-6 lg:px-10; }
+@utility container-x { @apply mx-auto w-full max-w-[120rem] px-4 sm:px-6 lg:px-[4vw] 2xl:px-[5vw]; }
+/* Product grids: 2 columns on phones, then as many ~15rem cards as the screen holds. */
+@utility grid-products { @apply grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-[repeat(auto-fill,minmax(14.5rem,1fr))] sm:gap-x-6; }
 
 /* Brand metal: gradient fill, gradient text, and a hairline gradient border. */
 @utility bg-gold-silver { background-image: var(--gold-silver); }

@@ -114,7 +114,7 @@
             <div>{!! $sectionTitle(__('shop.home.featured_eyebrow'), __('shop.home.featured')) !!}</div>
             <a href="{{ route('shop.index') }}" class="shrink-0 text-sm font-medium text-gold-700 underline-offset-4 hover:underline">{{ __('shop.home.view_all') }} →</a>
         </div>
-        <div class="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 sm:gap-x-6 md:grid-cols-4">
+        <div class="mt-8 grid-products">
             @foreach ($featured as $product)@include('partials.product-card')@endforeach
         </div>
     </section>
@@ -140,7 +140,7 @@
             <div>{!! $sectionTitle(__('shop.home.new_eyebrow'), __('shop.home.new')) !!}</div>
             <a href="{{ route('shop.index', ['sort' => 'newest']) }}" class="shrink-0 text-sm font-medium text-gold-700 underline-offset-4 hover:underline">{{ __('shop.home.view_all') }} →</a>
         </div>
-        <div class="no-scrollbar -mx-4 mt-8 flex snap-x gap-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-x-6 sm:gap-y-8 sm:overflow-visible sm:px-0 md:grid-cols-4">
+        <div class="no-scrollbar -mx-4 mt-8 flex snap-x gap-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-[repeat(auto-fill,minmax(14.5rem,1fr))] sm:gap-x-6 sm:gap-y-8 sm:overflow-visible sm:px-0">
             @foreach ($newArrivals as $product)<div class="w-[46%] shrink-0 snap-start sm:w-auto">@include('partials.product-card')</div>@endforeach
         </div>
     </section>
