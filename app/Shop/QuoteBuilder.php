@@ -69,6 +69,7 @@ class QuoteBuilder
     /** Fee for the chosen payment method: % of the amount being paid + fixed amount (both from Settings). */
     public function paymentFee(?string $method, int $amount): int
     {
+        $method = in_array($method, ['applepay', 'googlepay'], true) ? 'card' : $method;   // wallets pay the card fee
         if (! $method || $amount <= 0 || ! in_array($method, ['card', 'tabby', 'tamara', 'cod'], true)) {
             return 0;
         }

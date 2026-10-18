@@ -59,7 +59,7 @@
         <td style="width:50%; padding-left:6px">
             <div class="box">
                 <div class="muted">PAYMENT / FULFILMENT</div>
-                {{ strtoupper($order->payment_method) }} — {{ strtoupper($order->payment_status) }}<br>
+                {{ ['applepay' => 'APPLE PAY', 'googlepay' => 'GOOGLE PAY'][$order->payment_method] ?? strtoupper($order->payment_method) }} — {{ strtoupper($order->payment_status) }}<br>
                 {{ $order->fulfilment === 'pickup' ? 'Store pickup: '.($order->pickupBranch?->name ?? '') : 'Delivery: '.($order->shippingZone?->name ?? '') }}<br>
                 Currency: AED
             </div>

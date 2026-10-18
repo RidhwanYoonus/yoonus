@@ -79,7 +79,7 @@ class OrderResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('status')->options(collect(Order::STATUSES)->mapWithKeys(fn ($s) => [$s => __('shop.status.'.$s)])->all())->multiple(),
                 Tables\Filters\SelectFilter::make('fulfilment')->options(['delivery' => 'Delivery', 'pickup' => 'Store pickup']),
-                Tables\Filters\SelectFilter::make('payment_method')->options(['card' => 'Card', 'tabby' => 'Tabby', 'tamara' => 'Tamara', 'cod' => 'Cash on delivery', 'giftcard' => 'Gift card']),
+                Tables\Filters\SelectFilter::make('payment_method')->options(['applepay' => 'Apple Pay', 'googlepay' => 'Google Pay', 'card' => 'Card', 'tabby' => 'Tabby', 'tamara' => 'Tamara', 'cod' => 'Cash on delivery', 'giftcard' => 'Gift card']),
                 Tables\Filters\Filter::make('created_at')->form([
                     Forms\Components\DatePicker::make('from'), Forms\Components\DatePicker::make('until'),
                 ])->query(fn (Builder $query, array $data) => $query

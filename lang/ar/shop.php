@@ -131,7 +131,8 @@ return [
     ],
 
     'pay' => [
-        'card' => 'بطاقة ائتمان / خصم', 'card_note' => 'فيزا، ماستركارد، Apple Pay',
+        'applepay' => 'Apple Pay', 'applepay_note' => 'ادفع باستخدام بصمة الوجه أو الإصبع', 'googlepay' => 'Google Pay', 'googlepay_note' => 'ادفع باستخدام حساب Google',
+        'card' => 'بطاقة ائتمان / خصم', 'card_note' => 'فيزا، ماستركارد',
         'fee_note' => 'رسوم دفع :fee',
         'tabby' => 'تابي — قسّمها على 4', 'tabby_note' => '4 دفعات بدون فوائد بقيمة :amount د.إ',
         'tamara' => 'تمارا — قسّمها على 4', 'tamara_note' => '4 دفعات بدون فوائد بقيمة :amount د.إ',

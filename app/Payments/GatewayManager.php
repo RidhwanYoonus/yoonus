@@ -11,7 +11,8 @@ class GatewayManager
     public function for(string $method): PaymentGateway
     {
         return match ($method) {
-            'card' => $this->card(),
+            // Apple Pay / Google Pay run through the card gateway's secure page (Telr / Stripe).
+            'card', 'applepay', 'googlepay' => $this->card(),
             'tabby' => app(TabbyGateway::class),
             'tamara' => app(TamaraGateway::class),
             'mock', 'stripe', 'telr' => $this->card($method),
@@ -39,6 +40,11 @@ class GatewayManager
         $due = $quote->amountBeforeFee / 100;
         $methods = [];
         if ($due > 0) {
+            foreach (['applepay', 'googlepay'] as $wallet) {
+                if (Settings::bool("{$wallet}_enabled")) {
+                    $methods[$wallet] = ['label' => __("shop.pay.{$wallet}"), 'note' => $this->withFee(__("shop.pay.{$wallet}_note"), 'card')];
+                }
+            }
             $methods['card'] = ['label' => __('shop.pay.card'), 'note' => $this->withFee(__('shop.pay.card_note'), 'card')];
             foreach (['tabby', 'tamara'] as $bnpl) {
                 if (Settings::bool("{$bnpl}_enabled") && $due >= (float) Settings::get("{$bnpl}_min") && $due <= (float) Settings::get("{$bnpl}_max")) {

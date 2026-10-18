@@ -41,7 +41,9 @@ class CheckoutController extends Controller
         $fulfilment = $delivery ? 'delivery' : 'pickup';
         $quote = $this->quotes->build($this->cart->lines(), $request->user(), $request->user()?->email, zone: $zone, fulfilment: $fulfilment);
         // Price the first available payment method so its fee is included from the start.
-        $method = old('payment_method', array_key_first($this->gateways->available($quote)));
+        $offered = $this->gateways->available($quote);
+        // Card is the default (Apple Pay is listed first but only shows on Apple devices).
+        $method = old('payment_method', isset($offered['card']) ? 'card' : array_key_first($offered));
         $quote = $this->quotes->build($this->cart->lines(), $request->user(), $request->user()?->email, zone: $zone, fulfilment: $fulfilment, paymentMethod: $method);
 
         return view('shop.checkout', [
@@ -83,7 +85,7 @@ class CheckoutController extends Controller
             'line2' => 'nullable|string|max:191',
             'city' => 'required_if:fulfilment,delivery|nullable|string|max:64',
             'pickup_branch_id' => 'required_if:fulfilment,pickup|nullable|exists:branches,id',
-            'payment_method' => ['required', Rule::in(['card', 'tabby', 'tamara', 'cod', 'giftcard'])],
+            'payment_method' => ['required', Rule::in(['applepay', 'googlepay', 'card', 'tabby', 'tamara', 'cod', 'giftcard'])],
             'expected_total' => 'required|numeric',
             'coupon' => 'nullable|string|max:32',
             'gift_card' => 'nullable|string|max:24',

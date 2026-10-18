@@ -79,6 +79,11 @@ class Settings extends Page implements HasForms
                 Forms\Components\Tabs\Tab::make('Payments')->icon('heroicon-o-credit-card')->columns(3)->schema([
                     Forms\Components\Select::make('card_gateway')->options(['mock' => 'Test mode (simulated)', 'telr' => 'Telr', 'stripe' => 'Stripe'])->required()
                         ->helperText('API keys are set in the server .env file.'),
+                    Forms\Components\Toggle::make('applepay_enabled')->label('Apple Pay')->inline(false)
+                        ->helperText('Shown on iPhone, iPad and Mac (Safari). Turn Apple Pay on in your Telr / Stripe account too.'),
+                    Forms\Components\Toggle::make('googlepay_enabled')->label('Google Pay')->inline(false)
+                        ->helperText('Turn Google Pay on in your Telr / Stripe account too. Both use the card fee below.'),
+                    Forms\Components\Placeholder::make('wallet_hint')->hiddenLabel()->content(''),
                     Forms\Components\Toggle::make('cod_enabled')->label('Cash on delivery')->inline(false),
                     Forms\Components\TextInput::make('cod_max_total')->label('COD max order')->numeric()->prefix('AED'),
                     Forms\Components\Toggle::make('tabby_enabled')->label('Tabby')->inline(false),

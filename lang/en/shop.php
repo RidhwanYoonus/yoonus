@@ -131,7 +131,8 @@ return [
     ],
 
     'pay' => [
-        'card' => 'Credit / debit card', 'card_note' => 'Visa, Mastercard, Apple Pay',
+        'applepay' => 'Apple Pay', 'applepay_note' => 'Pay with Face ID or Touch ID', 'googlepay' => 'Google Pay', 'googlepay_note' => 'Pay with your Google account',
+        'card' => 'Credit / debit card', 'card_note' => 'Visa, Mastercard',
         'fee_note' => ':fee payment fee',
         'tabby' => 'Tabby — pay in 4', 'tabby_note' => '4 interest-free payments of AED :amount',
         'tamara' => 'Tamara — split in 4', 'tamara_note' => '4 interest-free payments of AED :amount',

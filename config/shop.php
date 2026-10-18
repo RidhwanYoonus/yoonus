@@ -46,6 +46,8 @@ return [
         'cod_fee_percent' => 0,
         'cod_fee_fixed' => 0,
 
+        'applepay_enabled' => true,
+        'googlepay_enabled' => true,
         'cod_enabled' => true,
         'cod_max_total' => 10000,
         'card_gateway' => 'mock',           // mock | stripe | telr | paytabs
