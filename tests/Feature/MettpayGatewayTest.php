@@ -120,4 +120,24 @@ class MettpayGatewayTest extends TestCase
             $this->assertStringContainsString('HTTP 401', $e->getMessage());
         }
     }
+
+    public function test_page_not_found_retries_with_trailing_slash_and_lists_server_paths(): void
+    {
+        Http::fake([
+            'application.mettpay.com/api/orders/createorder/' => Http::response(['data' => ['paymentUrl' => 'https://pay.mettpay.com/slash']]),
+            'application.mettpay.com/api/orders/createorder' => Http::response('<html><title>Page not found</title></html>', 404),
+        ]);
+        $this->assertSame('https://pay.mettpay.com/slash', \App\Payments\MettpayGateway::testConnection()['url']);
+    }
+
+    public function test_not_found_page_shows_the_addresses_mettpay_lists(): void
+    {
+        Http::fake(['application.mettpay.com/*' => Http::response('<html><body><ol><li>api/v1/ </li><li>api/v1/orders/create/ [name=\'create\']</li></ol></body></html>', 404)]);
+        try {
+            \App\Payments\MettpayGateway::testConnection();
+            $this->fail('should throw');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('api/v1/orders/create/', $e->getMessage());
+        }
+    }
 }

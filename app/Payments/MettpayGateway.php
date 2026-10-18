@@ -52,7 +52,7 @@ class MettpayGateway implements PaymentGateway
         [$first, $last] = array_pad(explode(' ', trim($order->customer_name), 2), 2, '');
         $back = fn (string $result) => URL::signedRoute('payments.return', ['gateway' => 'mettpay', 'order' => $order->number, 'result' => $result]);
 
-        $res = SecureHttp::send(fn ($http) => $http->withHeaders(self::headers())->asJson()->post((string) Settings::get('mettpay_api_url', self::DEFAULT_URL), [
+        $res = self::createOrder([
             'order' => [
                 'id' => $order->number,
                 'amount' => round((float) $order->amount_due, 2),
@@ -68,12 +68,12 @@ class MettpayGateway implements PaymentGateway
                 'mobilePhone' => $order->phone,
                 'phone' => $order->phone,
             ],
-        ]));
+        ]);
 
         $json = $res->json() ?? [];
         if ($res->failed() || ! ($url = self::findUrl($json))) {
             $code = self::findValue($json, ['message', 'msg', 'code', 'error']) ?? 'HTTP '.$res->status();
-            throw new RuntimeException((self::ERRORS[$code] ?? 'Mettpay could not start the payment.').' (HTTP '.$res->status().') Mettpay replied: '.mb_substr($res->body() ?: '(empty)', 0, 300));
+            throw new RuntimeException((self::ERRORS[$code] ?? 'Mettpay could not start the payment.').' (HTTP '.$res->status().') '.self::describe($res));
         }
 
         $order->update(['payment_reference' => (string) (self::findValue($json, ['orderNo', 'orderId', 'merchantOrderNo', 'reference', 'token', 'id']) ?? $order->number)]);
@@ -89,16 +89,52 @@ class MettpayGateway implements PaymentGateway
             throw new RuntimeException('Enter the merchant key and secret and click Save settings first.');
         }
         $id = 'TEST-'.now()->format('YmdHis');
-        $res = SecureHttp::send(fn ($http) => $http->withHeaders(self::headers())->asJson()->post((string) Settings::get('mettpay_api_url', self::DEFAULT_URL), [
+        $res = self::createOrder([
             'order' => ['id' => $id, 'amount' => 1.00, 'remarks' => 'Connection test', 'returnUrl' => url('/'), 'returnSuccUrl' => url('/'), 'returnErrorUrl' => url('/')],
             'customer' => ['email' => (string) Settings::get('store_email'), 'firstName' => 'Test', 'lastName' => 'Order', 'mobilePhone' => '+971500000000', 'phone' => '+971500000000'],
-        ]));
+        ]);
         $json = $res->json() ?? [];
         if ($res->failed() || ! ($url = self::findUrl($json))) {
-            throw new RuntimeException('HTTP '.$res->status().' — '.(self::ERRORS[self::findValue($json, ['message', 'msg', 'code', 'error'])] ?? '').' Mettpay replied: '.mb_substr($res->body() ?: '(empty)', 0, 500));
+            throw new RuntimeException('HTTP '.$res->status().' — '.(self::ERRORS[self::findValue($json, ['message', 'msg', 'code', 'error'])] ?? '').' '.self::describe($res));
         }
 
         return ['url' => $url, 'response' => $json];
+    }
+
+    /**
+     * POST to the create-order URL. On "page not found" it retries with a trailing slash (servers
+     * that need one answer 404 otherwise) and remembers the address that worked.
+     */
+    private static function createOrder(array $payload): \Illuminate\Http\Client\Response
+    {
+        $configured = rtrim(trim((string) Settings::get('mettpay_api_url', self::DEFAULT_URL)), '/');
+        $remembered = \Illuminate\Support\Facades\Cache::get('mettpay.working_url.'.md5($configured));
+        $res = null;
+        foreach (array_unique(array_filter([$remembered, $configured, $configured.'/'])) as $url) {
+            $res = SecureHttp::send(fn ($http) => $http->withHeaders(self::headers())->asJson()->post($url, $payload));
+            if ($res->status() !== 404) {
+                \Illuminate\Support\Facades\Cache::forever('mettpay.working_url.'.md5($configured), $url);
+
+                return $res;
+            }
+        }
+
+        return $res;
+    }
+
+    /** Short, readable version of Mettpay's reply; for a "page not found" page, the addresses it lists. */
+    private static function describe(\Illuminate\Http\Client\Response $res): string
+    {
+        $body = (string) $res->body();
+        if ($res->status() === 404 && str_contains($body, '<html')) {
+            preg_match_all('/<li>\s*(.*?)\s*<\/li>/s', $body, $m);
+            $paths = array_slice(array_filter(array_map(fn ($li) => trim(preg_replace('/\s+/', ' ', html_entity_decode(strip_tags($li)))), $m[1] ?? [])), 0, 25);
+
+            return 'Mettpay says this address does not exist ('.Settings::get('mettpay_api_url', self::DEFAULT_URL).').'
+                .($paths ? ' Addresses their server lists: '.implode(' | ', $paths) : ' Please ask Mettpay for the exact create-order URL.');
+        }
+
+        return 'Mettpay replied: '.mb_substr($body !== '' ? $body : '(empty)', 0, 400);
     }
 
     private static function headers(): array
