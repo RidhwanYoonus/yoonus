@@ -52,4 +52,18 @@ class ArabicTranslateTest extends TestCase
             ->callFormComponentAction('name_ar', 'translate_name_ar')
             ->assertFormSet(['name_ar' => 'خاتم كلاسيكي']);
     }
+
+    public function test_when_server_cannot_connect_the_browser_translates_instead(): void
+    {
+        $this->seed(ReferenceDataSeeder::class);
+        Http::fake(fn () => throw new \Illuminate\Http\Client\ConnectionException('cURL error 60: SSL certificate problem: unable to get local issuer certificate'));
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+
+        $page = Livewire::test(CreateProduct::class)
+            ->fillForm(['name' => 'Classic Ring'])
+            ->callFormComponentAction('name_ar', 'translate_name_ar');
+        $js = json_encode($page->effects['xjs'] ?? []);
+        $this->assertStringContainsString('api.mymemory.translated.net', $js);
+        $this->assertStringContainsString('data.name_ar', $js);
+    }
 }
