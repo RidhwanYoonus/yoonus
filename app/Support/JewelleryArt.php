@@ -55,13 +55,13 @@ class JewelleryArt
         return <<<SVG
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600">
   <defs>
-    <radialGradient id="pbg" cx="50%" cy="38%" r="80%"><stop offset="0" stop-color="#fffdf7"/><stop offset=".65" stop-color="#f6eedc"/><stop offset="1" stop-color="#eadcbc"/></radialGradient>
+    <radialGradient id="pbg" cx="50%" cy="38%" r="80%"><stop offset="0" stop-color="#ffffff" stop-opacity=".5"/><stop offset=".6" stop-color="#e9e6dc" stop-opacity=".18"/><stop offset="1" stop-color="#c9ccd3" stop-opacity=".22"/></radialGradient>
     <radialGradient id="pshadow" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#8a6d2b" stop-opacity=".25"/><stop offset="1" stop-color="#8a6d2b" stop-opacity="0"/></radialGradient>
   </defs>
   <rect width="600" height="600" fill="url(#pbg)"/>
   <ellipse cx="300" cy="500" rx="190" ry="22" fill="url(#pshadow)"/>
   {$art}
-  <text x="300" y="566" font-family="Georgia,serif" font-size="22" fill="#9a7b2f" text-anchor="middle" letter-spacing="8">{$label}</text>
+  <text x="300" y="566" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="600" fill="#8f939d" text-anchor="middle" letter-spacing="7">{$label}</text>
 </svg>
 SVG;
     }

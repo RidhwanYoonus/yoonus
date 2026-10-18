@@ -17,7 +17,7 @@
                     <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="{{ $active ? 2 : 1.5 }}" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $icon }}"/></svg>
                     <span>{{ $label }}</span>
                     @if ($pattern === 'cart.*' && ($cartCount ?? 0))
-                        <span class="absolute top-1 start-1/2 ms-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold-600 px-1 text-[10px] text-white">{{ $cartCount }}</span>
+                        <span class="absolute top-1 start-1/2 ms-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold-silver px-1 text-[10px] text-zinc-900">{{ $cartCount }}</span>
                     @endif
                 </a>
             </li>

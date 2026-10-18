@@ -1,5 +1,5 @@
 {{-- Google Maps pin + directions for a pickup branch. Needs no API key. --}}
-<div class="overflow-hidden rounded-2xl border border-line bg-white">
+<div class="overflow-hidden rounded-2xl border border-line bg-card">
     <iframe src="{{ $branch->mapEmbedUrl() }}" class="{{ $height ?? 'h-64' }} w-full border-0" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="{{ __('shop.pickup.map_title', ['name' => $branch->localized('name')]) }}" allowfullscreen></iframe>
     <div class="flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
         <div>

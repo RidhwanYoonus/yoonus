@@ -5,45 +5,145 @@
 @source '../**/*.blade.php';
 @source '../**/*.js';
 
-@theme {
-    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-    --font-display: 'Cormorant Garamond', Georgia, serif;
-    --font-arabic: 'Cairo', 'Tajawal', Tahoma, sans-serif;
+/* Dark mode follows the `dark` class on <html> (set from the visitor's choice or their system). */
+@custom-variant dark (&:where(.dark, .dark *));
 
-    --color-ivory: #fbf7ef;
-    --color-sand: #f1e8d6;
-    --color-line: #e5d8bd;
-    --color-ink: #231b14;
-    --color-muted: #75664f;
-    --color-gold-300: #e6cf8f;
-    --color-gold-400: #d4b468;
-    --color-gold-500: #b8954a;
-    --color-gold-600: #9a7b2f;
-    --color-gold-700: #7a5f22;
-    --color-onyx: #17120d;
+/*
+ * Theme = shadcn/ui's default (zinc) tokens, unchanged, with a gold → silver accent.
+ * Legacy names (ivory, sand, line, ink, muted, onyx, gold-*) are kept so every view
+ * picks the theme up; each maps to a shadcn role:
+ *   ivory = background · card = card · sand = muted/accent · line = border/input
+ *   ink = foreground · muted = muted-foreground · primary / primary-fg = shadcn primary
+ *   onyx = the dark bands (rate bar, hero, footer) with on-dark text
+ */
+@theme {
+    --font-sans: 'Inter', 'Cairo', ui-sans-serif, system-ui, sans-serif;
+    --font-display: 'Inter', 'Cairo', ui-sans-serif, system-ui, sans-serif;
+    --font-arabic: 'Inter', 'Cairo', 'Tajawal', Tahoma, sans-serif;
+
+    --color-ivory: #ffffff;
+    --color-card: #ffffff;
+    --color-sand: #f4f4f5;
+    --color-line: #e4e4e7;
+    --color-ink: #09090b;
+    --color-muted: #71717a;
+    --color-primary: #18181b;
+    --color-primary-fg: #fafafa;
+    --color-onyx: #111113;
+    --color-on-dark: #fafafa;
+
+    --color-gold-300: #ead9a8;
+    --color-gold-400: #d6bb79;
+    --color-gold-500: #bf9c55;
+    --color-gold-600: #a2813a;
+    --color-gold-700: #86682a;
+    --color-silver-300: #e4e5e9;
+    --color-silver-400: #c3c6cc;
+    --color-silver-500: #9a9ea7;
+
+    --radius-sm: 0.375rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.625rem;
+    --radius-xl: 0.75rem;
+    --radius-2xl: 1rem;
+
+    --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+:root {
+    --gold-silver: linear-gradient(115deg, #a8853f 0%, #d9be7c 28%, #f1e6c5 46%, #e3e5ea 58%, #b9bdc6 78%, #8f939d 100%);
+    --gold-silver-soft: linear-gradient(115deg, rgb(191 156 85 / 0.14), rgb(226 228 233 / 0.22) 55%, rgb(154 158 167 / 0.14));
+    /* Deeper version for text on light backgrounds, so lettering stays readable. */
+    --gold-silver-ink: linear-gradient(100deg, #8a6a28 0%, #b08d45 35%, #8d9099 65%, #5f636c 100%);
+    color-scheme: light;
+}
+
+/* Low-contrast dark: soft charcoal surfaces, off-white text, muted metals — easy on the eyes. */
+.dark {
+    --color-ivory: #161618;
+    --color-card: #1b1b1e;
+    --color-sand: #242428;
+    --color-line: #2c2c31;
+    --color-ink: #d4d4d8;
+    --color-muted: #8b8b94;
+    --color-primary: #d4d4d8;
+    --color-primary-fg: #18181b;
+    --color-onyx: #111113;
+    --color-on-dark: #d4d4d8;
+
+    --color-gold-300: #cdb882;
+    --color-gold-400: #b9a06a;
+    --color-gold-500: #a68d5c;
+    --color-gold-600: #b49864;
+    --color-gold-700: #c8ae79;
+    --color-silver-300: #5a5c63;
+    --color-silver-400: #8a8d95;
+    --color-silver-500: #a5a8b0;
+
+    --color-red-50: #2a1718;
+    --color-red-200: #4a2a2c;
+    --color-red-700: #e29a9a;
+    --color-red-800: #e8adad;
+    --color-green-700: #8cc4a0;
+
+    --gold-silver: linear-gradient(115deg, #8f7546 0%, #b9a06e 30%, #cfc3a2 46%, #b8bbc3 60%, #8f939c 80%, #70737c 100%);
+    --gold-silver-soft: linear-gradient(115deg, rgb(185 160 106 / 0.10), rgb(184 187 195 / 0.08) 55%, rgb(112 115 124 / 0.10));
+    --gold-silver-ink: linear-gradient(100deg, #b49864 0%, #cdb784 35%, #b4b7bf 65%, #8e929b 100%);
+    color-scheme: dark;
 }
 
 @layer base {
-    html { -webkit-font-smoothing: antialiased; }
-    body { @apply bg-ivory text-ink font-sans; }
+    html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-feature-settings: 'cv11', 'ss01'; }
+    body { @apply bg-ivory text-ink font-sans; transition: background-color .2s ease, color .2s ease; }
     [dir='rtl'] body { font-family: var(--font-arabic); }
-    [dir='rtl'] .font-display { font-family: 'Tajawal', var(--font-arabic); font-weight: 700; }
+    * { border-color: var(--color-line); }
+    ::selection { background: rgb(191 156 85 / 0.25); }
+    .font-display { font-weight: 600; letter-spacing: -0.025em; }
     [x-cloak] { display: none !important; }
     /* Amounts never break across lines ("AED / 2,400.00"). */
     td.text-end, dd { white-space: nowrap; }
+    /* Keep pictures calm in dark mode instead of glowing. */
+    .dark img { filter: brightness(.9); }
+    .dark img[src*='/placeholder/'] { filter: brightness(.88) saturate(.9); }
+    .dark iframe { filter: brightness(.85) contrast(.95); }
+    /* On the dark bands the bright metal reads best. */
+    .bg-onyx .eyebrow, .bg-onyx .text-gold-silver { background-image: var(--gold-silver); }
 }
 
 @utility no-scrollbar { scrollbar-width: none; &::-webkit-scrollbar { display: none; } }
 @utility pb-safe { padding-bottom: env(safe-area-inset-bottom); }
 
 @utility container-x { @apply mx-auto w-full max-w-[90rem] px-4 sm:px-6 lg:px-10; }
-@utility btn { @apply inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-medium tracking-wide transition focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-500 focus-visible:ring-offset-2 disabled:opacity-50; }
-@utility btn-gold { @apply btn bg-gold-600 text-white hover:bg-gold-700 shadow-sm; }
-@utility btn-dark { @apply btn bg-onyx text-ivory hover:bg-black; }
-@utility btn-outline { @apply btn border border-gold-500 text-gold-700 hover:bg-gold-600 hover:text-white; }
-@utility btn-whatsapp { @apply btn bg-[#25D366] text-white hover:bg-[#1ebe5b]; }
-@utility input { @apply block w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-sm placeholder:text-muted/60 focus:border-gold-500 focus:ring-2 focus:ring-gold-300/50 focus:outline-none; }
-@utility label { @apply mb-1.5 block text-xs font-medium uppercase tracking-wider text-muted; }
-@utility card { @apply rounded-2xl border border-line bg-white; }
-@utility eyebrow { @apply text-xs font-medium uppercase tracking-[0.25em] text-gold-600; }
+
+/* Brand metal: gradient fill, gradient text, and a hairline gradient border. */
+@utility bg-gold-silver { background-image: var(--gold-silver); }
+@utility bg-gold-silver-soft { background-image: var(--gold-silver-soft); }
+@utility text-gold-silver { background-image: var(--gold-silver-ink); -webkit-background-clip: text; background-clip: text; color: transparent; }
+@utility border-gold-silver {
+    border: 1px solid transparent;
+    background: linear-gradient(var(--color-card), var(--color-card)) padding-box, var(--gold-silver) border-box;
+}
+
+/* shadcn/ui Button — default (primary), outline, secondary, ghost; plus the metal variant. */
+@utility btn {
+    @apply inline-flex h-10 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md px-4 py-2 text-sm font-medium transition-all outline-none
+        focus-visible:ring-[3px] focus-visible:ring-gold-500/40 disabled:pointer-events-none disabled:opacity-50;
+}
+@utility btn-dark { @apply btn bg-primary text-primary-fg shadow-xs hover:bg-primary/90; }
+@utility btn-gold { @apply btn bg-gold-silver text-zinc-900 shadow-xs hover:brightness-[1.04] hover:shadow-md; background-size: 140% 100%; }
+@utility btn-outline { @apply btn border border-line bg-card text-ink shadow-xs hover:bg-sand; }
+@utility btn-secondary { @apply btn bg-sand text-ink hover:bg-sand/80; }
+@utility btn-ghost { @apply btn text-ink hover:bg-sand; }
+@utility btn-whatsapp { @apply btn bg-[#25D366] text-white shadow-xs hover:bg-[#1ebe5b] dark:bg-[#1f9e53] dark:text-zinc-50; }
+
+/* shadcn/ui Input, Label, Card, Badge. */
+@utility input {
+    @apply block min-h-10 w-full min-w-0 rounded-md border border-line bg-transparent px-3 py-2 text-sm text-ink shadow-xs transition-[color,box-shadow] outline-none
+        placeholder:text-muted focus-visible:border-gold-500 focus-visible:ring-[3px] focus-visible:ring-gold-500/30
+        disabled:cursor-not-allowed disabled:opacity-50 dark:bg-sand/40;
+}
+@utility label { @apply mb-2 block text-sm font-medium leading-none text-ink; }
+@utility card { @apply rounded-xl border border-line bg-card text-ink shadow-xs; }
+@utility badge { @apply inline-flex items-center gap-1 rounded-md border border-transparent px-2 py-0.5 text-xs font-medium; }
+@utility eyebrow { @apply text-xs font-semibold uppercase tracking-[0.22em]; background-image: var(--gold-silver-ink); -webkit-background-clip: text; background-clip: text; color: transparent; }
 @utility price { font-variant-numeric: tabular-nums; }

@@ -10,7 +10,7 @@
     @if ($current !== false)
         <ol class="mt-8 grid grid-cols-5 gap-2 text-center text-xs">
             @foreach ($steps as $i => $s)
-                <li><span class="mx-auto flex h-8 w-8 items-center justify-center rounded-full {{ $i <= $current ? 'bg-gold-600 text-white' : 'bg-sand text-muted' }}">{{ $i + 1 }}</span><span class="mt-2 block">{{ $order->statusLabel($s) }}</span></li>
+                <li><span class="mx-auto flex h-8 w-8 items-center justify-center rounded-full {{ $i <= $current ? 'bg-gold-silver text-zinc-900' : 'bg-sand text-muted' }}">{{ $i + 1 }}</span><span class="mt-2 block">{{ $order->statusLabel($s) }}</span></li>
             @endforeach
         </ol>
     @else

@@ -187,7 +187,7 @@
                     <div class="flex justify-between font-semibold" x-show="q.gift_card"><dt>{{ __('shop.checkout.amount_due') }}</dt><dd x-text="q.amount_due"></dd></div>
                 </dl>
                 <p class="mt-3 text-xs text-muted">{{ __('shop.checkout.vat_note') }}</p>
-                <button class="btn-dark mt-5 hidden w-full lg:flex" @disabled($blocked) :disabled="loading">{{ __('shop.checkout.place') }}</button>
+                <button class="btn-gold mt-5 hidden h-11 w-full lg:flex" @disabled($blocked) :disabled="loading">{{ __('shop.checkout.place') }}</button>
             </div>
         </aside>
 
@@ -198,7 +198,7 @@
                     <p class="text-[11px] text-muted">{{ __('shop.checkout.total') }} · {{ __('shop.product.incl_vat', ['vat' => 5]) }}</p>
                     <p class="price truncate text-lg font-semibold text-gold-700" x-text="q.gift_card ? q.amount_due : q.grand_total"></p>
                 </div>
-                <button class="btn-dark shrink-0 px-6" @disabled($blocked) :disabled="loading">{{ __('shop.checkout.place') }}</button>
+                <button class="btn-gold shrink-0 px-6" @disabled($blocked) :disabled="loading">{{ __('shop.checkout.place') }}</button>
             </div>
         </div>
     </form>

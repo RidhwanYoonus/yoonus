@@ -31,6 +31,16 @@ Alpine.data('rateTicker', (initial, url) => ({
 }));
 
 // Checkout: re-quote on every change so totals, VAT and BNPL eligibility stay correct.
+// Light / dark mode switch; remembers the visitor's choice (system setting until they pick one).
+Alpine.data('themeToggle', () => ({
+    dark: document.documentElement.classList.contains('dark'),
+    toggle() {
+        this.dark = !this.dark;
+        document.documentElement.classList.toggle('dark', this.dark);
+        try { localStorage.setItem('theme', this.dark ? 'dark' : 'light'); } catch (e) {}
+    },
+}));
+
 Alpine.data('checkout', (cfg) => ({
     form: cfg.form, q: cfg.quote, loading: false, timer: null,
     init() {

@@ -63,7 +63,7 @@
                     <div class="flex justify-between text-base font-semibold"><dt>{{ __('shop.checkout.subtotal_ex_vat') }}</dt><dd class="text-gold-700">{{ Money::format($subtotal) }}</dd></div>
                 </dl>
                 <p class="mt-2 text-xs text-muted">{{ __('shop.cart.shipping_next') }}</p>
-                <a href="{{ route('checkout.show') }}" class="btn-dark mt-6 w-full">{{ __('shop.cart.checkout') }}</a>
+                <a href="{{ route('checkout.show') }}" class="btn-gold mt-6 h-11 w-full">{{ __('shop.cart.checkout') }}</a>
                 <p class="mt-3 text-center text-xs text-muted">{{ __('shop.cart.bnpl_hint') }}</p>
             </aside>
         </div>

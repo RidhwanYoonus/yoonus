@@ -4,6 +4,7 @@ return [
     'currency' => 'AED',
 
     'nav' => [
+        'light_mode' => 'Light mode', 'dark_mode' => 'Dark mode',
         'home' => 'Home', 'shop' => 'Shop', 'search' => 'Search jewellery', 'menu' => 'Menu', 'cart' => 'Bag',
         'wishlist' => 'Wishlist', 'compare' => 'Compare', 'account' => 'My account', 'track' => 'Track order', 'gift_cards' => 'Gift cards',
     ],

@@ -10,7 +10,7 @@
 @section('content')
     {{-- Campaign strip --}}
     @foreach ($campaigns as $campaign)
-        <section class="relative overflow-hidden bg-gradient-to-r from-gold-700 via-gold-600 to-gold-700 text-white">
+        <section class="relative overflow-hidden bg-gold-silver text-zinc-900">
             @if ($campaign->bannerUrl())
                 <img src="{{ $campaign->bannerUrl() }}" alt="" class="absolute inset-0 h-full w-full object-cover opacity-30">
             @endif
@@ -19,7 +19,7 @@
                 @if ($campaign->show_countdown)
                     <div class="flex items-center gap-1.5 price text-xs" x-data="countdown('{{ $campaign->ends_at->toIso8601String() }}')" aria-label="{{ __('shop.campaign.ends_in') }}">
                         @foreach (['d' => 'days', 'h' => 'hours', 'm' => 'minutes', 's' => 'seconds'] as $k => $label)
-                            <span class="rounded-md bg-black/20 px-2 py-1"><b x-text="{{ $k }}"></b> {{ __('shop.campaign.'.$label) }}</span>
+                            <span class="rounded-md bg-white/40 px-2 py-1"><b x-text="{{ $k }}"></b> {{ __('shop.campaign.'.$label) }}</span>
                         @endforeach
                     </div>
                 @endif
@@ -29,7 +29,7 @@
     @endforeach
 
     {{-- Hero --}}
-    <section class="relative overflow-hidden bg-onyx text-ivory">
+    <section class="relative overflow-hidden bg-onyx text-on-dark">
         <div class="pointer-events-none absolute -top-40 end-[-10%] h-[38rem] w-[38rem] rounded-full bg-gold-500/25 blur-3xl"></div>
         <div class="pointer-events-none absolute -bottom-48 start-[-10%] h-[30rem] w-[30rem] rounded-full bg-gold-700/20 blur-3xl"></div>
         <div class="container-x relative grid items-center gap-6 py-10 sm:gap-10 sm:py-20 lg:grid-cols-[1.1fr_1fr] lg:py-28">
@@ -43,15 +43,15 @@
                 @endif
                 <p class="eyebrow mt-5 text-gold-300">{{ __('shop.home.eyebrow') }}</p>
                 <h1 class="font-display mt-3 text-[2.6rem] leading-[1.08] sm:mt-4 sm:text-6xl lg:text-7xl">{{ __('shop.home.headline') }}</h1>
-                <p class="mt-4 max-w-xl text-sm leading-relaxed text-ivory/70 sm:mt-6 sm:text-base">{{ __('shop.home.subline') }}</p>
+                <p class="mt-4 max-w-xl text-sm leading-relaxed text-on-dark/70 sm:mt-6 sm:text-base">{{ __('shop.home.subline') }}</p>
                 <div class="mt-6 flex flex-wrap gap-3 sm:mt-8">
                     <a href="{{ route('shop.index') }}" class="btn-gold px-8">{{ __('shop.home.cta') }}</a>
-                    <a href="#price-promise" class="btn border border-white/25 text-ivory hover:border-gold-400 hover:text-gold-300">{{ __('shop.home.how_priced') }}</a>
+                    <a href="#price-promise" class="btn border border-white/25 text-on-dark hover:border-gold-400 hover:text-gold-300">{{ __('shop.home.how_priced') }}</a>
                 </div>
                 @if ($headline22)
-                    <div class="mt-6 inline-flex items-center gap-4 rounded-2xl sm:mt-10 border border-white/10 bg-white/5 px-5 py-3 backdrop-blur">
-                        <span class="text-xs uppercase tracking-[0.2em] text-ivory/60">{{ __('shop.rates.today') }} · {{ $headline22->name }}</span>
-                        <span class="price font-display text-2xl text-gold-300">{{ Money::format(Money::toFils($headline22->rate_per_gram)) }}<span class="text-sm text-ivory/50">/{{ __('shop.rates.gram') }}</span></span>
+                    <div class="mt-6 inline-flex items-center gap-4 rounded-2xl sm:mt-10 border border-white/10 bg-card/5 px-5 py-3 backdrop-blur">
+                        <span class="text-xs uppercase tracking-[0.2em] text-on-dark/60">{{ __('shop.rates.today') }} · {{ $headline22->name }}</span>
+                        <span class="price font-display text-2xl text-gold-300">{{ Money::format(Money::toFils($headline22->rate_per_gram)) }}<span class="text-sm text-on-dark/50">/{{ __('shop.rates.gram') }}</span></span>
                     </div>
                 @endif
             </div>
@@ -69,7 +69,7 @@
     </section>
 
     {{-- Trust bar --}}
-    <section class="border-b border-line bg-white">
+    <section class="border-b border-line bg-card">
         <div class="container-x grid grid-cols-2 gap-x-6 gap-y-5 py-6 lg:grid-cols-4">
             @foreach ([
                 ['rate', 'M3 3v18h18M7 15l4-4 3 3 5-6'],
@@ -94,7 +94,7 @@
             <div class="no-scrollbar -mx-4 mt-8 flex snap-x gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-5 sm:px-0 lg:grid-cols-6">
                 @foreach ($categories as $c)
                     <a href="{{ route('category.show', $c) }}" class="group w-32 shrink-0 snap-start text-center sm:w-auto">
-                        <span class="relative block aspect-square overflow-hidden rounded-full border border-line bg-gradient-to-b from-white to-sand transition duration-300 group-hover:border-gold-400 group-hover:shadow-[0_15px_40px_-15px_rgba(154,123,47,.45)]">
+                        <span class="relative block aspect-square overflow-hidden rounded-full border border-line bg-gradient-to-b from-card to-sand transition duration-300 group-hover:border-gold-400 group-hover:shadow-[0_15px_40px_-15px_rgba(154,123,47,.45)]">
                             @if ($c->image)
                                 <img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($c->image) }}" alt="" class="h-full w-full object-cover" loading="lazy">
                             @else
@@ -147,17 +147,17 @@
 
     {{-- Gold price alerts --}}
     <section class="container-x mt-16 sm:mt-24">
-        <div class="relative overflow-hidden rounded-3xl bg-onyx p-8 text-ivory sm:p-12">
+        <div class="relative overflow-hidden rounded-3xl bg-onyx p-8 text-on-dark sm:p-12">
             <div class="pointer-events-none absolute -end-20 -top-20 h-72 w-72 rounded-full bg-gold-500/20 blur-3xl"></div>
             <div class="relative grid gap-6 lg:grid-cols-2 lg:items-center">
                 <div>
                     <p class="eyebrow text-gold-300">{{ __('shop.alerts.eyebrow') }}</p>
                     <h2 class="font-display mt-2 text-3xl sm:text-4xl">{{ __('shop.alerts.title') }}</h2>
-                    <p class="mt-2 text-sm text-ivory/60">{{ __('shop.alerts.subtitle') }}</p>
+                    <p class="mt-2 text-sm text-on-dark/60">{{ __('shop.alerts.subtitle') }}</p>
                 </div>
                 <form method="POST" action="{{ route('alerts.store') }}" class="grid gap-2 sm:grid-cols-[auto_1fr_auto]">
                     @csrf
-                    <select name="gold_category_id" class="input bg-white text-ink" aria-label="{{ __('shop.filters.karat') }}">
+                    <select name="gold_category_id" class="input bg-card text-ink" aria-label="{{ __('shop.filters.karat') }}">
                         @foreach ($karats as $k)<option value="{{ $k->id }}">{{ $k->name }}</option>@endforeach
                     </select>
                     <input type="email" name="email" placeholder="{{ __('shop.checkout.email') }}" class="input text-ink" required>
