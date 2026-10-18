@@ -47,6 +47,7 @@ class StripeSettingsTest extends TestCase
         $this->placeCardOrder()->assertRedirect('https://checkout.stripe.com/c/pay/cs_test_1');
         $order = Order::sole();
         Http::assertSent(fn (Request $r) => $r->hasHeader('Authorization', 'Bearer sk_test_ADMIN')
+            && $r['payment_method_types[0]'] === 'card'
             && str_contains($r['success_url'], '/payments/stripe/return/'.$order->number.'?session_id={CHECKOUT_SESSION_ID}'));
 
         Http::fake(['api.stripe.com/v1/checkout/sessions/cs_test_1' => Http::response([

@@ -57,6 +57,8 @@ class StripeGateway implements PaymentGateway
         $res = SecureHttp::send(fn ($http) => $http->asForm()->withToken(self::secretKey())
             ->post('https://api.stripe.com/v1/checkout/sessions', [
                 'mode' => 'payment',
+                // Ask for cards explicitly so it works even when no AED methods are switched on in the dashboard.
+                'payment_method_types[0]' => 'card',
                 'client_reference_id' => $order->number,
                 'customer_email' => $order->email,
                 'locale' => $order->locale === 'ar' ? 'auto' : 'en',
