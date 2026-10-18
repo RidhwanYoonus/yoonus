@@ -91,7 +91,8 @@ return [
         'share_cta' => 'Share',
     ],
 
-    'wishlist' => ['add' => 'Add to wishlist', 'remove' => 'Remove from wishlist', 'added' => 'Added to your wishlist.', 'removed' => 'Removed from your wishlist.', 'empty' => 'Your wishlist is empty.'],
+    'wishlist' => [
+        'saved' => 'Saved','add' => 'Add to wishlist', 'remove' => 'Remove from wishlist', 'added' => 'Added to your wishlist.', 'removed' => 'Removed from your wishlist.', 'empty' => 'Your wishlist is empty.'],
     'compare' => ['add' => 'Compare', 'updated' => 'Comparison updated.', 'empty' => 'Add up to 4 pieces to compare them side by side.'],
 
     'reviews' => [

@@ -114,7 +114,7 @@
                 </div>
             @endif
             <div class="mt-3 flex gap-4 text-sm">
-                <form method="POST" action="{{ route('wishlist.toggle', $product) }}">@csrf<button class="text-muted hover:text-gold-700">{{ $inWishlist ? '♥ '.__('shop.wishlist.remove') : '♡ '.__('shop.wishlist.add') }}</button></form>
+                <form method="POST" action="{{ route('wishlist.toggle', $product) }}">@csrf<button class="{{ $inWishlist ? 'font-semibold text-gold-700' : 'text-muted hover:text-gold-700' }}" aria-pressed="{{ $inWishlist ? 'true' : 'false' }}">{{ $inWishlist ? '♥ '.__('shop.wishlist.saved').' · '.__('shop.wishlist.remove') : '♡ '.__('shop.wishlist.add') }}</button></form>
                 <form method="POST" action="{{ route('compare.toggle', $product) }}">@csrf<button class="text-muted hover:text-gold-700">⇄ {{ __('shop.compare.add') }}</button></form>
             </div>
 

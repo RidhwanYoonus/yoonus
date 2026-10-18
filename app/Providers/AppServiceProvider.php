@@ -46,6 +46,7 @@ class AppServiceProvider extends ServiceProvider
 
         View::composer('layouts.app', function ($view) {
             $view->with('cartCount', app(CartService::class)->count());
+            $view->with('wishlistCount', count(\App\Http\Controllers\ShopController::wishlistIds(request())));
         });
     }
 }

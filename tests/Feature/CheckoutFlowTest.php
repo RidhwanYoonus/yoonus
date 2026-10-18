@@ -229,4 +229,14 @@ class CheckoutFlowTest extends TestCase
         $GLOBALS['__f'] = $flat;
         $this->assertEquals($flat(require lang_path('en/shop.php'))->sort()->values(), $flat(require lang_path('ar/shop.php'))->sort()->values());
     }
+
+    public function test_saved_pieces_show_gold_heart_and_header_count(): void
+    {
+        $this->get('/shop')->assertDontSee('aria-pressed="true"', false);
+        $this->post('/wishlist/band')->assertRedirect();
+        $this->get('/shop')->assertOk()
+            ->assertSee('aria-pressed="true"', false)
+            ->assertSeeInOrder([route('wishlist'), '>1</span>'], false);
+        $this->get('/product/band')->assertSee('Saved');
+    }
 }

@@ -1,4 +1,5 @@
 @php($price = $product->displayPrice())
+@php($wished = in_array($product->id, \App\Http\Controllers\ShopController::wishlistIds(request()), true))
 <article class="group relative">
     <div class="relative overflow-hidden rounded-2xl border border-line bg-gradient-to-b from-card to-sand transition duration-300 group-hover:-translate-y-1 group-hover:border-gold-300 group-hover:shadow-[0_20px_45px_-20px_rgba(122,95,34,.45)]">
         <a href="{{ route('product.show', $product) }}" class="block">
@@ -17,8 +18,10 @@
         </div>
         <form method="POST" action="{{ route('wishlist.toggle', $product) }}" class="absolute end-3 top-3">
             @csrf
-            <button class="flex h-9 w-9 items-center justify-center rounded-full bg-card/90 text-ink/70 shadow-sm transition hover:text-gold-700" aria-label="{{ __('shop.wishlist.add') }}">
-                <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg>
+            {{-- Saved pieces show a filled gold heart. --}}
+            <button class="flex h-9 w-9 items-center justify-center rounded-full shadow-sm transition {{ $wished ? 'bg-gold-silver text-gold-700 ring-1 ring-gold-500/40' : 'bg-card/90 text-ink/70 hover:text-gold-700' }}"
+                    aria-pressed="{{ $wished ? 'true' : 'false' }}" aria-label="{{ __($wished ? 'shop.wishlist.remove' : 'shop.wishlist.add') }}" title="{{ __($wished ? 'shop.wishlist.remove' : 'shop.wishlist.add') }}">
+                <svg class="h-4 w-4 {{ $wished ? 'text-[#7a5a14]' : '' }}" fill="{{ $wished ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg>
             </button>
         </form>
         @if ($product->inStock())

@@ -112,11 +112,16 @@ class ShopController extends Controller
         return $request->wantsJson() ? response()->json(['added' => $added]) : back()->with('status', __($added ? 'shop.wishlist.added' : 'shop.wishlist.removed'));
     }
 
+    /** Saved product ids, looked up once per request (every product card asks). */
     public static function wishlistIds(Request $request): array
     {
-        return $request->user()
-            ? $request->user()->wishlist()->pluck('product_id')->all()
-            : $request->session()->get('wishlist', []);
+        if (! $request->attributes->has('wishlist_ids')) {
+            $request->attributes->set('wishlist_ids', array_map('intval', $request->user()
+                ? $request->user()->wishlist()->pluck('product_id')->all()
+                : ($request->hasSession() ? $request->session()->get('wishlist', []) : [])));
+        }
+
+        return $request->attributes->get('wishlist_ids');
     }
 
     public function compare(Request $request)
