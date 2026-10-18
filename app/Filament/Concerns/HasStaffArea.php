@@ -8,6 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 /** Resource access from Staff & permissions; the resource sets protected static string $staffArea. */
 trait HasStaffArea
 {
+    public static function staffArea(): string
+    {
+        return static::$staffArea;
+    }
+
     public static function canViewAny(): bool
     {
         return StaffAccess::current(static::$staffArea, 'view');

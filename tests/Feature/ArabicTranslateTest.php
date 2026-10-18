@@ -66,4 +66,40 @@ class ArabicTranslateTest extends TestCase
         $this->assertStringContainsString('api.mymemory.translated.net', $js);
         $this->assertStringContainsString('data.name_ar', $js);
     }
+
+    public function test_bulk_button_fills_only_blank_arabic_fields(): void
+    {
+        $this->seed(ReferenceDataSeeder::class);
+        $karat = \App\Models\GoldCategory::where('name', '22K')->value('id');
+        $blank = \App\Models\Product::create(['name' => 'Gold Ring', 'description' => 'Hallmarked', 'sku' => 'T-1', 'slug' => 't-1', 'gold_category_id' => $karat, 'weight_grams' => 2, 'stock_qty' => 1]);
+        $done = \App\Models\Product::create(['name' => 'Bangle', 'name_ar' => 'سوار يدوي', 'sku' => 'T-2', 'slug' => 't-2', 'gold_category_id' => $karat, 'weight_grams' => 2, 'stock_qty' => 1]);
+        Http::fake(['api.mymemory.translated.net/*' => fn (Request $r) => Http::response(['responseStatus' => 200, 'responseData' => ['translatedText' => 'AR:'.$r['q']]])]);
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+
+        Livewire::test(\App\Filament\Resources\ProductResource\Pages\ListProducts::class)->callAction('translateMissingArabic');
+
+        $this->assertSame('AR:Gold Ring', $blank->fresh()->name_ar);
+        $this->assertSame('AR:Hallmarked', $blank->fresh()->description_ar);
+        $this->assertSame('سوار يدوي', $done->fresh()->name_ar);   // untouched
+    }
+
+    public function test_bulk_button_hands_over_to_browser_when_server_cannot_connect(): void
+    {
+        $this->seed(ReferenceDataSeeder::class);
+        $karat = \App\Models\GoldCategory::where('name', '22K')->value('id');
+        $p = \App\Models\Product::create(['name' => 'Gold Ring', 'sku' => 'T-1', 'slug' => 't-1', 'gold_category_id' => $karat, 'weight_grams' => 2, 'stock_qty' => 1]);
+        Http::fake(fn () => throw new \Illuminate\Http\Client\ConnectionException('cURL error 60: SSL certificate problem'));
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+
+        $page = Livewire::test(\App\Filament\Resources\ProductResource\Pages\ListProducts::class)->callAction('translateMissingArabic');
+        $this->assertStringContainsString('saveMissingArabic', json_encode($page->effects['xjs'] ?? []));
+
+        // What the browser then calls back with:
+        $page->call('saveMissingArabic', $p->id, 'name_ar', 'خاتم ذهب');
+        $this->assertSame('خاتم ذهب', $p->fresh()->name_ar);
+        $page->call('saveMissingArabic', $p->id, 'name_ar', 'something else');   // already filled: kept
+        $page->call('saveMissingArabic', $p->id, 'sku', 'HACK');                   // not an Arabic field
+        $this->assertSame('خاتم ذهب', $p->fresh()->name_ar);
+        $this->assertSame('T-1', $p->fresh()->sku);
+    }
 }

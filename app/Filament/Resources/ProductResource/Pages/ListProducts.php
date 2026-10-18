@@ -12,11 +12,14 @@ use Illuminate\Support\Facades\Storage;
 
 class ListProducts extends ListRecords
 {
+    use \App\Filament\Concerns\TranslatesMissingArabic;
+
     protected static string $resource = ProductResource::class;
 
     protected function getHeaderActions(): array
     {
         return [
+            $this->translateMissingArabicAction(),
             Actions\Action::make('export')->label('Export CSV')->icon('heroicon-o-arrow-down-tray')->color('gray')
                 ->action(fn () => response()->streamDownload(ProductCsv::export(), 'products-'.now()->format('Ymd-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8'])),
             Actions\Action::make('import')->visible(fn () => \App\Support\StaffAccess::current('products', 'create'))->label('Import CSV')->icon('heroicon-o-arrow-up-tray')->color('gray')
@@ -32,5 +35,10 @@ class ListProducts extends ListRecords
                 }),
             Actions\CreateAction::make(),
         ];
+    }
+
+    protected function arabicPairs(): array
+    {
+        return ['name' => 'name_ar', 'description' => 'description_ar'];
     }
 }
