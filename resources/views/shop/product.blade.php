@@ -45,7 +45,7 @@
                 <span class="mt-4 inline-flex rounded-full px-3 py-1 text-xs font-semibold {{ $badge['highlight'] ? 'bg-onyx text-gold-300' : 'bg-sand text-ink/70' }}">{{ $badge['text'] }}</span>
             @endif
             <div class="mt-4 flex flex-wrap items-baseline gap-3 price">
-                <span class="text-3xl font-semibold text-gold-700">{{ $fmt($price->taxable) }}</span>
+                <span class="text-price text-3xl font-bold">{{ $fmt($price->taxable) }}</span>
                 @if ($price->hasDiscount())
                     <s class="text-lg text-muted">{{ $fmt($price->subtotal) }}</s>
                     <span class="rounded-full bg-gold-silver px-3 py-1 text-xs font-semibold text-zinc-900">{{ __('shop.product.save_amount', ['amount' => $fmt($price->subtotal - $price->taxable)]) }}</span>
@@ -68,7 +68,7 @@
                         @if ($price->wastage)<tr><td class="px-5 py-2.5">{{ __('shop.breakdown.wastage') }} <span class="text-muted">({{ rtrim(rtrim((string) $product->wastage_percent, '0'), '.') }}%)</span></td><td class="px-5 py-2.5 text-end">{{ $fmt($price->wastage) }}</td></tr>@endif
                         @if ($price->rounding)<tr><td class="px-5 py-2.5">{{ __('shop.breakdown.rounding') }}</td><td class="px-5 py-2.5 text-end">{{ $fmt($price->rounding) }}</td></tr>@endif
                         @if ($price->hasDiscount())<tr class="text-gold-700"><td class="px-5 py-2.5">{{ __('shop.breakdown.discount') }}</td><td class="px-5 py-2.5 text-end">− {{ $fmt($price->discount) }}</td></tr>@endif
-                        <tr class="bg-sand/40 font-semibold"><td class="px-5 py-3">{{ __('shop.breakdown.price_ex_vat') }}</td><td class="px-5 py-3 text-end text-gold-700">{{ $fmt($price->taxable) }}</td></tr>
+                        <tr class="bg-sand/40 font-semibold"><td class="px-5 py-3">{{ __('shop.breakdown.price_ex_vat') }}</td><td class="px-5 py-3 text-end text-price">{{ $fmt($price->taxable) }}</td></tr>
                     </tbody>
                 </table>
                 <p class="border-t border-line px-5 py-2.5 text-xs text-muted">{{ __('shop.breakdown.vat_at_checkout', ['vat' => rtrim(rtrim($price->vatPercent(), '0'), '.')]) }}</p>
@@ -169,7 +169,7 @@
     <div class="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-line bg-ivory/95 backdrop-blur lg:hidden">
         <div class="container-x flex items-center gap-3 py-3">
             <div class="min-w-0 flex-1">
-                <p class="price truncate font-semibold text-gold-700">{{ $fmt($price->taxable) }}</p>
+                <p class="price text-price truncate font-bold">{{ $fmt($price->taxable) }}</p>
                 <p class="text-[0.6875rem] text-muted">{{ __('shop.product.plus_vat', ['vat' => rtrim(rtrim($price->vatPercent(), '0'), '.')]) }}</p>
             </div>
             <a href="{{ \App\Messaging\WhatsApp::link($whatsapp, $enquireText) }}" target="_blank" rel="noopener" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-white" aria-label="{{ __('shop.whatsapp.enquire_cta') }}">

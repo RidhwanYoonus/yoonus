@@ -14,7 +14,7 @@
         <div class="flex justify-between"><dt>{{ __('shop.checkout.shipping') }}</dt><dd>{{ (float) $order->shipping_total ? $m((float) $order->shipping_total - (float) $order->shipping_vat) : __('shop.checkout.free') }}</dd></div>
         @if ((float) $order->payment_fee)<div class="flex justify-between"><dt>{{ __('shop.checkout.payment_fee') }}</dt><dd>{{ $m($order->payment_fee) }}</dd></div>@endif
         <div class="flex justify-between"><dt>{{ __('shop.checkout.vat') }}</dt><dd>{{ $m((float) $order->vat_total + (float) $order->shipping_vat + (float) $order->payment_fee_vat) }}</dd></div>
-        <div class="flex justify-between border-t border-line pt-2 font-semibold"><dt>{{ __('shop.checkout.total') }}</dt><dd class="text-gold-700">{{ $m($order->grand_total) }}</dd></div>
+        <div class="flex justify-between border-t border-line pt-2 font-semibold"><dt>{{ __('shop.checkout.total') }}</dt><dd class="text-price">{{ $m($order->grand_total) }}</dd></div>
         @if ((float) $order->gift_card_amount)<div class="flex justify-between"><dt>{{ __('shop.checkout.gift_card') }}</dt><dd>− {{ $m($order->gift_card_amount) }}</dd></div>@endif
     </dl>
 </div>

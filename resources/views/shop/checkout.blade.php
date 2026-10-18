@@ -182,7 +182,7 @@
                     <div class="flex justify-between" x-show="q.payment_fee"><dt>{{ __('shop.checkout.payment_fee') }}</dt><dd x-text="q.payment_fee"></dd></div>
                     <div class="flex justify-between border-t border-line pt-2"><dt>{{ __('shop.checkout.taxable') }}</dt><dd x-text="q.taxable_all"></dd></div>
                     <div class="flex justify-between"><dt>{{ __('shop.checkout.vat') }}</dt><dd x-text="q.vat"></dd></div>
-                    <div class="flex justify-between border-t border-line pt-3 text-base font-semibold"><dt>{{ __('shop.checkout.total') }}</dt><dd class="text-gold-700" x-text="q.grand_total"></dd></div>
+                    <div class="flex justify-between border-t border-line pt-3 text-base font-semibold"><dt>{{ __('shop.checkout.total') }}</dt><dd class="text-price" x-text="q.grand_total"></dd></div>
                     <div class="flex justify-between text-gold-700" x-show="q.gift_card"><dt>{{ __('shop.checkout.gift_card') }}</dt><dd x-text="'− ' + q.gift_card"></dd></div>
                     <div class="flex justify-between font-semibold" x-show="q.gift_card"><dt>{{ __('shop.checkout.amount_due') }}</dt><dd x-text="q.amount_due"></dd></div>
                 </dl>
@@ -196,7 +196,7 @@
             <div class="container-x flex items-center gap-3 py-3">
                 <div class="min-w-0 flex-1">
                     <p class="text-[0.6875rem] text-muted">{{ __('shop.checkout.total') }} · {{ __('shop.product.incl_vat', ['vat' => 5]) }}</p>
-                    <p class="price truncate text-lg font-semibold text-gold-700" x-text="q.gift_card ? q.amount_due : q.grand_total"></p>
+                    <p class="price text-price truncate text-lg font-bold" x-text="q.gift_card ? q.amount_due : q.grand_total"></p>
                 </div>
                 <button class="btn-gold shrink-0 px-6" @disabled($blocked) :disabled="loading">{{ __('shop.checkout.place') }}</button>
             </div>

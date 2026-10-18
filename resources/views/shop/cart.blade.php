@@ -60,7 +60,7 @@
             @php($subtotal = array_sum(array_map(fn ($l) => $l->subtotal(), $lines)))
             <aside class="card h-fit p-6">
                 <dl class="space-y-2 text-sm price">
-                    <div class="flex justify-between text-base font-semibold"><dt>{{ __('shop.checkout.subtotal_ex_vat') }}</dt><dd class="text-gold-700">{{ Money::format($subtotal) }}</dd></div>
+                    <div class="flex justify-between text-base font-semibold"><dt>{{ __('shop.checkout.subtotal_ex_vat') }}</dt><dd class="text-price">{{ Money::format($subtotal) }}</dd></div>
                 </dl>
                 <p class="mt-2 text-xs text-muted">{{ __('shop.cart.shipping_next') }}</p>
                 <a href="{{ route('checkout.show') }}" class="btn-gold mt-6 h-11 w-full">{{ __('shop.cart.checkout') }}</a>

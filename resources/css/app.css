@@ -55,6 +55,8 @@
     --gold-silver-soft: linear-gradient(115deg, rgb(191 156 85 / 0.14), rgb(226 228 233 / 0.22) 55%, rgb(154 158 167 / 0.14));
     /* Deeper version for text on light backgrounds, so lettering stays readable. */
     --gold-silver-ink: linear-gradient(100deg, #8a6a28 0%, #b08d45 35%, #8d9099 65%, #5f636c 100%);
+    /* Prices: a deep gold that stays clearly readable (≈7:1 on white). */
+    --color-price: #6e520f;
     color-scheme: light;
 }
 
@@ -89,6 +91,7 @@
     --gold-silver: linear-gradient(115deg, #8f7546 0%, #b9a06e 30%, #cfc3a2 46%, #b8bbc3 60%, #8f939c 80%, #70737c 100%);
     --gold-silver-soft: linear-gradient(115deg, rgb(185 160 106 / 0.10), rgb(184 187 195 / 0.08) 55%, rgb(112 115 124 / 0.10));
     --gold-silver-ink: linear-gradient(100deg, #b49864 0%, #cdb784 35%, #b4b7bf 65%, #8e929b 100%);
+    --color-price: #e3cb93;
     color-scheme: dark;
 }
 
@@ -152,3 +155,6 @@
 @utility badge { @apply inline-flex items-center gap-1 rounded-md border border-transparent px-2 py-0.5 text-xs font-medium; }
 @utility eyebrow { @apply text-xs font-semibold uppercase tracking-[0.22em]; background-image: var(--gold-silver-ink); -webkit-background-clip: text; background-clip: text; color: transparent; }
 @utility price { font-variant-numeric: tabular-nums; }
+@utility text-price { color: var(--color-price); font-variant-numeric: tabular-nums; }
+/* Live gold rates on the dark bands: bright warm gold (≈11:1 on the bar). */
+@utility text-rate { color: #f1d592; }

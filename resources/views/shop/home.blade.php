@@ -51,7 +51,7 @@
                 @if ($headline22)
                     <div class="mt-6 inline-flex items-center gap-4 rounded-2xl sm:mt-10 border border-white/10 bg-card/5 px-5 py-3 backdrop-blur">
                         <span class="text-xs uppercase tracking-[0.2em] text-on-dark/60">{{ __('shop.rates.today') }} · {{ $headline22->name }}</span>
-                        <span class="price font-display text-2xl text-gold-300">{{ Money::format(Money::toFils($headline22->rate_per_gram)) }}<span class="text-sm text-on-dark/50">/{{ __('shop.rates.gram') }}</span></span>
+                        <span class="price font-display text-rate text-2xl font-bold">{{ Money::format(Money::toFils($headline22->rate_per_gram)) }}<span class="text-sm text-on-dark/50">/{{ __('shop.rates.gram') }}</span></span>
                     </div>
                 @endif
             </div>

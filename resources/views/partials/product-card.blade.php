@@ -32,7 +32,7 @@
         <p class="text-[0.6875rem] uppercase tracking-[0.15em] text-muted">{{ $product->specLine() }}</p>
         <h3 class="mt-1 line-clamp-1 font-medium"><a href="{{ route('product.show', $product) }}" class="hover:text-gold-700">{{ $product->localized('name') }}</a></h3>
         <p class="price mt-1">
-            <span class="font-semibold text-gold-700">{{ \App\Pricing\Money::format($price->taxable) }}</span>
+            <span class="text-price font-bold">{{ \App\Pricing\Money::format($price->taxable) }}</span>
             @if ($price->hasDiscount())
                 <s class="ms-1 text-xs text-muted">{{ \App\Pricing\Money::format($price->subtotal) }}</s>
             @endif
