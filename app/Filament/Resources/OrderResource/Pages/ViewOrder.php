@@ -24,7 +24,7 @@ class ViewOrder extends ViewRecord
             OrderResource::invoiceAction(),
             Actions\Action::make('handover')->label(fn (Order $record) => $record->isPickup() ? 'Customer collected' : 'Hand over to customer')
                 ->icon('heroicon-o-shield-check')->color('success')
-                ->visible(fn (Order $record) => $record->canTransitionTo('delivered'))
+                ->visible(fn (Order $record) => $record->canTransitionTo('delivered') && \App\Support\StaffAccess::current('orders', 'edit'))
                 ->modalDescription(fn (Order $record) => $record->hasIdDocument() ? 'Check the ID first: '.IdDocument::masked($record->id_type, $record->id_last4).' — '.$record->customer_name : 'Ask the customer for the 6-digit code we sent them.')
                 ->form(fn (Order $record) => OrderResource::handoverFields($record, fn () => true))
                 ->action(function (Order $record, array $data) {
@@ -40,13 +40,13 @@ class ViewOrder extends ViewRecord
             Actions\Action::make('sendCode')->label(fn (Order $record) => $record->handover_otp_sent_at ? 'Resend handover code' : 'Send handover code')
                 ->icon('heroicon-o-key')->color('gray')->requiresConfirmation()
                 ->modalDescription(fn (Order $record) => 'A new 6-digit code goes to '.$record->email.' and WhatsApp '.$record->phone.'. Any earlier code stops working.')
-                ->visible(fn (Order $record) => HandoverOtp::required($record) && in_array($record->status, ['packed', 'shipped', 'ready']))
+                ->visible(fn (Order $record) => HandoverOtp::required($record) && in_array($record->status, ['packed', 'shipped', 'ready']) && \App\Support\StaffAccess::current('orders', 'edit'))
                 ->action(function (Order $record) {
                     app(HandoverOtp::class)->issue($record);
                     Notification::make()->success()->title('Handover code sent')->send();
                 }),
             Actions\Action::make('advance')->label('Update status')->icon('heroicon-o-arrow-right-circle')
-                ->visible(fn (Order $record) => $record->allowedTransitions() !== [])
+                ->visible(fn (Order $record) => $record->allowedTransitions() !== [] && \App\Support\StaffAccess::current('orders', 'edit'))
                 ->form(fn (Order $record) => [
                     Forms\Components\Select::make('status')->required()->live()
                         ->options(collect($record->allowedTransitions())->mapWithKeys(fn ($s) => [$s => $record->statusLabel($s)])),

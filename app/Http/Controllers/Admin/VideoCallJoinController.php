@@ -10,7 +10,7 @@ class VideoCallJoinController extends Controller
 {
     public function __invoke(Request $request, int $id)
     {
-        abort_unless($request->user()?->is_admin, 403);
+        abort_unless(\App\Support\StaffAccess::can($request->user(), 'video_calls', 'edit'), 403);
         $call = VideoCallRequest::findOrFail($id);
         if ($call->status === 'waiting') {
             $call->update(['status' => 'answered', 'staff_id' => $request->user()->id, 'answered_at' => now()]);

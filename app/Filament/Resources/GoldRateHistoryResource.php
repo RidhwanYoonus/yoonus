@@ -6,6 +6,7 @@ use App\Filament\Resources\GoldRateHistoryResource\Pages;
 use App\Models\GoldRateHistory;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
+use App\Filament\Concerns\HasStaffArea;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -13,6 +14,10 @@ use Filament\Tables\Table;
 /** Read-only audit log: every rate change, who made it, and the product prices it produced. */
 class GoldRateHistoryResource extends Resource
 {
+    use HasStaffArea;
+
+    protected static string $staffArea = 'gold_rates';
+
     protected static ?string $model = GoldRateHistory::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';

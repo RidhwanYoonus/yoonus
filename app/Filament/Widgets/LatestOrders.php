@@ -10,6 +10,11 @@ use Filament\Widgets\TableWidget;
 
 class LatestOrders extends TableWidget
 {
+    public static function canView(): bool
+    {
+        return \App\Support\StaffAccess::current('orders');
+    }
+
     protected static ?int $sort = 4;
 
     protected int|string|array $columnSpan = 'full';

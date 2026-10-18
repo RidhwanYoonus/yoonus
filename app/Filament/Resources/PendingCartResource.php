@@ -6,6 +6,7 @@ use App\Filament\Resources\PendingCartResource\Pages;
 use App\Messaging\WhatsApp;
 use App\Models\Cart;
 use App\Models\Product;
+use App\Filament\Concerns\HasStaffArea;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -14,6 +15,10 @@ use Illuminate\Database\Eloquent\Builder;
 /** Shoppers who put pieces in their bag but have not placed the order yet. */
 class PendingCartResource extends Resource
 {
+    use HasStaffArea;
+
+    protected static string $staffArea = 'pending_carts';
+
     protected static ?string $model = Cart::class;
 
     protected static ?string $slug = 'pending-carts';

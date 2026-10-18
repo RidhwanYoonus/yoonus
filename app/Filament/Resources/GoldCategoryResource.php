@@ -9,6 +9,7 @@ use App\Pricing\GoldRateService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
+use App\Filament\Concerns\HasStaffArea;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -16,6 +17,10 @@ use Illuminate\Support\Facades\Auth;
 
 class GoldCategoryResource extends Resource
 {
+    use HasStaffArea;
+
+    protected static string $staffArea = 'gold_rates';
+
     protected static ?string $model = GoldCategory::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-scale';
@@ -71,7 +76,7 @@ class GoldCategoryResource extends Resource
 
     public static function updateRateAction(): Tables\Actions\Action
     {
-        return Tables\Actions\Action::make('updateRate')
+        return Tables\Actions\Action::make('updateRate')->visible(fn () => \App\Support\StaffAccess::current('gold_rates', 'edit'))
             ->label('Update rate')
             ->icon('heroicon-o-arrow-path')
             ->color('primary')

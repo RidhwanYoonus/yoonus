@@ -6,6 +6,7 @@ use App\Filament\Resources\CategoryResource\Pages;
 use App\Models\Category;
 use Filament\Forms;
 use Filament\Forms\Form;
+use App\Filament\Concerns\HasStaffArea;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -13,6 +14,10 @@ use Illuminate\Support\Str;
 
 class CategoryResource extends Resource
 {
+    use HasStaffArea;
+
+    protected static string $staffArea = 'categories';
+
     protected static ?string $model = Category::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-squares-2x2';

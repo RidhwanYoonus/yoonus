@@ -7,6 +7,11 @@ use Filament\Widgets\ChartWidget;
 
 class RateVsSalesChart extends ChartWidget
 {
+    public static function canView(): bool
+    {
+        return \App\Support\StaffAccess::current('reports');
+    }
+
     protected static ?string $heading = '22K gold rate vs. daily revenue';
 
     protected static bool $isDiscovered = false;

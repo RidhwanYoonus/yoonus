@@ -6,12 +6,17 @@ use App\Filament\Resources\BranchResource\Pages;
 use App\Models\Branch;
 use Filament\Forms;
 use Filament\Forms\Form;
+use App\Filament\Concerns\HasStaffArea;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
 class BranchResource extends Resource
 {
+    use HasStaffArea;
+
+    protected static string $staffArea = 'branches';
+
     protected static ?string $model = Branch::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-building-storefront';

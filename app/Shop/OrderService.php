@@ -220,6 +220,9 @@ class OrderService
             if ($to === 'cancelled') {
                 $this->restock($order);
             }
+            if ($to === 'delivered') {
+                $this->hideSoldOut($order);
+            }
             if ($to === 'delivered' && $order->payment_method === 'cod' && ! $order->isPaid()) {
                 // Cash collected on delivery.
                 $this->markPaid($order, 'cod', 'cod-'.$order->number);
@@ -232,6 +235,21 @@ class OrderService
 
             return $order;
         });
+    }
+
+    /**
+     * Once the last piece has been handed over, take it out of the shop so nobody can order
+     * stock we no longer have. Adding stock in the admin shows it again (Product::booted).
+     */
+    private function hideSoldOut(Order $order): void
+    {
+        foreach ($order->items()->with('product')->get() as $item) {
+            $p = $item->product;
+            if ($p && $p->stock_qty <= 0 && ! $p->hidden_after_sale && ! $p->hasOpenOrders($order->id)) {
+                $p->forceFill(['hidden_after_sale' => true])->saveQuietly();
+            }
+        }
+        \App\Support\StorefrontCache::flushPriceDependent();
     }
 
     /** Manual price override (before payment), logged with reason and admin. */

@@ -32,6 +32,8 @@ class User extends Authenticatable implements FilamentUser
             'id_expiry' => 'date',
             'id_saved_at' => 'datetime',
             'is_admin' => 'boolean',
+            'is_staff' => 'boolean',
+            'permissions' => 'array',
             'marketing_opt_in' => 'boolean',
         ];
     }
@@ -48,7 +50,7 @@ class User extends Authenticatable implements FilamentUser
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->is_admin;
+        return $this->is_admin || $this->is_staff;
     }
 
     public function orders(): HasMany

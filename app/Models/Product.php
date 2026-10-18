@@ -33,6 +33,7 @@ class Product extends Model
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
             'video_call_enabled' => 'boolean',
+            'hidden_after_sale' => 'boolean',
             'fixed_price' => 'decimal:2',
             'cached_gold_value' => 'decimal:2',
             'cached_making_fee' => 'decimal:2',
@@ -79,9 +80,34 @@ class Product extends Model
         return $this->hasMany(BranchStock::class);
     }
 
+    /** Shown in the shop: switched on, and not a sold piece whose order has already been handed over. */
     public function scopeActive(Builder $q): Builder
     {
-        return $q->where('is_active', true);
+        return $q->where('is_active', true)->where('hidden_after_sale', false);
+    }
+
+    protected static function booted(): void
+    {
+        // Restocking a sold-and-delivered piece puts it back in the shop.
+        static::saving(function (self $p) {
+            if ($p->hidden_after_sale && $p->stock_qty > 0) {
+                $p->hidden_after_sale = false;
+            }
+        });
+    }
+
+    public function isListed(): bool
+    {
+        return $this->is_active && ! $this->hidden_after_sale;
+    }
+
+    /** Orders that still hold this piece (not yet delivered, collected, cancelled or refunded). */
+    public function hasOpenOrders(?int $exceptOrderId = null): bool
+    {
+        return OrderItem::where('product_id', $this->id)
+            ->whereHas('order', fn ($q) => $q->whereNotIn('status', ['delivered', 'cancelled', 'refunded'])
+                ->when($exceptOrderId, fn ($q) => $q->whereKeyNot($exceptOrderId)))
+            ->exists();
     }
 
     /** Live, server-side price (cached 60s, invalidated on any rate change). */

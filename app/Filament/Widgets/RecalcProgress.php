@@ -9,6 +9,11 @@ use Illuminate\Support\Facades\Bus;
 /** Progress bar for the most recent price recalculation batch (polls every 2s). */
 class RecalcProgress extends Widget
 {
+    public static function canView(): bool
+    {
+        return \App\Support\StaffAccess::current('gold_rates');
+    }
+
     protected static string $view = 'filament.recalc-progress';
 
     protected int|string|array $columnSpan = 'full';

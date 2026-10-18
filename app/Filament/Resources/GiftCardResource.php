@@ -9,6 +9,7 @@ use App\Pricing\Money;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
+use App\Filament\Concerns\HasStaffArea;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -16,6 +17,10 @@ use Illuminate\Support\Facades\DB;
 
 class GiftCardResource extends Resource
 {
+    use HasStaffArea;
+
+    protected static string $staffArea = 'gift_cards';
+
     protected static ?string $model = GiftCard::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-gift';

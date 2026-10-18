@@ -57,7 +57,7 @@ return [
         'plus_vat' => '+ :vat% VAT at checkout',
         'valid_as_of' => 'Price valid as of :time · Gold rate :rate/g',
         'save_percent' => 'Save :percent%', 'save_amount' => 'Save :amount',
-        'add_to_cart' => 'Add to bag', 'sold_out' => 'Sold out', 'out_of_stock' => 'This piece is currently out of stock.',
+        'add_to_cart' => 'Add to bag', 'sold_out' => 'Sold', 'out_of_stock' => 'This piece is currently out of stock.',
         'only_left' => '{1} Only 1 left|[2,*] Only :count left',
         'related' => 'You may also like',
         'fixed_price' => 'Fixed price',

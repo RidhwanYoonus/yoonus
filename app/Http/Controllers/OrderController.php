@@ -14,7 +14,7 @@ class OrderController extends Controller
         return ($order->user_id && $request->user()?->id === $order->user_id)
             || in_array($order->number, $request->session()->get('orders', []), true)
             || $request->hasValidSignature()
-            || (bool) $request->user()?->is_admin;
+            || \App\Support\StaffAccess::can($request->user(), 'orders');
     }
 
     public function track(Request $request)

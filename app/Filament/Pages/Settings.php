@@ -28,6 +28,11 @@ class Settings extends Page implements HasForms
 
     public ?array $data = [];
 
+    public static function canAccess(): bool
+    {
+        return \App\Support\StaffAccess::current('settings', 'edit');
+    }
+
     public function mount(): void
     {
         $this->form->fill(Store::all());

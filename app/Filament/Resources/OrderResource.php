@@ -15,6 +15,7 @@ use Filament\Forms;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
 use Filament\Notifications\Notification;
+use App\Filament\Concerns\HasStaffArea;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -24,6 +25,10 @@ use Throwable;
 
 class OrderResource extends Resource
 {
+    use HasStaffArea;
+
+    protected static string $staffArea = 'orders';
+
     protected static ?string $model = Order::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-shopping-bag';
@@ -96,7 +101,7 @@ class OrderResource extends Resource
                 Forms\Components\TextInput::make('tracking_number')->default($record->tracking_number)->visible(! $record->isPickup()),
                 Forms\Components\TextInput::make('note')->maxLength(255),
             ])
-            ->visible(fn (Order $record) => $record->allowedTransitions() !== [])
+            ->visible(fn (Order $record) => $record->allowedTransitions() !== [] && \App\Support\StaffAccess::current('orders', 'edit'))
             ->action(function (Order $record, array $data) {
                 try {
                     if ($data['status'] === 'delivered') {

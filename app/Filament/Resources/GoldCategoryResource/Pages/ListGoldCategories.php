@@ -30,7 +30,7 @@ class ListGoldCategories extends ListRecords
     /** One form to type today's rate for every karat; only changed karats are updated. */
     private function updateAllAction(): Actions\Action
     {
-        return Actions\Action::make('updateAllRates')
+        return Actions\Action::make('updateAllRates')->visible(fn () => \App\Support\StaffAccess::current('gold_rates', 'edit'))
             ->label('Update all rates')
             ->icon('heroicon-o-pencil-square')
             ->modalHeading('Update today\'s gold rates')
@@ -67,7 +67,7 @@ class ListGoldCategories extends ListRecords
      */
     private function fetchFromWebsiteAction(): Actions\Action
     {
-        return Actions\Action::make('fetchWebsiteRates')
+        return Actions\Action::make('fetchWebsiteRates')->visible(fn () => \App\Support\StaffAccess::current('gold_rates', 'edit'))
             ->label('Fetch rate from Dubai City of Gold')
             ->icon('heroicon-o-cloud-arrow-down')
             ->modalHeading('Today\'s gold rate from the website')

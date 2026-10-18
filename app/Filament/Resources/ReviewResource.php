@@ -6,12 +6,17 @@ use App\Filament\Resources\ReviewResource\Pages;
 use App\Models\Review;
 use Filament\Forms;
 use Filament\Forms\Form;
+use App\Filament\Concerns\HasStaffArea;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
 class ReviewResource extends Resource
 {
+    use HasStaffArea;
+
+    protected static string $staffArea = 'reviews';
+
     protected static ?string $model = Review::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-chat-bubble-left-right';

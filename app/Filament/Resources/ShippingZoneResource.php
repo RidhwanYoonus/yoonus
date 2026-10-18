@@ -6,12 +6,17 @@ use App\Filament\Resources\ShippingZoneResource\Pages;
 use App\Models\ShippingZone;
 use Filament\Forms;
 use Filament\Forms\Form;
+use App\Filament\Concerns\HasStaffArea;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
 class ShippingZoneResource extends Resource
 {
+    use HasStaffArea;
+
+    protected static string $staffArea = 'shipping_zones';
+
     protected static ?string $model = ShippingZone::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-truck';

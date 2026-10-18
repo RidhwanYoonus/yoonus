@@ -15,7 +15,7 @@ class ProductController extends Controller
 {
     public function show(Request $request, Product $product)
     {
-        abort_unless($product->is_active, 404);
+        abort_unless($product->isListed(), 404);
         $product->load('goldCategory', 'category');
         Product::whereKey($product->id)->increment('view_count');
 

@@ -14,7 +14,7 @@ class IdDocumentController extends Controller
 {
     public function __invoke(Request $request, string $owner, int $id, string $side)
     {
-        abort_unless($request->user()?->is_admin, 403);
+        abort_unless(\App\Support\StaffAccess::can($request->user(), $owner === 'order' ? 'orders' : 'customers'), 403);
         $model = $owner === 'order' ? Order::findOrFail($id) : User::findOrFail($id);
         $path = $side === 'back' ? $model->id_back_path : $model->id_front_path;
         abort_unless($path && Storage::disk(IdDocument::DISK)->exists($path), 404);

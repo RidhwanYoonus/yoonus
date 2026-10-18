@@ -10,6 +10,7 @@ use App\Pricing\Money;
 use App\Pricing\PricingService;
 use Filament\Forms;
 use Filament\Forms\Form;
+use App\Filament\Concerns\HasStaffArea;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -19,6 +20,10 @@ use Illuminate\Support\Str;
 
 class ProductResource extends Resource
 {
+    use HasStaffArea;
+
+    protected static string $staffArea = 'products';
+
     protected static ?string $model = Product::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-sparkles';
@@ -104,7 +109,10 @@ class ProductResource extends Resource
                         ->content(fn (?Product $record) => $record?->price_calculated_at?->diffForHumans() ?? '—'),
                 ]),
                 Forms\Components\Section::make('Stock & visibility')->schema([
-                    Forms\Components\TextInput::make('stock_qty')->label('Stock')->numeric()->required()->default(1)->minValue(0),
+                    Forms\Components\TextInput::make('stock_qty')->label('Stock')->numeric()->required()->default(1)->minValue(0)
+                        ->helperText(fn (?Product $record) => $record?->hidden_after_sale
+                            ? 'Sold and handed over — hidden from the shop. Enter new stock to show it again.'
+                            : 'At 0 the shop shows "Sold" and stops orders; after that order is delivered the piece is hidden.'),
                     Forms\Components\TextInput::make('low_stock_threshold')->numeric()->default(2)->minValue(0),
                     Forms\Components\Toggle::make('is_active')->label('Visible in shop')->default(true),
                     Forms\Components\Toggle::make('is_featured')->label('Featured on homepage'),
@@ -175,6 +183,7 @@ class ProductResource extends Resource
                 Tables\Columns\TextColumn::make('cached_subtotal')->label('Price (excl. VAT)')->money('AED')->sortable()->weight('bold'),
                 Tables\Columns\TextColumn::make('price_calculated_at')->label('Recalculated')->since()->sortable()->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('stock_qty')->label('Stock')->sortable()
+                    ->description(fn (Product $record) => $record->hidden_after_sale ? 'Sold · hidden' : ($record->stock_qty <= 0 ? 'Sold · showing' : null))
                     ->color(fn (Product $record) => $record->isLowStock() ? 'danger' : null)->icon(fn (Product $record) => $record->isLowStock() ? 'heroicon-o-exclamation-triangle' : null),
                 Tables\Columns\ToggleColumn::make('is_active')->label('Live'),
                 Tables\Columns\ToggleColumn::make('is_featured')->label('Featured')->toggleable(isToggledHiddenByDefault: true),
@@ -192,7 +201,7 @@ class ProductResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\BulkAction::make('recalculate')->icon('heroicon-o-arrow-path')
+                    Tables\Actions\BulkAction::make('recalculate')->visible(fn () => \App\Support\StaffAccess::current('products', 'edit'))->icon('heroicon-o-arrow-path')
                         ->action(fn ($records) => $records->each(fn ($p) => app(PricingService::class)->refreshCachedPrice($p, null, 'manual'))),
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),

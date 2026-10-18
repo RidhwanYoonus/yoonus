@@ -6,6 +6,7 @@ use App\Filament\Resources\CampaignResource\Pages;
 use App\Models\Campaign;
 use Filament\Forms;
 use Filament\Forms\Form;
+use App\Filament\Concerns\HasStaffArea;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -13,6 +14,10 @@ use Illuminate\Support\Str;
 
 class CampaignResource extends Resource
 {
+    use HasStaffArea;
+
+    protected static string $staffArea = 'campaigns';
+
     protected static ?string $model = Campaign::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-megaphone';

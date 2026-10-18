@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\GoldPriceAlertResource\Pages;
 use App\Models\GoldPriceAlert;
+use App\Filament\Concerns\HasStaffArea;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -11,6 +12,10 @@ use Filament\Tables\Table;
 /** Customers who asked to be told when a karat's gold rate drops (homepage / account form). */
 class GoldPriceAlertResource extends Resource
 {
+    use HasStaffArea;
+
+    protected static string $staffArea = 'gold_alerts';
+
     protected static ?string $model = GoldPriceAlert::class;
 
     protected static ?string $slug = 'gold-price-alerts';

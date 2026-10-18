@@ -9,6 +9,11 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class StatsOverview extends Base
 {
+    public static function canView(): bool
+    {
+        return \App\Support\StaffAccess::current('reports');
+    }
+
     protected static ?int $sort = 1;
 
     protected function getStats(): array

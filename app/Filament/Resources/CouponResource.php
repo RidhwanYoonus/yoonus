@@ -9,12 +9,17 @@ use App\Models\GoldCategory;
 use App\Models\Product;
 use Filament\Forms;
 use Filament\Forms\Form;
+use App\Filament\Concerns\HasStaffArea;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
 class CouponResource extends Resource
 {
+    use HasStaffArea;
+
+    protected static string $staffArea = 'coupons';
+
     protected static ?string $model = Coupon::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-ticket';

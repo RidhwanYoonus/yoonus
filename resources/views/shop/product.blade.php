@@ -36,7 +36,7 @@
         <div>
             <p class="eyebrow">{{ collect([$product->goldCategory ? $product->goldCategory->name.' '.__('shop.product.gold') : null, $product->category?->localized('name')])->filter()->join(' · ') }}</p>
             <h1 class="font-display mt-2 text-3xl sm:text-4xl">{{ $name }}</h1>
-            @if (auth()->user()?->is_admin)
+            @if (\App\Support\StaffAccess::current('products', 'edit'))
                 <a href="{{ \App\Filament\Resources\ProductResource::getUrl('edit', ['record' => $product]) }}" class="mt-2 inline-flex items-center gap-1 rounded-full border border-gold-500 px-3 py-1 text-xs text-gold-700 hover:bg-gold-600 hover:text-white">✎ Edit in admin</a>
             @endif
             <p class="mt-1 text-xs text-muted">SKU {{ $product->sku }} @if($product->hallmark_ref) · {{ __('shop.product.hallmark') }} {{ $product->hallmark_ref }} @endif</p>

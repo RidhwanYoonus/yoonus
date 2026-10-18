@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\VideoCallRequestResource\Pages;
 use App\Models\VideoCallRequest;
+use App\Filament\Concerns\HasStaffArea;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -12,6 +13,10 @@ use Illuminate\Database\Eloquent\Builder;
 /** Customers waiting for a live video call. The list refreshes itself every 10 seconds. */
 class VideoCallRequestResource extends Resource
 {
+    use HasStaffArea;
+
+    protected static string $staffArea = 'video_calls';
+
     protected static ?string $model = VideoCallRequest::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-video-camera';

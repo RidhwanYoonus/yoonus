@@ -23,7 +23,7 @@ class CartController extends Controller
 
     public function add(Request $request, Product $product)
     {
-        abort_unless($product->is_active, 404);
+        abort_unless($product->isListed(), 404);
         if (! $product->inStock()) {
             return back()->withErrors(['cart' => __('shop.product.out_of_stock')]);
         }

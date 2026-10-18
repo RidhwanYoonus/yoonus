@@ -7,6 +7,7 @@ use App\Models\NotificationLog;
 use Filament\Forms;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
+use App\Filament\Concerns\HasStaffArea;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -15,6 +16,10 @@ use Illuminate\Database\Eloquent\Builder;
 /** Every WhatsApp and email message the shop sent (or tried to send). */
 class MessageLogResource extends Resource
 {
+    use HasStaffArea;
+
+    protected static string $staffArea = 'messages';
+
     protected static ?string $model = NotificationLog::class;
 
     protected static ?string $slug = 'messages-sent';

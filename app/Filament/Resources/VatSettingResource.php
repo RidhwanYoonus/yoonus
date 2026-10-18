@@ -8,12 +8,17 @@ use App\Pricing\PricingService;
 use App\Support\StorefrontCache;
 use Filament\Forms;
 use Filament\Forms\Form;
+use App\Filament\Concerns\HasStaffArea;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
 class VatSettingResource extends Resource
 {
+    use HasStaffArea;
+
+    protected static string $staffArea = 'vat';
+
     protected static ?string $model = VatSetting::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-receipt-percent';

@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\NewsletterSubscriberResource\Pages;
 use App\Models\NewsletterSubscriber;
+use App\Filament\Concerns\HasStaffArea;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -11,6 +12,10 @@ use Illuminate\Database\Eloquent\Builder;
 
 class NewsletterSubscriberResource extends Resource
 {
+    use HasStaffArea;
+
+    protected static string $staffArea = 'newsletter';
+
     protected static ?string $model = NewsletterSubscriber::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-envelope';

@@ -10,6 +10,11 @@ use Filament\Widgets\TableWidget;
 
 class LowStock extends TableWidget
 {
+    public static function canView(): bool
+    {
+        return \App\Support\StaffAccess::current('products');
+    }
+
     protected static ?int $sort = 3;
 
     protected static ?string $heading = 'Low stock';

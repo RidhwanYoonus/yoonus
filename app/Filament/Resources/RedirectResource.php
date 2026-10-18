@@ -6,12 +6,17 @@ use App\Filament\Resources\RedirectResource\Pages;
 use App\Models\Redirect;
 use Filament\Forms;
 use Filament\Forms\Form;
+use App\Filament\Concerns\HasStaffArea;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 
 class RedirectResource extends Resource
 {
+    use HasStaffArea;
+
+    protected static string $staffArea = 'redirects';
+
     protected static ?string $model = Redirect::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-arrow-uturn-right';

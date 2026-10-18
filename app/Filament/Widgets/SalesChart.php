@@ -7,6 +7,11 @@ use Filament\Widgets\ChartWidget;
 
 class SalesChart extends ChartWidget
 {
+    public static function canView(): bool
+    {
+        return \App\Support\StaffAccess::current('reports');
+    }
+
     protected static ?string $heading = 'Revenue · last 30 days';
 
     protected static ?int $sort = 2;
