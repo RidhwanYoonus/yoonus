@@ -15,7 +15,7 @@ class GatewayManager
             'card', 'applepay', 'googlepay' => $this->card(),
             'tabby' => app(TabbyGateway::class),
             'tamara' => app(TamaraGateway::class),
-            'mock', 'stripe', 'telr' => $this->card($method),
+            'mock', 'stripe', 'telr', 'mettpay' => $this->card($method),
             default => throw new InvalidArgumentException("Unknown payment method [$method]."),
         };
     }
@@ -25,6 +25,7 @@ class GatewayManager
         return match ($driver ?? Settings::get('card_gateway', 'mock')) {
             'stripe' => app(StripeGateway::class),
             'telr' => app(TelrGateway::class),
+            'mettpay' => app(MettpayGateway::class),
             default => app(MockGateway::class),
         };
     }

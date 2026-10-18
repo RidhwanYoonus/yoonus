@@ -131,6 +131,7 @@ return [
     ],
 
     'pay' => [
+        'not_completed' => 'The card payment was not completed. You can try again from your order page or choose another payment method.',
         'applepay' => 'Apple Pay', 'applepay_note' => 'Pay with Face ID or Touch ID', 'googlepay' => 'Google Pay', 'googlepay_note' => 'Pay with your Google account',
         'card' => 'Credit / debit card', 'card_note' => 'Visa, Mastercard',
         'fee_note' => ':fee payment fee',
@@ -141,7 +142,7 @@ return [
         'bnpl_rejected' => 'The instalment provider could not approve this order. Please choose another payment method.',
         'start_failed' => 'We could not start the payment. Your order is saved — please try again or contact us on WhatsApp.',
     ],
-    'pay_status' => ['unpaid' => 'Awaiting payment', 'paid' => 'Paid', 'cod' => 'Pay on delivery', 'refunded' => 'Refunded'],
+    'pay_status' => ['verifying' => 'Payment received — being confirmed', 'unpaid' => 'Awaiting payment', 'paid' => 'Paid', 'cod' => 'Pay on delivery', 'refunded' => 'Refunded'],
     'status' => ['pending' => 'Placed', 'paid' => 'Paid', 'packed' => 'Packed', 'shipped' => 'Shipped', 'ready' => 'Ready for pickup', 'delivered' => 'Delivered', 'collected' => 'Collected', 'cancelled' => 'Cancelled', 'refunded' => 'Refunded'],
 
     'order' => [

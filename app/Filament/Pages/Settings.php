@@ -77,8 +77,18 @@ class Settings extends Page implements HasForms
                     $secret('gold_rate_api_key', 'Gold rate API key'),
                 ]),
                 Forms\Components\Tabs\Tab::make('Payments')->icon('heroicon-o-credit-card')->columns(3)->schema([
-                    Forms\Components\Select::make('card_gateway')->options(['mock' => 'Test mode (simulated)', 'telr' => 'Telr', 'stripe' => 'Stripe'])->required()
+                    Forms\Components\Select::make('card_gateway')->options(['mock' => 'Test mode (simulated)', 'mettpay' => 'Mettpay (PayBy)', 'telr' => 'Telr', 'stripe' => 'Stripe'])->required()->live()
                         ->helperText('API keys are set in the server .env file.'),
+                    Forms\Components\Section::make('Mettpay (PayBy) card payments')->columns(2)->columnSpanFull()
+                        ->visible(fn (Forms\Get $get) => $get('card_gateway') === 'mettpay')
+                        ->description('From your Mettpay merchant portal. Test card: 5123 4500 0000 0008 · 05/31 · CVV 100.')
+                        ->schema([
+                            $text('mettpay_merchant_key', 'Merchant key')->placeholder('live-…'),
+                            $secret('mettpay_merchant_secret', 'Merchant secret'),
+                            $text('mettpay_api_url', 'Create-order URL')->url()->placeholder(\App\Payments\MettpayGateway::DEFAULT_URL),
+                            $text('mettpay_status_url', 'Payment status URL (optional)')->url()
+                                ->helperText('Ask Mettpay for their payment-status (or "query order") API. With it, paid orders are confirmed automatically; without it, staff confirm each payment in the Mettpay dashboard. Use {id} where the order number goes.'),
+                        ]),
                     Forms\Components\Toggle::make('applepay_enabled')->label('Apple Pay')->inline(false)
                         ->helperText('Shown on iPhone, iPad and Mac (Safari). Turn Apple Pay on in your Telr / Stripe account too.'),
                     Forms\Components\Toggle::make('googlepay_enabled')->label('Google Pay')->inline(false)

@@ -50,7 +50,11 @@ return [
         'googlepay_enabled' => true,
         'cod_enabled' => true,
         'cod_max_total' => 10000,
-        'card_gateway' => 'mock',           // mock | stripe | telr | paytabs
+        'card_gateway' => 'mock',           // mock | mettpay | stripe | telr
+        'mettpay_api_url' => 'https://application.mettpay.com/api/orders/createorder',
+        'mettpay_merchant_key' => null,
+        'mettpay_merchant_secret' => null,
+        'mettpay_status_url' => null,
         'tabby_enabled' => true,
         'tabby_min' => 100,
         'tabby_max' => 15000,

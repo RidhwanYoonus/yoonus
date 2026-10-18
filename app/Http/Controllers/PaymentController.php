@@ -31,7 +31,14 @@ class PaymentController extends Controller
     /** Shopper returns from the hosted page; we still verify server-to-server. */
     public function return(Request $request, string $gateway, string $order)
     {
-        abort_unless(in_array($gateway, ['telr', 'tabby', 'tamara', 'stripe'], true), 404);
+        abort_unless(in_array($gateway, ['telr', 'tabby', 'tamara', 'stripe', 'mettpay'], true), 404);
+        if ($gateway === 'mettpay') {
+            abort_unless($request->hasValidSignature(), 403);
+            if ($request->query('result') !== 'success') {
+                return redirect()->route('order.show', $order)->withErrors(['payment' => __('shop.pay.not_completed')]);
+            }
+            $request->session()->push('orders', $order);
+        }
         try {
             if ($gateway !== 'stripe') {
                 $this->gateways->for($gateway)->confirm($request);
