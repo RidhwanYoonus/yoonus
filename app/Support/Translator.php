@@ -40,7 +40,11 @@ class Translator
         } catch (RuntimeException $e) {
             throw $e;
         } catch (\Throwable $e) {
-            throw new RuntimeException('Could not reach the translation service — check the internet connection and try again.', 0, $e);
+            report($e);
+            $reason = str_contains($e->getMessage(), 'cURL error 60') || str_contains($e->getMessage(), 'SSL')
+                ? 'secure connection (SSL certificate) problem on this PC'
+                : mb_substr(preg_replace('/\s+/', ' ', $e->getMessage()), 0, 160);
+            throw new RuntimeException('Could not reach the translation service ('.$reason.').', 0, $e);
         }
     }
 

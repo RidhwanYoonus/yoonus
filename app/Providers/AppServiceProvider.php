@@ -27,6 +27,15 @@ class AppServiceProvider extends ServiceProvider
         if ($this->app->isProduction()) {
             URL::forceScheme('https');
         }
+        // Windows PHP (e.g. XAMPP) often has no CA list, so every HTTPS call (translation, WhatsApp,
+        // newsletter, gold rates) fails with "cURL error 60". Trust the Windows certificate store plus
+        // the Mozilla list shipped in resources/certs — certificates are still fully verified.
+        if (! ini_get('curl.cainfo') && ! ini_get('openssl.cafile') && is_file(resource_path('certs/cacert.pem'))) {
+            \Illuminate\Support\Facades\Http::globalOptions(array_filter([
+                'verify' => resource_path('certs/cacert.pem'),
+                'curl' => PHP_OS_FAMILY === 'Windows' && defined('CURLSSLOPT_NATIVE_CA') ? [CURLOPT_SSL_OPTIONS => CURLSSLOPT_NATIVE_CA] : null,
+            ]));
+        }
         try {
             \App\Support\MailSettings::apply();
         } catch (\Throwable) {
