@@ -37,7 +37,7 @@ class ArabicTranslateTest extends TestCase
         $this->assertSame('قلادة "ذهب"', Translator::toArabic('Necklace "gold"'));
 
         Settings::set(['translation_provider' => 'deepl', 'deepl_key' => 'abc:fx']);
-        $this->assertSame('أقراط', Translator::toArabic('Earrings'));
+        $this->assertSame('أقراط', Translator::toArabic('Earrings with blue stones'));
         Http::assertSent(fn (Request $r) => $r->hasHeader('Authorization', 'DeepL-Auth-Key abc:fx') && $r['target_lang'] === 'AR');
     }
 
@@ -101,5 +101,37 @@ class ArabicTranslateTest extends TestCase
         $page->call('saveMissingArabic', $p->id, 'sku', 'HACK');                   // not an Arabic field
         $this->assertSame('خاتم ذهب', $p->fresh()->name_ar);
         $this->assertSame('T-1', $p->fresh()->sku);
+    }
+
+    public function test_jewellery_words_use_the_dictionary_and_owner_words_win(): void
+    {
+        Http::fake();
+        $this->assertSame('خواتم', Translator::toArabic('Rings'));          // not "phone calls"
+        $this->assertSame('أقراط', Translator::toArabic('  earrings. '));
+        Settings::set(['translation_glossary' => "Kada = كادا\nRings = خواتم ذهب"]);
+        $this->assertSame('كادا', Translator::toArabic('kada'));
+        $this->assertSame('خواتم ذهب', Translator::toArabic('Rings'));
+        Http::assertNothingSent();
+    }
+
+    public function test_free_translator_prefers_machine_translation_over_crowd_entries(): void
+    {
+        Http::fake(['api.mymemory.translated.net/*' => Http::response(['responseStatus' => 200,
+            'responseData' => ['translatedText' => 'اتصال'],
+            'matches' => [['created-by' => 'someone', 'translation' => 'اتصال'], ['created-by' => 'MT!', 'translation' => 'خاتم مصنوع يدويا']]])]);
+        $this->assertSame('خاتم مصنوع يدويا', Translator::toArabic('Handmade ring'));
+    }
+
+    public function test_bulk_redo_replaces_earlier_wrong_arabic(): void
+    {
+        $this->seed(ReferenceDataSeeder::class);
+        $cat = \App\Models\Category::create(['name' => 'Rings', 'name_ar' => 'اتصال', 'slug' => 'rings-x']);
+        Http::fake();
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+
+        Livewire::test(\App\Filament\Resources\CategoryResource\Pages\ManageCategories::class)->callAction('translateMissingArabic', ['overwrite' => false]);
+        $this->assertSame('اتصال', $cat->fresh()->name_ar);
+        Livewire::test(\App\Filament\Resources\CategoryResource\Pages\ManageCategories::class)->callAction('translateMissingArabic', ['overwrite' => true]);
+        $this->assertSame('خواتم', $cat->fresh()->name_ar);
     }
 }

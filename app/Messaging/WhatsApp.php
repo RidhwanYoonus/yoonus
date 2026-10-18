@@ -132,9 +132,9 @@ class WhatsApp
     /** Template variables may not contain new lines, tabs or long runs of spaces. */
     public static function templateText(string $text): string
     {
-        $flat = preg_replace('/\s*\n+\s*/', ' · ', trim($text));
+        $flat = preg_replace('/\s*\n+\s*/u', ' · ', trim($text));
 
-        return mb_substr(preg_replace('/[\t ]{2,}/', ' ', $flat), 0, 1000);
+        return mb_substr(preg_replace('/[\t ]{2,}/u', ' ', $flat), 0, 1000);
     }
 
     /** wa.me deep link with a pre-filled message (share / enquire buttons). */

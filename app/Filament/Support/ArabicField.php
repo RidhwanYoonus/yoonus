@@ -40,20 +40,40 @@ class ArabicField
             });
     }
 
+    /**
+     * Browser-side translator used when the server cannot connect: jewellery dictionary first,
+     * then MyMemory, preferring its machine translation over crowd entries. Defines window.jsTrAr(line).
+     */
+    public static function jsHelpers(): string
+    {
+        $glossary = json_encode(\App\Support\JewelleryGlossary::all(), JSON_UNESCAPED_UNICODE);
+        $email = json_encode((string) (\App\Support\Settings::get('mymemory_email') ?: \App\Support\Settings::get('store_email')));
+
+        return <<<JS
+window.jsTrAr = window.jsTrAr || (() => {
+    const glossary = {$glossary}, email = {$email};
+    const key = (s) => s.trim().replace(/[.!:;,]+$/, '').replace(/\\s+/g, ' ').toLowerCase();
+    const decode = (s) => { const t = document.createElement('textarea'); t.innerHTML = s; return t.value; };
+    return async (line) => {
+        if (glossary[key(line)]) return glossary[key(line)];
+        const r = await fetch('https://api.mymemory.translated.net/get?langpair=en%7Car&mt=1&q=' + encodeURIComponent(line.slice(0, 480)) + (email ? '&de=' + encodeURIComponent(email) : ''));
+        const j = await r.json();
+        if (j.responseStatus != 200) throw new Error(j.responseDetails || 'daily limit reached');
+        const mt = (j.matches || []).find((m) => m['created-by'] === 'MT!' && m.translation);
+        return decode(mt ? mt.translation : j.responseData.translatedText);
+    };
+})();
+JS;
+    }
+
     public static function browserScript(string $text, string $statePath): string
     {
-        return sprintf(<<<'JS'
+        return self::jsHelpers().sprintf(<<<'JS'
 (async () => {
     const text = %s, path = %s;
     try {
         const out = [];
-        for (const line of text.split(/\r?\n/)) {
-            if (!line.trim()) { out.push(line); continue; }
-            const r = await fetch('https://api.mymemory.translated.net/get?langpair=en%%7Car&q=' + encodeURIComponent(line.slice(0, 480)));
-            const j = await r.json();
-            if (j.responseStatus != 200) throw new Error(j.responseDetails || 'limit reached');
-            const t = document.createElement('textarea'); t.innerHTML = j.responseData.translatedText; out.push(t.value);
-        }
+        for (const line of text.split(/\r?\n/)) out.push(line.trim() ? await window.jsTrAr(line) : line);
         $wire.set(path, out.join('\n'));
         new FilamentNotification().title('Translated (via your browser) — please check the Arabic before saving').success().send();
     } catch (e) {

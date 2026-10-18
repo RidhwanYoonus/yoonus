@@ -3,7 +3,6 @@
 namespace App\Filament\Concerns;
 
 use App\Support\ConnectionProblem;
-use App\Support\Settings;
 use App\Support\StaffAccess;
 use App\Support\Translator;
 use Filament\Actions\Action;
@@ -28,14 +27,17 @@ trait TranslatesMissingArabic
             ->icon('heroicon-o-language')
             ->color('gray')
             ->visible(fn () => StaffAccess::current(static::getResource()::staffArea(), 'edit'))
-            ->requiresConfirmation()
             ->modalHeading('Translate missing Arabic')
-            ->modalDescription(fn () => ($n = count($this->missingArabic())) === 0
-                ? 'Every Arabic field is already filled in.'
-                : "{$n} blank Arabic field(s) will be filled from the English text. Arabic you already wrote is not changed. Please check the results afterwards.")
+            ->modalDescription(fn () => (($n = count($this->missingArabic())) === 0 ? 'Every Arabic field is already filled in.' : "{$n} blank Arabic field(s) will be filled from the English text.")
+                .' Please check the results afterwards.')
+            ->form([
+                \Filament\Forms\Components\Toggle::make('overwrite')->label('Redo all Arabic (also replace Arabic that is already filled in)')
+                    ->helperText('Use this to fix earlier machine translations. Arabic you typed yourself will be replaced too.'),
+            ])
             ->modalSubmitActionLabel('Translate')
-            ->action(function () {
-                $jobs = $this->missingArabic();
+            ->action(function (array $data) {
+                $overwrite = (bool) ($data['overwrite'] ?? false);
+                $jobs = $this->missingArabic(overwrite: $overwrite);
                 if ($jobs === []) {
                     Notification::make()->success()->title('Nothing to translate — all Arabic fields are filled in')->send();
 
@@ -44,7 +46,7 @@ trait TranslatesMissingArabic
                 $done = 0;
                 try {
                     foreach ($jobs as $i => $job) {
-                        $this->saveMissingArabic($job['id'], $job['field'], Translator::toArabic($job['text']));
+                        $this->saveMissingArabic($job['id'], $job['field'], Translator::toArabic($job['text']), $overwrite);
                         $done++;
                         unset($jobs[$i]);
                     }
@@ -55,7 +57,7 @@ trait TranslatesMissingArabic
 
                         return;
                     }
-                    $this->js($this->browserTranslateScript(array_values($jobs), $done));
+                    $this->js($this->browserTranslateScript(array_values($jobs), $done, $overwrite));
                 } catch (Throwable $e) {
                     Notification::make()->warning()->title(($done ? "Translated {$done}, then stopped: " : '').$e->getMessage())->persistent()->send();
                 }
@@ -63,13 +65,13 @@ trait TranslatesMissingArabic
     }
 
     /** @return array<int,array{id:int,field:string,text:string}> */
-    protected function missingArabic(int $limit = 300): array
+    protected function missingArabic(int $limit = 300, bool $overwrite = false): array
     {
         $model = static::getResource()::getModel();
         $jobs = [];
         foreach ($this->arabicPairs() as $en => $ar) {
             $model::query()
-                ->where(fn (Builder $q) => $q->whereNull($ar)->orWhere($ar, ''))
+                ->when(! $overwrite, fn (Builder $q) => $q->where(fn (Builder $q) => $q->whereNull($ar)->orWhere($ar, '')))
                 ->where(fn (Builder $q) => $q->whereNotNull($en)->where($en, '!=', ''))
                 ->orderBy('id')->limit($limit)->get(['id', $en])
                 ->each(function ($r) use (&$jobs, $en, $ar) {
@@ -81,14 +83,14 @@ trait TranslatesMissingArabic
     }
 
     /** Called by the browser fallback for each translated field; only fills fields that are still blank. */
-    public function saveMissingArabic(int $id, string $field, string $value): bool
+    public function saveMissingArabic(int $id, string $field, string $value, bool $overwrite = false): bool
     {
         if (! in_array($field, $this->arabicPairs(), true) || ! StaffAccess::current(static::getResource()::staffArea(), 'edit')) {
             return false;
         }
         $record = static::getResource()::getModel()::find($id);
         $value = trim(strip_tags($value));
-        if (! $record || filled($record->{$field}) || $value === '') {
+        if (! $record || (! $overwrite && filled($record->{$field})) || $value === '') {
             return false;
         }
         $record->forceFill([$field => mb_substr($value, 0, $field === 'description_ar' ? 5000 : 255)])->save();
@@ -96,33 +98,24 @@ trait TranslatesMissingArabic
         return true;
     }
 
-    protected function browserTranslateScript(array $jobs, int $alreadyDone): string
+    protected function browserTranslateScript(array $jobs, int $alreadyDone, bool $overwrite = false): string
     {
-        $email = (string) (Settings::get('mymemory_email') ?: Settings::get('store_email'));
-
-        return sprintf(<<<'JS'
+        return \App\Filament\Support\ArabicField::jsHelpers().sprintf(<<<'JS'
 (async () => {
-    const jobs = %s, email = %s;
+    const jobs = %s, overwrite = %s;
     let done = %d, failed = '';
     const note = (t, kind) => { const n = new FilamentNotification().title(t); (kind === 'ok' ? n.success() : n.warning()).send(); };
     note('Translating ' + jobs.length + ' field(s) in your browser… keep this page open', 'ok');
-    const decode = (s) => { const t = document.createElement('textarea'); t.innerHTML = s; return t.value; };
     for (const job of jobs) {
         try {
             const out = [];
-            for (const line of job.text.split(/\r?\n/)) {
-                if (!line.trim()) { out.push(line); continue; }
-                const r = await fetch('https://api.mymemory.translated.net/get?langpair=en%%7Car&q=' + encodeURIComponent(line.slice(0, 480)) + (email ? '&de=' + encodeURIComponent(email) : ''));
-                const j = await r.json();
-                if (j.responseStatus != 200) throw new Error(j.responseDetails || 'daily limit reached');
-                out.push(decode(j.responseData.translatedText));
-            }
-            if (await $wire.saveMissingArabic(job.id, job.field, out.join('\n'))) done++;
+            for (const line of job.text.split(/\r?\n/)) out.push(line.trim() ? await window.jsTrAr(line) : line);
+            if (await $wire.saveMissingArabic(job.id, job.field, out.join('\n'), overwrite)) done++;
         } catch (e) { failed = e.message; break; }
     }
     note(failed ? ('Translated ' + done + ' field(s), then stopped: ' + failed) : ('Translated ' + done + ' field(s) — please check the Arabic'), failed ? 'warn' : 'ok');
     $wire.$refresh();
 })();
-JS, json_encode($jobs, JSON_UNESCAPED_UNICODE), json_encode($email), $alreadyDone);
+JS, json_encode($jobs, JSON_UNESCAPED_UNICODE), json_encode($overwrite), $alreadyDone);
     }
 }

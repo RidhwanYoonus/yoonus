@@ -62,6 +62,9 @@ class Settings extends Page implements HasForms
                             ->options(['auto' => 'Automatic (best service with a key, else free)', 'mymemory' => 'Free (MyMemory, no account)', 'google' => 'Google Translate (API key)', 'deepl' => 'DeepL (API key, best quality)']),
                         $secret('google_translate_key', 'Google Cloud Translation API key')->visible(fn (Forms\Get $get) => in_array($get('translation_provider'), ['auto', 'google'], true)),
                         $secret('deepl_key', 'DeepL API key')->visible(fn (Forms\Get $get) => in_array($get('translation_provider'), ['auto', 'deepl'], true)),
+                        Forms\Components\Textarea::make('translation_glossary')->label('My words (always translated this way)')->rows(5)->columnSpanFull()
+                            ->placeholder("Kada = كادا\nJhumka = جمكا\nTwisted Bangle Pair = زوج أساور ملتوية")
+                            ->helperText('One per line: English = Arabic. Used before the translator, so names and shop words are always right. Common jewellery words (rings, necklaces, bangles, earrings, pendants, sets, gold, diamond…) are already built in.'),
                     ]),
                 ]),
                 Forms\Components\Tabs\Tab::make('Pricing')->icon('heroicon-o-calculator')->columns(2)->schema([

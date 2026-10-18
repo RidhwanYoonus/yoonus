@@ -30,9 +30,12 @@ class Translator
         if ($text === '') {
             throw new RuntimeException('Type the English text first.');
         }
+        if (($known = JewelleryGlossary::lookup($text)) !== null) {
+            return $known;
+        }
 
         try {
-            return Cache::remember('tr.ar.'.self::provider().'.'.md5($text), now()->addDays(30), fn () => match (self::provider()) {
+            return Cache::remember('tr2.ar.'.self::provider().'.'.md5($text), now()->addDays(30), fn () => match (self::provider()) {
                 'google' => self::google($text),
                 'deepl' => self::deepl($text),
                 default => self::myMemory($text),
@@ -73,12 +76,13 @@ class Translator
     /** Free service: up to 500 characters per call, so long descriptions go line by line. */
     private static function myMemory(string $text): string
     {
-        $lines = preg_split('/\R/', $text);
+        $lines = preg_split('/\R/u', $text);
         foreach ($lines as $n => $line) {
             if (trim($line) === '') {
                 continue;
             }
-            $lines[$n] = implode(' ', array_map(fn ($chunk) => self::myMemoryCall($chunk), self::chunks($line, 450)));
+            $lines[$n] = JewelleryGlossary::lookup($line)
+                ?? implode(' ', array_map(fn ($chunk) => self::myMemoryCall($chunk), self::chunks($line, 450)));
         }
 
         return implode("\n", $lines);
@@ -94,7 +98,19 @@ class Translator
             throw new RuntimeException('Free translator: '.($res->json('responseDetails') ?: 'not available right now').' — try again later or add a Google/DeepL key.');
         }
 
-        return html_entity_decode((string) $res->json('responseData.translatedText'), ENT_QUOTES);
+        return html_entity_decode(self::bestMyMemoryMatch($res->json()), ENT_QUOTES);
+    }
+
+    /** Prefer MyMemory's machine translation ("MT!") over crowd memory entries, which are often wrong. */
+    public static function bestMyMemoryMatch(array $json): string
+    {
+        foreach ($json['matches'] ?? [] as $match) {
+            if (($match['created-by'] ?? '') === 'MT!' && filled($match['translation'] ?? null)) {
+                return (string) $match['translation'];
+            }
+        }
+
+        return (string) ($json['responseData']['translatedText'] ?? '');
     }
 
     private static function chunks(string $line, int $max): array
