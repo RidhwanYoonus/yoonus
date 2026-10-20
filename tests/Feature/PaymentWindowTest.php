@@ -102,4 +102,18 @@ class PaymentWindowTest extends TestCase
         $this->assertSame('pending', $cod->fresh()->status);
         $this->assertSame('paid', $card->fresh()->status);
     }
+
+    public function test_admin_sets_the_time_to_pay_in_settings(): void
+    {
+        $admin = \App\Models\User::factory()->create(['is_admin' => true]);
+        $this->actingAs($admin)->get('/admin/settings')->assertOk()->assertSee('Gold price hold — time to pay')->assertSee('Customer must pay within');
+
+        \Livewire\Livewire::actingAs($admin)->test(\App\Filament\Pages\Settings::class)
+            ->set('data.payment_window_minutes', 15)->call('save')->assertHasNoErrors();
+        $this->assertSame(15, OrderService::paymentWindow());
+
+        $this->actingAs($admin);   // the next order is held for 15 minutes
+        $order = $this->place();
+        $this->assertEqualsWithDelta(now()->addMinutes(15)->timestamp, $order->payment_expires_at->timestamp, 5);
+    }
 }

@@ -77,6 +77,15 @@ class Settings extends Page implements HasForms
                     $secret('gold_rate_api_key', 'Gold rate API key'),
                 ]),
                 Forms\Components\Tabs\Tab::make('Payments')->icon('heroicon-o-credit-card')->columns(3)->schema([
+                    Forms\Components\Section::make('Gold price hold — time to pay')->icon('heroicon-o-clock')->columns(2)->columnSpanFull()
+                        ->description('How long an online order keeps its gold price. If the customer has not paid by then, the order is cancelled automatically, the stock is released and no invoice is made. They must order again at the current gold price. (Cash on delivery is not affected.)')
+                        ->schema([
+                            Forms\Components\Select::make('payment_window_minutes')->label('Customer must pay within')->required()->native(false)->selectablePlaceholder(false)
+                                ->options([10 => '10 minutes', 15 => '15 minutes', 20 => '20 minutes', 30 => '30 minutes (recommended)', 45 => '45 minutes', 60 => '1 hour', 90 => '1 hour 30 minutes', 120 => '2 hours', 180 => '3 hours', 240 => '4 hours'])
+                                ->helperText('Shorter = less risk when the gold rate moves. Stripe keeps its card page open for at least 30 minutes.'),
+                            Forms\Components\Placeholder::make('payment_window_now')->label('Waiting for payment right now')
+                                ->content(fn () => rescue(fn () => \App\Models\Order::where('status', 'pending')->where('payment_status', 'unpaid')->where('payment_method', '!=', 'cod')->count().' order(s)', '—', false)),
+                        ]),
                     Forms\Components\Select::make('card_gateway')->options(['mock' => 'Test mode (simulated)', 'mettpay' => 'Mettpay (PayBy)', 'telr' => 'Telr', 'stripe' => 'Stripe'])->required()->live()
                         ->helperText('Mettpay and Stripe keys go in the section below. Telr keys are set in the server .env file.'),
                     Forms\Components\Section::make('Mettpay (PayBy) card payments')->columns(2)->columnSpanFull()
@@ -98,8 +107,6 @@ class Settings extends Page implements HasForms
                             $secret('stripe_webhook_secret', 'Webhook signing secret (optional)')->placeholder('whsec_…')
                                 ->helperText(fn () => 'Recommended once the site is online: in Stripe → Developers → Webhooks add '.route('payments.webhook', 'stripe').' with the event checkout.session.completed, then paste its signing secret here.'),
                         ]),
-                    Forms\Components\TextInput::make('payment_window_minutes')->label('Time to pay online')->numeric()->minValue(10)->maxValue(240)->suffix('minutes')
-                        ->helperText('The gold price is held only this long. Unpaid card / Apple Pay / Google Pay / Tabby / Tamara orders are then cancelled automatically, the stock is released and no invoice is made.'),
                     Forms\Components\Toggle::make('applepay_enabled')->label('Apple Pay')->inline(false)
                         ->helperText('Shown on iPhone, iPad and Mac (Safari). Turn Apple Pay on in your Telr / Stripe account too.'),
                     Forms\Components\Toggle::make('googlepay_enabled')->label('Google Pay')->inline(false)
