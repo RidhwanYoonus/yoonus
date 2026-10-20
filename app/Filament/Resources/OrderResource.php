@@ -70,7 +70,7 @@ class OrderResource extends Resource
                 Tables\Columns\TextColumn::make('status')->badge()->color(fn (string $state) => self::statusColor($state))
                     ->formatStateUsing(fn (Order $record) => $record->statusLabel()),
                 Tables\Columns\TextColumn::make('payment_method')->label('Payment')->badge()->color('gray')
-                    ->description(fn (Order $record) => $record->payment_status),
+                    ->description(fn (Order $record) => __('shop.pay_status.'.$record->payment_status)),
                 Tables\Columns\TextColumn::make('fulfilment')->badge()->color('gray')
                     ->formatStateUsing(fn (string $state) => $state === 'pickup' ? 'Store pickup' : 'Delivery'),
                 Tables\Columns\TextColumn::make('grand_total')->money('AED')->sortable()->weight('bold'),
@@ -78,6 +78,10 @@ class OrderResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')->options(collect(Order::STATUSES)->mapWithKeys(fn ($s) => [$s => __('shop.status.'.$s)])->all())->multiple(),
+                Tables\Filters\SelectFilter::make('payment_status')->label('Payment status')->multiple()->options([
+                    'unpaid' => 'Unpaid (waiting for payment)', 'expired' => 'Unpaid — time ran out (cancelled)', 'cod' => 'Cash on delivery (not collected yet)',
+                    'verifying' => 'Payment to confirm', 'paid' => 'Paid', 'refunded' => 'Refunded',
+                ]),
                 Tables\Filters\SelectFilter::make('fulfilment')->options(['delivery' => 'Delivery', 'pickup' => 'Store pickup']),
                 Tables\Filters\SelectFilter::make('payment_method')->options(['applepay' => 'Apple Pay', 'googlepay' => 'Google Pay', 'card' => 'Card', 'tabby' => 'Tabby', 'tamara' => 'Tamara', 'cod' => 'Cash on delivery', 'giftcard' => 'Gift card']),
                 Tables\Filters\Filter::make('created_at')->form([

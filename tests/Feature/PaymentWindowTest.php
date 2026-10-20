@@ -116,4 +116,23 @@ class PaymentWindowTest extends TestCase
         $order = $this->place();
         $this->assertEqualsWithDelta(now()->addMinutes(15)->timestamp, $order->payment_expires_at->timestamp, 5);
     }
+
+    public function test_orders_list_has_unpaid_and_cancelled_tabs_and_payment_filter(): void
+    {
+        $admin = \App\Models\User::factory()->create(['is_admin' => true]);
+        $waiting = $this->place();
+        $expired = $this->place();
+        $this->travel(31)->minutes();
+        app(OrderService::class)->expireUnpaid($expired);
+        $this->travel(-31)->minutes();
+        $waiting->forceFill(['payment_expires_at' => now()->addMinutes(30)])->save();
+        $paid = $this->place();
+        app(OrderService::class)->markPaid($paid, 'stripe', 'pi_9');
+
+        $list = fn () => \Livewire\Livewire::actingAs($admin)->test(\App\Filament\Resources\OrderResource\Pages\ListOrders::class);
+        $list()->set('activeTab', 'unpaid')->assertCanSeeTableRecords([$waiting])->assertCanNotSeeTableRecords([$expired, $paid]);
+        $list()->set('activeTab', 'cancelled')->assertCanSeeTableRecords([$expired])->assertCanNotSeeTableRecords([$waiting, $paid]);
+        $list()->filterTable('payment_status', ['expired'])->assertCanSeeTableRecords([$expired])->assertCanNotSeeTableRecords([$waiting, $paid]);
+        $this->actingAs($admin)->get('/admin/orders')->assertOk()->assertSee('Unpaid')->assertSee('Cancelled');
+    }
 }
