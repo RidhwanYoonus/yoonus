@@ -26,6 +26,7 @@ class AffiliateCommission extends Model
 
         return match ($this->basis) {
             'gram' => $this->base_amount.' g × AED '.$this->rate_percent.' per gram',
+            'piece' => (int) $this->base_amount.' pc × AED '.$this->rate_percent.' per piece',
             'making' => 'Making AED '.$this->base_amount.' × '.$pct.'%',
             default => 'Item total AED '.$this->base_amount.' × '.$pct.'%',
         };

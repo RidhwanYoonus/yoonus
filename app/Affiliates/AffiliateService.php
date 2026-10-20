@@ -13,8 +13,9 @@ use RuntimeException;
 
 /**
  * Commission per order line:
+ *   same AED per piece for every item (one simple rate), or per item type:
  *   by-gram (gold-rate) item → making charge × affiliate's making %, or grams × fixed AED per gram
- *   fixed-price-per-piece item → item total (excl. VAT, after discount) × affiliate's fixed %
+ *   fixed-price-per-piece item → item total (excl. VAT, after discount) × affiliate's fixed %, or AED per piece
  * plus, on the white page, the full mark-up the affiliate added. It is "pending" until the
  * order is delivered / collected, then "available" to collect at the store; cancelled or
  * refunded orders void it.
@@ -31,19 +32,7 @@ class AffiliateService
         foreach ($order->items()->with('product')->get() as $item) {
             $markup = Money::toFils($item->affiliate_markup);
             $fixed = $item->product ? $item->product->isFixedPrice() : $item->karat === 'Fixed price';
-            if ($fixed) {
-                $base = max(0, Money::toFils($item->subtotal) - Money::toFils($item->discount_amount) - $markup);
-                $rate = Money::scaled($affiliate->fixed_commission_percent, 2);
-            } elseif ($affiliate->making_commission_type === 'per_gram') {
-                $grams = Money::scaled($item->weight_grams, 3) * $item->qty;          // milligrams
-                $base = $grams;
-                $rate = Money::toFils($affiliate->commission_per_gram);                // fils per gram
-            } else {
-                $base = max(0, Money::toFils($item->making_fee) - $markup);
-                $rate = Money::scaled($affiliate->making_commission_percent, 2);
-            }
-            $perGram = ! $fixed && $affiliate->making_commission_type === 'per_gram';
-            $commission = $perGram ? Money::divRound($base * $rate, 1000) : Money::percentOf($base, $rate);
+            [$basis, $baseShown, $rateShown, $commission] = $this->line($affiliate, $item, $fixed, $markup);
             if ($commission + $markup <= 0) {
                 continue;
             }
@@ -52,10 +41,9 @@ class AffiliateService
                 'order_id' => $order->id,
                 'order_item_id' => $item->id,
                 'product_name' => $item->product_name.($item->qty > 1 ? ' × '.$item->qty : ''),
-                'basis' => $fixed ? 'total' : ($perGram ? 'gram' : 'making'),
-                // per gram: base = grams, rate = AED per gram; otherwise base = AED, rate = %
-                'base_amount' => $perGram ? number_format($base / 1000, 2, '.', '') : Money::toAed($base),
-                'rate_percent' => Money::toAed($rate),
+                'basis' => $basis,
+                'base_amount' => $baseShown,
+                'rate_percent' => $rateShown,
                 'commission_amount' => Money::toAed($commission),
                 'markup_amount' => Money::toAed($markup),
                 'amount' => Money::toAed($commission + $markup),
@@ -63,6 +51,40 @@ class AffiliateService
             ]);
         }
         $this->sync($order);
+    }
+
+    /**
+     * One order line → [basis, base shown, rate shown, commission in fils].
+     *   piece  : base = pieces,  rate = AED per piece
+     *   gram   : base = grams,   rate = AED per gram
+     *   making : base = AED making charge (without mark-up), rate = %
+     *   total  : base = AED item price (after discount, without mark-up), rate = %
+     */
+    private function line(Affiliate $a, $item, bool $fixed, int $markup): array
+    {
+        $perPiece = $a->commission_mode === 'per_piece' ? $a->commission_per_piece
+            : ($fixed && $a->fixed_commission_type === 'per_piece' ? $a->fixed_commission_amount : null);
+        if ($perPiece !== null) {
+            $rate = Money::toFils($perPiece);
+
+            return ['piece', (string) $item->qty, Money::toAed($rate), $rate * $item->qty];
+        }
+        if ($fixed) {
+            $base = max(0, Money::toFils($item->subtotal) - Money::toFils($item->discount_amount) - $markup);
+            $rate = Money::scaled($a->fixed_commission_percent, 2);
+
+            return ['total', Money::toAed($base), Money::toAed($rate), Money::percentOf($base, $rate)];
+        }
+        if ($a->making_commission_type === 'per_gram') {
+            $mg = Money::scaled($item->weight_grams, 3) * $item->qty;
+            $rate = Money::toFils($a->commission_per_gram);
+
+            return ['gram', number_format($mg / 1000, 2, '.', ''), Money::toAed($rate), Money::divRound($mg * $rate, 1000)];
+        }
+        $base = max(0, Money::toFils($item->making_fee) - $markup);
+        $rate = Money::scaled($a->making_commission_percent, 2);
+
+        return ['making', Money::toAed($base), Money::toAed($rate), Money::percentOf($base, $rate)];
     }
 
     /** Follow the order: delivered → available, cancelled / refunded → void, otherwise pending. */

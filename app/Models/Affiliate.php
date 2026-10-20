@@ -16,6 +16,8 @@ class Affiliate extends Model
         return [
             'making_commission_percent' => 'decimal:2',
             'commission_per_gram' => 'decimal:2',
+            'commission_per_piece' => 'decimal:2',
+            'fixed_commission_amount' => 'decimal:2',
             'fixed_commission_percent' => 'decimal:2',
             'making_markup_percent' => 'decimal:2', 'fixed_markup_percent' => 'decimal:2', 'markup_amount' => 'decimal:2',
             'max_making_markup_percent' => 'decimal:2', 'max_fixed_markup_percent' => 'decimal:2', 'max_markup_amount' => 'decimal:2',
@@ -61,6 +63,20 @@ class Affiliate extends Model
         }
 
         return new \App\Pricing\Markup(makingBp: $cap('making_markup_percent', 'max_making_markup_percent'), fixedBp: $cap('fixed_markup_percent', 'max_fixed_markup_percent'));
+    }
+
+    /** Whole commission rule in one line, for the admin list and the affiliate's dashboard. */
+    public function commissionSummary(): string
+    {
+        $n = fn ($v) => rtrim(rtrim(number_format((float) $v, 2, '.', ''), '0'), '.') ?: '0';
+        if ($this->commission_mode === 'per_piece') {
+            return __('shop.affiliate.all_per_piece', ['amount' => 'AED '.$n($this->commission_per_piece)]);
+        }
+        $fixed = $this->fixed_commission_type === 'per_piece'
+            ? __('shop.affiliate.fixed_per_piece', ['amount' => 'AED '.$n($this->fixed_commission_amount)])
+            : __('shop.affiliate.fixed_percent', ['pct' => $n($this->fixed_commission_percent)]);
+
+        return __('shop.affiliate.by_type', ['gold' => $this->goldCommissionLabel(), 'fixed' => $fixed]);
     }
 
     /** e.g. "10% of making" or "AED 2 per gram" (by-weight items). */

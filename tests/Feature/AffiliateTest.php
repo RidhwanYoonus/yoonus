@@ -265,4 +265,24 @@ class AffiliateTest extends TestCase
             ->assertSee('Calculation per item')->assertSee('Making AED 100.00 × 10%')->assertSee('Item total AED 500.00 × 3%')
             ->assertSee('Huda Partner')->assertSee('Shop keeps')->assertSee('70.00')->assertSee('1,575.00');   // affiliate 10 + 20 + 15 + 25; shop 1,645 − 70
     }
+
+    public function test_same_amount_per_piece_for_every_item(): void
+    {
+        $this->affiliate->update(['commission_mode' => 'per_piece', 'commission_per_piece' => 10, 'white_page_enabled' => false]);
+        $this->get('/?aff=HUDA10');
+        $this->post('/cart/add/watch', ['qty' => 2]);   // 2 fixed-price pieces
+        $this->checkout(['band']);                     // + 1 gold piece
+        $this->assertSame(['piece'], AffiliateCommission::distinct()->pluck('basis')->all());
+        $this->assertSame(3000, $this->affiliate->totals()['pending']);   // 3 × AED 10
+        $this->actingAs(User::factory()->create(['is_admin' => true]))->get('/admin/affiliate-commissions')->assertSee('2 pc × AED 10.00 per piece');
+    }
+
+    public function test_fixed_price_items_can_earn_a_fixed_amount_per_piece(): void
+    {
+        $this->affiliate->update(['fixed_commission_type' => 'per_piece', 'fixed_commission_amount' => 12, 'white_page_enabled' => false]);
+        $this->get('/?aff=HUDA10');
+        $this->checkout();
+        $this->assertSame('12.00', AffiliateCommission::where('basis', 'piece')->sole()->amount);   // watch
+        $this->assertSame('10.00', AffiliateCommission::where('basis', 'making')->sole()->amount);  // band still 10% of making
+    }
 }

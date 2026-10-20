@@ -68,7 +68,7 @@ class AffiliateCommissionResource extends Resource
                 $withAffiliate ? Tables\Filters\SelectFilter::make('affiliate_id')->label('Affiliate')->multiple()
                     ->options(fn () => Affiliate::with('user')->get()->mapWithKeys(fn ($a) => [$a->id => $a->code.' — '.$a->user?->name])) : null,
                 Tables\Filters\SelectFilter::make('status')->options(AffiliateCommission::STATUSES)->multiple(),
-                Tables\Filters\SelectFilter::make('basis')->label('Item type')->options(['making' => 'By-weight (% of making)', 'gram' => 'By-weight (AED per gram)', 'total' => 'Fixed price (% of total)']),
+                Tables\Filters\SelectFilter::make('basis')->label('Item type')->options(['making' => 'By-weight (% of making)', 'gram' => 'By-weight (AED per gram)', 'total' => 'Fixed price (% of total)', 'piece' => 'Per piece']),
                 Tables\Filters\Filter::make('created_at')->form([Forms\Components\DatePicker::make('from'), Forms\Components\DatePicker::make('until')])
                     ->query(fn (Builder $q, array $data) => $q
                         ->when($data['from'] ?? null, fn ($q, $v) => $q->whereDate('created_at', '>=', $v))
