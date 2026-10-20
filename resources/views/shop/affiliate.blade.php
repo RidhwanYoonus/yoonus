@@ -6,6 +6,9 @@
     <p class="eyebrow">{{ __('shop.affiliate.eyebrow') }} · <span dir="ltr">{{ $affiliate->code }}</span></p>
     <h1 class="mt-2 font-display text-4xl">{{ __('shop.affiliate.title') }}</h1>
     <p class="mt-2 text-sm text-muted">{{ __('shop.affiliate.intro') }}</p>
+    @unless ($affiliate->is_active)
+        <div class="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert">{{ __('shop.affiliate.paused') }}</div>
+    @endunless
     @unless ($affiliate->is_active)<p class="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800">{{ __('shop.affiliate.inactive') }}</p>@endunless
 
     <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

@@ -35,6 +35,7 @@ class EditAffiliate extends EditRecord
                 ->visible(fn () => \App\Support\StaffAccess::current('affiliates', 'edit'))
                 ->form(\App\Filament\Resources\AffiliateResource::storeSaleForm())
                 ->action(fn (array $data) => \App\Filament\Resources\AffiliateResource::runStoreSale($this->record, $data)),
+            \App\Filament\Resources\AffiliateResource::toggleActive(Actions\Action::class, fn () => $this->refreshFormData(['is_active'])),
             Actions\DeleteAction::make()->visible(fn () => ! $this->record->commissions()->exists()),
         ];
     }

@@ -293,6 +293,28 @@ class Settings extends Page implements HasForms
     protected function getHeaderActions(): array
     {
         return [
+            \Filament\Actions\Action::make('deleteData')->label('Delete data')->icon('heroicon-o-trash')->color('danger')
+                ->visible(fn () => (bool) auth()->user()?->is_admin)
+                ->modalHeading('Delete shop data')->modalWidth('2xl')->modalIcon('heroicon-o-exclamation-triangle')->modalIconColor('danger')
+                ->modalDescription('For clearing test data before going live, or old records. This cannot be undone — take a database backup first (phpMyAdmin → Export). Products, gold rates, settings, branches and staff logins are never deleted.')
+                ->modalSubmitActionLabel('Delete permanently')
+                ->form(fn () => [
+                    Forms\Components\CheckboxList::make('groups')->label('What to delete')->required()->bulkToggleable()
+                        ->options(function () {
+                            $counts = \App\Support\DataCleanup::counts();
+
+                            return collect(\App\Support\DataCleanup::GROUPS)->map(fn ($g, $k) => $g[0].' ('.number_format($counts[$k] ?? 0).')')->all();
+                        })
+                        ->descriptions(collect(\App\Support\DataCleanup::GROUPS)->map(fn ($g) => $g[1])->all()),
+                    Forms\Components\TextInput::make('confirm')->label('Type DELETE to confirm')->required()->in(['DELETE'])
+                        ->validationMessages(['in' => 'Type DELETE in capital letters.']),
+                    Forms\Components\TextInput::make('password')->label('Your admin password')->password()->required()->currentPassword(),
+                ])
+                ->action(function (array $data) {
+                    $done = \App\Support\DataCleanup::run($data['groups'], auth()->user());
+                    Notification::make()->success()->title('Data deleted')->persistent()
+                        ->body(collect($done)->map(fn ($n, $label) => $label.': '.number_format($n))->implode("\n"))->send();
+                }),
             \Filament\Actions\Action::make('testEmail')->label('Send test email')->icon('heroicon-o-envelope')->color('gray')
                 ->form([Forms\Components\TextInput::make('to')->label('Send to')->email()->required()->default(fn () => auth()->user()?->email)])
                 ->modalDescription('Save your settings first. The test uses the saved email settings.')

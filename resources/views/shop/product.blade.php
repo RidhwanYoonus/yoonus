@@ -19,10 +19,14 @@
 
     <div class="mt-6 grid gap-10 lg:grid-cols-2">
         <div x-data="{ active: 0 }">
-            <div class="overflow-hidden rounded-3xl border border-line bg-sand">
+            <div class="relative overflow-hidden rounded-3xl border border-line bg-sand">
                 @foreach ($images as $i => $img)
-                    <img x-show="active === {{ $i }}" @if($i) x-cloak @endif src="{{ $img }}" alt="{{ $name }}" class="aspect-square w-full object-cover" loading="{{ $i ? 'lazy' : 'eager' }}" width="900" height="900">
+                    <img x-show="active === {{ $i }}" @if($i) x-cloak @endif src="{{ $img }}" alt="{{ $name }}" class="aspect-square w-full object-cover {{ $product->inStock() ? '' : 'grayscale-[35%]' }}" loading="{{ $i ? 'lazy' : 'eager' }}" width="900" height="900">
                 @endforeach
+                @unless ($product->inStock())
+                    @include('partials.sold-watermark', ['large' => true])
+                @endunless
+                @include('partials.diamond-specs', ['large' => true])
             </div>
             @if (count($images) > 1)
                 <div class="mt-3 flex gap-3">

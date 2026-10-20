@@ -306,4 +306,26 @@ class AffiliateTest extends TestCase
             'fixed_markup_type' => 'percent', 'fixed_markup_percent' => 8])->assertSessionHasNoErrors();
         $this->assertSame('999.00', $this->affiliate->fresh()->making_markup_per_gram);
     }
+
+    public function test_admin_can_disable_and_activate_an_affiliate(): void
+    {
+        $this->affiliate->update(['coupon_discount_percent' => 10]);
+        $admin = User::factory()->create(['is_admin' => true]);
+        $this->actingAs($admin);
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('admin'));
+
+        \Livewire\Livewire::test(\App\Filament\Resources\AffiliateResource\Pages\ListAffiliates::class)
+            ->assertTableActionVisible('toggleActive', $this->affiliate)->callTableAction('toggleActive', $this->affiliate);
+        $this->assertFalse($this->affiliate->fresh()->is_active);
+        $this->assertFalse((bool) \App\Models\Coupon::where('code', 'HUDA10')->value('is_active'), 'their code stops working');
+        auth()->logout();
+        $this->get('/w/HUDA10')->assertNotFound();
+        $this->actingAs($this->affiliate->user)->get(route('affiliate.dashboard'))->assertOk()->assertSee('paused');
+
+        $this->actingAs($admin);
+        \Livewire\Livewire::test(\App\Filament\Resources\AffiliateResource\Pages\EditAffiliate::class, ['record' => $this->affiliate->getRouteKey()])
+            ->callAction('toggleActive');
+        $this->assertTrue($this->affiliate->fresh()->is_active);
+        $this->assertTrue((bool) \App\Models\Coupon::where('code', 'HUDA10')->value('is_active'));
+    }
 }

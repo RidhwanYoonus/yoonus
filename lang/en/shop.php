@@ -68,6 +68,8 @@ return [
     ],
 
     'certificate' => [
+        'carat_short' => 'Carat',
+        'sold_stamp' => 'Sold',
         'origin' => 'Diamond type',
         'origin_natural' => 'Natural diamond',
         'origin_lab_grown' => 'Lab-grown diamond',
@@ -271,6 +273,7 @@ return [
     ],
 
     'affiliate' => [
+        'paused' => 'Your affiliate account is paused. Your link, page and code are not active right now; money you have already earned can still be collected. Please contact the shop.',
         'eyebrow' => 'Affiliate', 'title' => 'Affiliate dashboard',
         'intro' => 'Share your link. When a customer buys through it, your commission appears here. It becomes ready to collect once the order is delivered or collected, and you collect it in cash at our store.',
         'inactive' => 'Your affiliate account is paused. Please contact us.',

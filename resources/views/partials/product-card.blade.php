@@ -4,9 +4,13 @@
     <div class="relative overflow-hidden rounded-2xl border border-line bg-gradient-to-b from-card to-sand transition duration-300 group-hover:-translate-y-1 group-hover:border-gold-300 group-hover:shadow-[0_20px_45px_-20px_rgba(122,95,34,.45)]">
         <a href="{{ route('product.show', $product) }}" class="block">
             <img src="{{ $product->primaryImage() }}" alt="{{ $product->localized('name') }}" loading="lazy" decoding="async" width="600" height="600"
-                 class="aspect-square w-full object-cover transition duration-700 group-hover:scale-105">
+                 class="aspect-square w-full object-cover transition duration-700 group-hover:scale-105 {{ $product->inStock() ? '' : 'grayscale-[35%]' }}">
         </a>
-        <div class="pointer-events-none absolute inset-x-3 top-3 flex items-start justify-between">
+        @unless ($product->inStock())
+            @include('partials.sold-watermark')
+        @endunless
+        @include('partials.diamond-specs')
+        <div class="pointer-events-none absolute inset-x-3 top-3 z-[3] flex items-start justify-between">
             <span class="flex flex-col items-start gap-1.5">
                 @if ($product->goldCategory)<span class="rounded-full bg-card/90 px-2.5 py-1 text-[0.625rem] font-semibold tracking-wider text-gold-700 shadow-sm">{{ $product->goldCategory->name }}</span>@endif
                 @if ($badge = $product->makingBadge())
@@ -14,10 +18,9 @@
                 @endif
                 @if ($origin = $product->diamondOriginLabel())<span class="rounded-full px-2.5 py-1 text-[0.625rem] font-semibold shadow-sm {{ $product->diamond_origin === 'natural' ? 'bg-emerald-50 text-emerald-800' : 'bg-sky-50 text-sky-800' }}">{{ $origin }}</span>@endif
                 @if ($price->hasDiscount())<span class="rounded-full bg-gold-silver px-2.5 py-1 text-[0.625rem] font-semibold text-zinc-900">{{ __('shop.product.save_percent', ['percent' => $price->savingsPercent()]) }}</span>@endif
-                @unless ($product->inStock())<span class="rounded-full bg-onyx/80 px-2.5 py-1 text-[0.625rem] text-on-dark">{{ __('shop.product.sold_out') }}</span>@endunless
             </span>
         </div>
-        <form method="POST" action="{{ route('wishlist.toggle', $product) }}" class="absolute end-3 top-3">
+        <form method="POST" action="{{ route('wishlist.toggle', $product) }}" class="absolute end-3 top-3 z-[3]">
             @csrf
             {{-- Saved pieces show a filled gold heart. --}}
             <button class="flex h-9 w-9 items-center justify-center rounded-full shadow-sm transition {{ $wished ? 'bg-gold-silver text-gold-700 ring-1 ring-gold-500/40' : 'bg-card/90 text-ink/70 hover:text-gold-700' }}"
@@ -26,7 +29,7 @@
             </button>
         </form>
         @if ($product->inStock())
-            <form method="POST" action="{{ route('cart.add', $product) }}" class="absolute inset-x-3 bottom-3 hidden translate-y-2 opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 lg:block">
+            <form method="POST" action="{{ route('cart.add', $product) }}" class="absolute inset-x-3 bottom-3 z-[3] hidden translate-y-2 opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 lg:block">
                 @csrf
                 <button class="w-full rounded-md bg-gold-silver py-2.5 text-xs font-semibold uppercase tracking-[0.15em] text-zinc-900 shadow-md hover:bg-onyx">{{ __('shop.product.add_to_cart') }}</button>
             </form>

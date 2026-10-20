@@ -24,6 +24,16 @@ class Product extends Model
 
     public const DIAMOND_ORIGINS = ['natural' => 'Natural diamond', 'lab_grown' => 'Lab-grown diamond'];
 
+    /** Carat / colour / clarity shown over the photo of diamond pieces: [[label, value], …]. */
+    public function diamondSpecs(): array
+    {
+        return array_values(array_filter([
+            filled($this->diamond_carat) ? [__('shop.certificate.carat_short'), rtrim(rtrim((string) $this->diamond_carat, '0'), '.').' ct'] : null,
+            filled($this->diamond_color) ? [__('shop.certificate.color'), $this->diamond_color] : null,
+            filled($this->diamond_clarity) ? [__('shop.certificate.clarity'), $this->diamond_clarity] : null,
+        ]));
+    }
+
     /** "Natural diamond" / "Lab-grown diamond" in the shop's language, or null. */
     public function diamondOriginLabel(): ?string
     {

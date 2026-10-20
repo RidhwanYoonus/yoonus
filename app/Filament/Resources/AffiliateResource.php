@@ -236,11 +236,46 @@ class AffiliateResource extends Resource
                 Tables\Columns\TextColumn::make('earned')->label('Earned')->state($money('earned')),
                 Tables\Columns\TextColumn::make('collected')->label('Collected')->state($money('collected')),
                 Tables\Columns\TextColumn::make('balance')->label('To collect')->state($money('balance'))->weight('bold')->color('success'),
-                Tables\Columns\IconColumn::make('is_active')->label('Active')->boolean(),
+                Tables\Columns\TextColumn::make('is_active')->label('Status')->badge()
+                    ->formatStateUsing(fn ($state) => $state ? 'Active' : 'Disabled')->color(fn ($state) => $state ? 'success' : 'danger'),
                 Tables\Columns\TextColumn::make('created_at')->label('Joined')->date('d M Y')->sortable()->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->filters([Tables\Filters\TernaryFilter::make('is_active')->label('Active')])
-            ->actions([self::collectAction(), Tables\Actions\ActionGroup::make([self::storeSaleAction(), self::adjustAction()]), Tables\Actions\EditAction::make()]);
+            ->filters([Tables\Filters\TernaryFilter::make('is_active')->label('Status')->trueLabel('Active')->falseLabel('Disabled')])
+            ->actions([self::collectAction(), self::toggleActive(Tables\Actions\Action::class), Tables\Actions\ActionGroup::make([self::storeSaleAction(), self::adjustAction()]), Tables\Actions\EditAction::make()])
+            ->bulkActions([
+                Tables\Actions\BulkAction::make('activate')->label('Activate')->icon('heroicon-o-play')->color('success')->requiresConfirmation()
+                    ->visible(fn () => \App\Support\StaffAccess::current('affiliates', 'edit'))
+                    ->action(fn (\Illuminate\Support\Collection $records) => $records->each(fn (Affiliate $a) => self::setActive($a, true))),
+                Tables\Actions\BulkAction::make('disable')->label('Disable')->icon('heroicon-o-pause')->color('danger')->requiresConfirmation()
+                    ->modalDescription(self::DISABLE_NOTE)
+                    ->visible(fn () => \App\Support\StaffAccess::current('affiliates', 'edit'))
+                    ->action(fn (\Illuminate\Support\Collection $records) => $records->each(fn (Affiliate $a) => self::setActive($a, false))),
+            ]);
+    }
+
+    public const DISABLE_NOTE = 'While disabled: their link, own page and coupon code stop working, and new visits are not credited to them. They can still sign in, see their balance and collect money already earned. Orders already placed keep their commission.';
+
+    /** "Disable" / "Activate" button for one affiliate (table row or edit page). */
+    public static function toggleActive(string $actionClass, ?\Closure $after = null)
+    {
+        return $actionClass::make('toggleActive')
+            ->label(fn (Affiliate $record) => $record->is_active ? 'Disable' : 'Activate')
+            ->icon(fn (Affiliate $record) => $record->is_active ? 'heroicon-o-pause' : 'heroicon-o-play')
+            ->color(fn (Affiliate $record) => $record->is_active ? 'danger' : 'success')
+            ->visible(fn () => \App\Support\StaffAccess::current('affiliates', 'edit'))
+            ->requiresConfirmation()
+            ->modalHeading(fn (Affiliate $record) => ($record->is_active ? 'Disable ' : 'Activate ').$record->code.'?')
+            ->modalDescription(fn (Affiliate $record) => $record->is_active ? self::DISABLE_NOTE : 'Their link, own page and coupon code work again.')
+            ->action(function (Affiliate $record) use ($after) {
+                self::setActive($record, ! $record->is_active);
+                \Filament\Notifications\Notification::make()->success()->title($record->code.($record->is_active ? ' is active' : ' is disabled'))->send();
+                $after && $after();
+            });
+    }
+
+    public static function setActive(Affiliate $affiliate, bool $active): void
+    {
+        $affiliate->update(['is_active' => $active]);   // saving also switches their coupon code on / off
     }
 
     /** Staff hand over the affiliate's money at the store. */
