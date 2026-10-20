@@ -183,6 +183,14 @@ class Settings extends Page implements HasForms
                         Forms\Components\RichEditor::make("policy_{$k}_ar")->label('Arabic (optional)')->extraInputAttributes(['dir' => 'rtl'])->toolbarButtons(['h2', 'h3', 'bold', 'italic', 'bulletList', 'orderedList', 'link', 'undo', 'redo']),
                     ]))->values()->all(),
                 ]),
+                Forms\Components\Tabs\Tab::make('Affiliates')->icon('heroicon-o-user-plus')->columns(2)->schema([
+                    Forms\Components\TextInput::make('affiliate_cookie_days')->label('Customer stays linked to the affiliate for')->numeric()->minValue(1)->maxValue(365)->suffix('days')
+                        ->helperText('After clicking an affiliate link, orders within this time earn that affiliate commission. The last link clicked wins.'),
+                    Forms\Components\Placeholder::make('affiliate_help')->hiddenLabel()->content('Defaults for new affiliates — each affiliate can have their own rates under Affiliates.'),
+                    Forms\Components\TextInput::make('affiliate_default_making_percent')->label('Default: by-gram items, % of making charge')->numeric()->minValue(0)->maxValue(100)->suffix('%'),
+                    Forms\Components\TextInput::make('affiliate_default_fixed_percent')->label('Default: fixed-price items, % of item total')->numeric()->minValue(0)->maxValue(100)->suffix('%'),
+                    Forms\Components\TextInput::make('affiliate_default_max_markup')->label('Default: maximum white-page mark-up')->numeric()->minValue(0)->maxValue(100)->suffix('%'),
+                ]),
                 Forms\Components\Tabs\Tab::make('Video calls')->icon('heroicon-o-video-camera')->columns(2)->schema([
                     Forms\Components\Toggle::make('video_call_enabled')->label('Live video call button on products')->inline(false)
                         ->helperText('Can also be switched off per product (Products → edit → Stock & visibility).'),

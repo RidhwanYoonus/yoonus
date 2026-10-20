@@ -35,7 +35,7 @@ class AdminPanelProvider extends PanelProvider
             ->font('Inter')
             ->globalSearchKeyBindings(['command+k', 'ctrl+k'])
             ->sidebarCollapsibleOnDesktop()
-            ->navigationGroups(['Sales', 'Gold rates', 'Catalogue', 'Offers', 'Customers', 'Marketing', 'Settings'])
+            ->navigationGroups(['Sales', 'Gold rates', 'Catalogue', 'Offers', 'Customers', 'Affiliates', 'Marketing', 'Settings'])
             ->navigationItems([
                 NavigationItem::make('View shop')->url('/', shouldOpenInNewTab: true)->icon('heroicon-o-arrow-top-right-on-square')->sort(99),
             ])

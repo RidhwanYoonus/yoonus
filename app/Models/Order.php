@@ -46,6 +46,7 @@ class Order extends Model
             'shipping_address' => 'array',
             'paid_at' => 'datetime',
             'payment_expires_at' => 'datetime',
+            'affiliate_white_page' => 'boolean',
             'invoiced_at' => 'datetime',
             'conversion_sent' => 'boolean',
             'id_number' => 'encrypted',
@@ -58,6 +59,11 @@ class Order extends Model
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function affiliate(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Affiliate::class);
     }
 
     public function user(): BelongsTo

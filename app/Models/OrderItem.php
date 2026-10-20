@@ -13,7 +13,7 @@ class OrderItem extends Model
     protected function casts(): array
     {
         return collect(['weight_grams' => 'decimal:3', 'vat_percent' => 'decimal:2'])
-            ->merge(collect(['gold_rate_snapshot', 'gold_value', 'making_fee', 'stone_value', 'wastage', 'rounding', 'subtotal', 'discount_amount', 'vat_amount', 'line_total'])
+            ->merge(collect(['gold_rate_snapshot', 'gold_value', 'making_fee', 'stone_value', 'wastage', 'rounding', 'subtotal', 'discount_amount', 'vat_amount', 'line_total', 'affiliate_markup'])
                 ->mapWithKeys(fn ($c) => [$c => 'decimal:2']))
             ->all();
     }

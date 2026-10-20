@@ -17,7 +17,32 @@ use Illuminate\Support\Facades\Cache;
  */
 class PricingService
 {
+    /** White-page mark-up for the current visitor (basis points), set by the affiliate middleware. */
+    private int $markupBp = 0;
+
     public function __construct(private readonly PriceCalculator $calculator) {}
+
+    public function setMarkup(int $bp): void
+    {
+        $this->markupBp = max(0, $bp);
+    }
+
+    public function markup(): int
+    {
+        return $this->markupBp;
+    }
+
+    /** Price without any affiliate mark-up (what the shop itself charges). */
+    public function base(Product $product): PriceBreakdown
+    {
+        $saved = $this->markupBp;
+        $this->markupBp = 0;
+        try {
+            return $this->compute($product);
+        } finally {
+            $this->markupBp = $saved;
+        }
+    }
 
     public function version(): int
     {
@@ -68,7 +93,7 @@ class PricingService
         if ($discount > 0) {
             return $this->compute($product, $discount);
         }
-        $key = sprintf('price.v%d.p%d.%s', $this->version(), $product->id, $product->updated_at?->timestamp);
+        $key = sprintf('price.v%d.p%d.%s.m%d', $this->version(), $product->id, $product->updated_at?->timestamp, $this->markupBp);
 
         return PriceBreakdown::fromArray(Cache::remember($key, $this->ttl(), fn () => $this->compute($product)->raw()));
     }
@@ -81,6 +106,7 @@ class PricingService
             $this->vatBpFor($product->gold_category_id),
             $this->roundingMode(),
             $discount,
+            $this->markupBp,
         );
     }
 
@@ -124,7 +150,7 @@ class PricingService
     /** Persist the price cache columns and log the change for the audit trail. */
     public function refreshCachedPrice(Product $product, ?int $rateHistoryId = null, string $reason = 'rate_change'): PriceBreakdown
     {
-        $price = $this->compute($product);
+        $price = $this->base($product);   // stored prices never include an affiliate mark-up
         $old = $product->cached_sales_price;
         $new = Money::toAed($price->total);
 

@@ -255,6 +255,25 @@ return [
         'agree' => 'I have read and agree to the :terms and the :refund (all sales final — no refund or exchange).',
     ],
 
+    'affiliate' => [
+        'eyebrow' => 'Affiliate', 'title' => 'Affiliate dashboard',
+        'intro' => 'Share your link. When a customer buys through it, your commission appears here. It becomes ready to collect once the order is delivered or collected, and you collect it in cash at our store.',
+        'inactive' => 'Your affiliate account is paused. Please contact us.',
+        'pending' => 'Pending', 'pending_note' => 'Orders not delivered yet',
+        'earned' => 'Earned', 'collected' => 'Collected at store', 'balance' => 'Ready to collect', 'balance_note' => 'Bring your ID to the store',
+        'link' => 'Your link', 'link_note' => 'Normal shop prices. You earn :making% of the making charge on items priced by weight, and :fixed% of the price on fixed-price items.',
+        'copy' => 'Copy',
+        'white_page' => 'Your own price page', 'white_note' => 'Prices on this link include your mark-up (up to :max%). You keep the full mark-up plus your normal commission.',
+        'display_name' => 'Name shown to customers', 'markup' => 'Your mark-up', 'markup_example' => 'Example: 5% on a piece of AED 2,000 shows AED 2,100 (+ VAT) and adds AED 100 to your commission.',
+        'save' => 'Save', 'saved' => 'Saved. Your page now uses the new mark-up.',
+        'sales' => 'Your sales', 'item' => 'Item', 'commission' => 'Commission', 'incl_markup' => 'incl. :amount mark-up',
+        'no_sales' => 'No sales yet — share your link to start earning.',
+        'collections' => 'Collected at the store', 'store' => 'Store', 'receipt' => 'Receipt no.', 'amount' => 'Amount', 'no_collections' => 'Nothing collected yet.',
+        'status' => ['pending' => 'Pending', 'available' => 'Ready to collect', 'void' => 'Cancelled'],
+        'welcome' => 'Welcome! You are shopping with :name.',
+        'shopping_with' => 'You are shopping with :name',
+    ],
+
     'footer' => [
         'about' => 'Fine gold and diamond jewellery, priced live from the daily gold rate with every charge shown.',
         'help' => 'Help', 'visit' => 'Visit us', 'trn' => 'TRN',

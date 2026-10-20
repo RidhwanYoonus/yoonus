@@ -52,6 +52,9 @@
 <body class="min-h-screen flex flex-col {{ $focus ? 'pb-24' : 'pb-16' }} lg:pb-0">
     @include('partials.rate-banner')
     @include('partials.header')
+    @if (isset($affiliateContext) && $affiliateContext->whitePage && $affiliateContext->affiliate)
+        <div class="border-b border-line bg-sand/60 py-2 text-center text-xs text-muted">{{ __('shop.affiliate.shopping_with', ['name' => $affiliateContext->affiliate->name()]) }}</div>
+    @endif
 
     @if (session('status'))
         <div class="container-x mt-4"><div class="rounded-xl border border-gold-300 bg-gold-300/20 px-4 py-3 text-sm" role="status">{{ session('status') }}</div></div>

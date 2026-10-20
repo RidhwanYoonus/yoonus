@@ -26,6 +26,7 @@ class StaffAccess
         'customers' => ['Customers', 'Customers'],
         'reviews' => ['Review moderation', 'Customers'],
         'video_calls' => ['Live video calls', 'Customers'],
+        'affiliates' => ['Affiliates, commission report & collections', 'Affiliates'],
         'newsletter' => ['Newsletter', 'Marketing'],
         'gold_alerts' => ['Gold price alerts', 'Marketing'],
         'messages' => ['Messages sent', 'Marketing'],

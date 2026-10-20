@@ -14,7 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->web(prepend: [HandleRedirects::class], append: [SetLocale::class, SecurityHeaders::class]);
+        $middleware->web(prepend: [HandleRedirects::class], append: [SetLocale::class, \App\Http\Middleware\TrackAffiliate::class, SecurityHeaders::class]);
         $middleware->validateCsrfTokens(except: ['webhooks/*']);
         $middleware->trustProxies(at: '*');   // behind Cloudflare / load balancer
         $middleware->redirectGuestsTo(fn () => route('login'));

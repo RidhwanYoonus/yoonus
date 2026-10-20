@@ -104,3 +104,10 @@ Route::middleware('auth')->prefix('admin-verify')->group(function () {
 // Terms, no refund / no exchange, privacy and delivery policies (Settings → Policies to edit).
 Route::get('/{slug}', [\App\Http\Controllers\PolicyController::class, 'show'])
     ->whereIn('slug', array_column(\App\Support\Policies::PAGES, 'slug'))->name('policy.show');
+
+// Affiliates: white page (/w/CODE), dashboard for the affiliate.
+Route::get('/w/{code}', [\App\Http\Controllers\AffiliateController::class, 'page'])->where('code', '[A-Za-z0-9]{2,32}')->name('affiliate.page');
+Route::middleware('auth')->group(function () {
+    Route::get('/affiliate', [\App\Http\Controllers\AffiliateController::class, 'dashboard'])->name('affiliate.dashboard');
+    Route::post('/affiliate/page', [\App\Http\Controllers\AffiliateController::class, 'update'])->middleware('throttle:10,1')->name('affiliate.update');
+});

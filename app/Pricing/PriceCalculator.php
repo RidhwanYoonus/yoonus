@@ -18,15 +18,20 @@ namespace App\Pricing;
  */
 final class PriceCalculator
 {
-    public function calculate(PricingInput $in, int $rateFils, int $vatBp, RoundingMode $rounding = RoundingMode::Fils, int $discount = 0): PriceBreakdown
+    /**
+     * $markupBp: an affiliate's white-page mark-up (% of the price before VAT). It is folded into
+     * the making charge for gold-rate items and into the price for fixed-price items.
+     */
+    public function calculate(PricingInput $in, int $rateFils, int $vatBp, RoundingMode $rounding = RoundingMode::Fils, int $discount = 0, int $markupBp = 0): PriceBreakdown
     {
         if ($in->pricingType === 'FIXED') {
-            return $this->fixed($in, $vatBp, $discount);
+            return $this->fixed($in, $vatBp, $discount, $markupBp);
         }
 
         $gold = Money::divRound($in->weightMg * $rateFils, 1000);
         $making = $in->chargeType === 'PER_PIECE' ? $in->chargeValue : Money::percentOf($gold, $in->chargeValue);
         $wastage = Money::percentOf($gold, $in->wastageBp);
+        $making += Money::percentOf($gold + $making + $in->stoneFils + $wastage, $markupBp);
         $base = $gold + $making + $in->stoneFils + $wastage;
 
         // Undiscounted reference price (for strikethrough display).
@@ -50,9 +55,9 @@ final class PriceCalculator
      * Fixed-price product: the admin enters the selling price before VAT (like every price in
      * the shop); VAT is added at checkout. Discounts come off the pre-VAT amount.
      */
-    private function fixed(PricingInput $in, int $vatBp, int $discount): PriceBreakdown
+    private function fixed(PricingInput $in, int $vatBp, int $discount, int $markupBp = 0): PriceBreakdown
     {
-        $taxable = $in->fixedFils;
+        $taxable = $in->fixedFils + Money::percentOf($in->fixedFils, $markupBp);
         $vat = Money::percentOf($taxable, $vatBp);
         $total = $taxable + $vat;
 

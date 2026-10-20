@@ -9,6 +9,13 @@
             <a href="{{ route('phone.verify') }}" class="btn-gold h-9 px-4 text-xs">{{ __('shop.verify.account_cta') }}</a>
         </div>
     @endif
+    @php($myAffiliate = rescue(fn () => $user->affiliate, null, false))
+    @if ($myAffiliate)
+        <a href="{{ route('affiliate.dashboard') }}" class="mb-6 flex items-center justify-between gap-3 rounded-xl border border-gold-400 bg-gold-300/20 px-4 py-3 text-sm">
+            <span>🤝 {{ __('shop.affiliate.title') }} — {{ __('shop.affiliate.balance') }}: <strong class="price">{{ Money::format($myAffiliate->totals()['balance']) }}</strong></span>
+            <span class="text-gold-700">→</span>
+        </a>
+    @endif
     <div class="flex flex-wrap items-end justify-between gap-4">
         <div><p class="eyebrow">{{ __('shop.nav.account') }}</p><h1 class="font-display mt-2 text-4xl">{{ __('shop.account.hello', ['name' => $user->name]) }}</h1></div>
         <form method="POST" action="{{ route('logout') }}">@csrf<button class="btn-outline">{{ __('shop.auth.logout') }}</button></form>

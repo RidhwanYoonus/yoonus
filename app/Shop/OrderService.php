@@ -49,8 +49,18 @@ class OrderService
                 }
             }
 
+            // Affiliate who sent this customer (never the customer themselves).
+            $affiliate = $data['affiliate'] ?? null;
+            if ($affiliate && ($affiliate->user_id === $user?->id || strtolower((string) $affiliate->user?->email) === strtolower($data['email']))) {
+                $affiliate = null;
+            }
+            $white = $affiliate && ! empty($data['affiliate_white']);
+            $pricing = app(\App\Pricing\PricingService::class);
+
             $order = Order::create([
                 'number' => $this->nextNumber(),
+                // Only written for affiliate orders, so checkout keeps working before the database update.
+                ...($affiliate ? ['affiliate_id' => $affiliate->id, 'affiliate_white_page' => $white] : []),
                 'user_id' => $user?->id,
                 'status' => 'pending',
                 'payment_method' => $data['payment_method'],
@@ -114,6 +124,9 @@ class OrderService
                     'vat_amount' => Money::toAed($quote->lineVat[$i]),
                     'line_total' => Money::toAed($quote->lineTotal($i)),
                     'coupon_code_applied' => implode(',', array_keys(array_filter($line->discountsByCode))) ?: null,
+                    // White page: the part of the price the affiliate added on top of the shop price.
+                    ...($white && $pricing->markup() > 0
+                        ? ['affiliate_markup' => Money::toAed(max(0, $u->subtotal - $pricing->base($line->product)->subtotal) * $line->qty)] : []),
                 ]);
                 $products[$line->product->id]->decrement('stock_qty', $line->qty);
             }
@@ -145,6 +158,7 @@ class OrderService
             }
 
             $this->history($order, null, 'pending', null, 'Order placed');
+            app(\App\Affiliates\AffiliateService::class)->record($order);
 
             // Fully covered by a gift card: nothing left to collect.
             if ($quote->amountDue === 0) {
@@ -204,6 +218,7 @@ class OrderService
                     GiftCardTransaction::create(['gift_card_id' => $card->id, 'order_id' => $order->id, 'amount' => Money::toAed(-Money::toFils($tx->amount)), 'channel' => 'online']);
                 }
             }
+            app(\App\Affiliates\AffiliateService::class)->sync($order);
             $this->history($order, 'pending', 'cancelled', null, 'Payment not completed within '.self::paymentWindow().' minutes — order cancelled, gold price released, stock returned.');
 
             return true;
@@ -252,6 +267,7 @@ class OrderService
                     .($late ? ' — after the payment time had run out. Stock was reserved again: please check it is still available.' : ''));
             }
 
+            app(\App\Affiliates\AffiliateService::class)->sync($order);
             $this->invoices->issue($order);
             $this->loyalty->earn($order);
             $this->referrals->rewardFor($order);
@@ -285,6 +301,7 @@ class OrderService
             if ($to === 'cancelled') {
                 $this->restock($order);
             }
+            app(\App\Affiliates\AffiliateService::class)->sync($order);
             if ($to === 'delivered') {
                 $this->hideSoldOut($order);
             }
