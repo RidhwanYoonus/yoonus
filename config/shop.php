@@ -58,6 +58,7 @@ return [
         'payment_window_minutes' => 30,
         'affiliate_cookie_days' => 30,
         'affiliate_default_making_percent' => 10,
+        'affiliate_default_commission_per_gram' => 2,
         'affiliate_default_fixed_percent' => 3,
         'affiliate_default_max_markup' => 10,          // fixed-price items, % of price
         'affiliate_default_max_making_markup' => 30,   // by-weight items, % of making charge

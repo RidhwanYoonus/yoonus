@@ -55,7 +55,11 @@ class AffiliateCommissionResource extends Resource
                     ->description(fn (AffiliateCommission $r) => $r->order?->statusLabel()),
                 Tables\Columns\TextColumn::make('product_name')->label('Item')->limit(30),
                 Tables\Columns\TextColumn::make('basis')->label('Based on')
-                    ->formatStateUsing(fn (string $state, AffiliateCommission $r) => ($state === 'making' ? 'Making AED ' : 'Item total AED ').$r->base_amount.' × '.rtrim(rtrim((string) $r->rate_percent, '0'), '.').'%'),
+                    ->formatStateUsing(fn (string $state, AffiliateCommission $r) => match ($state) {
+                        'gram' => $r->base_amount.' g × AED '.$r->rate_percent.' per gram',
+                        'making' => 'Making AED '.$r->base_amount.' × '.rtrim(rtrim((string) $r->rate_percent, '0'), '.').'%',
+                        default => 'Item total AED '.$r->base_amount.' × '.rtrim(rtrim((string) $r->rate_percent, '0'), '.').'%',
+                    }),
                 Tables\Columns\TextColumn::make('commission_amount')->label('Commission')->money('AED')->summarize($sum()),
                 Tables\Columns\TextColumn::make('markup_amount')->label('White-page mark-up')->money('AED')->summarize($sum())->toggleable(),
                 Tables\Columns\TextColumn::make('amount')->label('Total')->money('AED')->weight('bold')->summarize($sum()),
@@ -68,7 +72,7 @@ class AffiliateCommissionResource extends Resource
                 $withAffiliate ? Tables\Filters\SelectFilter::make('affiliate_id')->label('Affiliate')->multiple()
                     ->options(fn () => Affiliate::with('user')->get()->mapWithKeys(fn ($a) => [$a->id => $a->code.' — '.$a->user?->name])) : null,
                 Tables\Filters\SelectFilter::make('status')->options(AffiliateCommission::STATUSES)->multiple(),
-                Tables\Filters\SelectFilter::make('basis')->label('Item type')->options(['making' => 'By-gram (making %)', 'total' => 'Fixed price (total %)']),
+                Tables\Filters\SelectFilter::make('basis')->label('Item type')->options(['making' => 'By-weight (% of making)', 'gram' => 'By-weight (AED per gram)', 'total' => 'Fixed price (% of total)']),
                 Tables\Filters\Filter::make('created_at')->form([Forms\Components\DatePicker::make('from'), Forms\Components\DatePicker::make('until')])
                     ->query(fn (Builder $q, array $data) => $q
                         ->when($data['from'] ?? null, fn ($q, $v) => $q->whereDate('created_at', '>=', $v))

@@ -233,4 +233,19 @@ class AffiliateTest extends TestCase
         $this->affiliate->fresh()->update(['max_markup_amount' => 0, 'max_making_markup_percent' => 0, 'max_fixed_markup_percent' => 0]);
         $this->actingAs($this->affiliate->user->fresh())->get('/affiliate')->assertSee('Mark-up is not switched on');
     }
+
+    public function test_commission_can_be_a_fixed_amount_per_gram_on_gold_items(): void
+    {
+        $this->affiliate->update(['making_commission_type' => 'per_gram', 'commission_per_gram' => 2.5, 'white_page_enabled' => false]);
+        $this->get('/?aff=HUDA10');
+        $this->post('/cart/add/band', ['qty' => 2]);   // 2 × 5 g
+        $order = $this->checkout(['watch']);
+
+        $band = AffiliateCommission::where('basis', 'gram')->sole();
+        $this->assertSame('10.00', $band->base_amount);      // grams
+        $this->assertSame('25.00', $band->amount);           // 10 g × AED 2.50
+        $this->assertSame('15.00', AffiliateCommission::where('basis', 'total')->sole()->amount);   // fixed item still 3%
+        $this->actingAs(\App\Models\User::factory()->create(['is_admin' => true]))->get('/admin/affiliate-commissions')->assertSee('10.00 g × AED 2.50 per gram');
+        $this->actingAs($this->affiliate->user->fresh())->get('/affiliate')->assertSee('AED 2.5 per gram');
+    }
 }

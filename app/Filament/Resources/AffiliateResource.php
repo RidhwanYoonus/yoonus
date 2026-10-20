@@ -60,9 +60,18 @@ class AffiliateResource extends Resource
             Forms\Components\Section::make('Commission')->columnSpan(2)->columns(2)
                 ->description('Commission becomes "ready to collect" when the order is delivered / collected. Cancelled or refunded orders earn nothing.')
                 ->schema([
-                    Forms\Components\TextInput::make('making_commission_percent')->label('By-gram items: % of making charge')->numeric()->minValue(0)->maxValue(100)->suffix('%')->required()
-                        ->default(fn () => Settings::get('affiliate_default_making_percent', 10))
-                        ->helperText('Items priced by weight × gold rate. Example: making AED 300 × 10% = AED 30.'),
+                    Forms\Components\Group::make()->schema([
+                        Forms\Components\ToggleButtons::make('making_commission_type')->label('By-weight items: commission as')->inline()->required()->live()->default('percent')
+                            ->options(['percent' => '% of making charge', 'per_gram' => 'Fixed AED per gram']),
+                        Forms\Components\TextInput::make('making_commission_percent')->hiddenLabel()->numeric()->minValue(0)->maxValue(100)->suffix('%')
+                            ->default(fn () => Settings::get('affiliate_default_making_percent', 10))
+                            ->required(fn (Forms\Get $get) => $get('making_commission_type') !== 'per_gram')->visible(fn (Forms\Get $get) => $get('making_commission_type') !== 'per_gram')
+                            ->helperText('Items priced by weight × gold rate. Example: making AED 300 × 10% = AED 30.'),
+                        Forms\Components\TextInput::make('commission_per_gram')->hiddenLabel()->numeric()->minValue(0)->prefix('AED')->suffix('per gram')
+                            ->default(fn () => Settings::get('affiliate_default_commission_per_gram', 2))
+                            ->required(fn (Forms\Get $get) => $get('making_commission_type') === 'per_gram')->visible(fn (Forms\Get $get) => $get('making_commission_type') === 'per_gram')
+                            ->helperText('Example: a 12.5 g chain × AED 2 = AED 25, whatever the making charge.'),
+                    ]),
                     Forms\Components\TextInput::make('fixed_commission_percent')->label('Fixed-price items: % of item total')->numeric()->minValue(0)->maxValue(100)->suffix('%')->required()
                         ->default(fn () => Settings::get('affiliate_default_fixed_percent', 3))
                         ->helperText('Items with a fixed price per piece. % of the item price before VAT, after discounts.'),
@@ -105,7 +114,7 @@ class AffiliateResource extends Resource
                 Tables\Columns\TextColumn::make('code')->badge()->searchable()->copyable(),
                 Tables\Columns\TextColumn::make('user.name')->label('Name')->searchable()->description(fn (Affiliate $r) => $r->user?->email),
                 Tables\Columns\TextColumn::make('rates')->label('Commission')
-                    ->state(fn (Affiliate $r) => rtrim(rtrim((string) $r->making_commission_percent, '0'), '.').'% making · '.rtrim(rtrim((string) $r->fixed_commission_percent, '0'), '.').'% fixed'),
+                    ->state(fn (Affiliate $r) => $r->goldCommissionLabel().' · '.rtrim(rtrim((string) $r->fixed_commission_percent, '0'), '.').'% fixed'),
                 Tables\Columns\IconColumn::make('white_page_enabled')->label('White page')->boolean(),
                 Tables\Columns\TextColumn::make('pending')->label('Pending')->state($money('pending'))->color('gray'),
                 Tables\Columns\TextColumn::make('earned')->label('Earned')->state($money('earned')),

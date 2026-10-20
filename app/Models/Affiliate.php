@@ -15,6 +15,7 @@ class Affiliate extends Model
     {
         return [
             'making_commission_percent' => 'decimal:2',
+            'commission_per_gram' => 'decimal:2',
             'fixed_commission_percent' => 'decimal:2',
             'making_markup_percent' => 'decimal:2', 'fixed_markup_percent' => 'decimal:2', 'markup_amount' => 'decimal:2',
             'max_making_markup_percent' => 'decimal:2', 'max_fixed_markup_percent' => 'decimal:2', 'max_markup_amount' => 'decimal:2',
@@ -60,6 +61,16 @@ class Affiliate extends Model
         }
 
         return new \App\Pricing\Markup(makingBp: $cap('making_markup_percent', 'max_making_markup_percent'), fixedBp: $cap('fixed_markup_percent', 'max_fixed_markup_percent'));
+    }
+
+    /** e.g. "10% of making" or "AED 2 per gram" (by-weight items). */
+    public function goldCommissionLabel(): string
+    {
+        $n = fn ($v) => rtrim(rtrim(number_format((float) $v, 2, '.', ''), '0'), '.') ?: '0';
+
+        return $this->making_commission_type === 'per_gram'
+            ? __('shop.affiliate.per_gram_label', ['amount' => 'AED '.$n($this->commission_per_gram)])
+            : __('shop.affiliate.making_label', ['pct' => $n($this->making_commission_percent)]);
     }
 
     /** Short description, e.g. "10% of making · 5% on fixed-price items" or "AED 50 per piece". */

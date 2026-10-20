@@ -188,6 +188,7 @@ class Settings extends Page implements HasForms
                         ->helperText('After clicking an affiliate link, orders within this time earn that affiliate commission. The last link clicked wins.'),
                     Forms\Components\Placeholder::make('affiliate_help')->hiddenLabel()->content('Defaults for new affiliates — each affiliate can have their own rates under Affiliates.'),
                     Forms\Components\TextInput::make('affiliate_default_making_percent')->label('Default: by-gram items, % of making charge')->numeric()->minValue(0)->maxValue(100)->suffix('%'),
+                    Forms\Components\TextInput::make('affiliate_default_commission_per_gram')->label('Default: by-weight items, AED per gram (when chosen)')->numeric()->minValue(0)->prefix('AED'),
                     Forms\Components\TextInput::make('affiliate_default_fixed_percent')->label('Default: fixed-price items, % of item total')->numeric()->minValue(0)->maxValue(100)->suffix('%'),
                     Forms\Components\TextInput::make('affiliate_default_max_making_markup')->label('Default max mark-up: by-weight items, % of making')->numeric()->minValue(0)->maxValue(500)->suffix('%'),
                     Forms\Components\TextInput::make('affiliate_default_max_markup')->label('Default max mark-up: fixed-price items, % of price')->numeric()->minValue(0)->maxValue(100)->suffix('%'),

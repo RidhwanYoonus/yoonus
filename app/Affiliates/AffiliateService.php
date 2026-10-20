@@ -13,7 +13,7 @@ use RuntimeException;
 
 /**
  * Commission per order line:
- *   by-gram (gold-rate) item → making charge × affiliate's making %
+ *   by-gram (gold-rate) item → making charge × affiliate's making %, or grams × fixed AED per gram
  *   fixed-price-per-piece item → item total (excl. VAT, after discount) × affiliate's fixed %
  * plus, on the white page, the full mark-up the affiliate added. It is "pending" until the
  * order is delivered / collected, then "available" to collect at the store; cancelled or
@@ -34,11 +34,16 @@ class AffiliateService
             if ($fixed) {
                 $base = max(0, Money::toFils($item->subtotal) - Money::toFils($item->discount_amount) - $markup);
                 $rate = Money::scaled($affiliate->fixed_commission_percent, 2);
+            } elseif ($affiliate->making_commission_type === 'per_gram') {
+                $grams = Money::scaled($item->weight_grams, 3) * $item->qty;          // milligrams
+                $base = $grams;
+                $rate = Money::toFils($affiliate->commission_per_gram);                // fils per gram
             } else {
                 $base = max(0, Money::toFils($item->making_fee) - $markup);
                 $rate = Money::scaled($affiliate->making_commission_percent, 2);
             }
-            $commission = Money::percentOf($base, $rate);
+            $perGram = ! $fixed && $affiliate->making_commission_type === 'per_gram';
+            $commission = $perGram ? Money::divRound($base * $rate, 1000) : Money::percentOf($base, $rate);
             if ($commission + $markup <= 0) {
                 continue;
             }
@@ -47,8 +52,9 @@ class AffiliateService
                 'order_id' => $order->id,
                 'order_item_id' => $item->id,
                 'product_name' => $item->product_name.($item->qty > 1 ? ' × '.$item->qty : ''),
-                'basis' => $fixed ? 'total' : 'making',
-                'base_amount' => Money::toAed($base),
+                'basis' => $fixed ? 'total' : ($perGram ? 'gram' : 'making'),
+                // per gram: base = grams, rate = AED per gram; otherwise base = AED, rate = %
+                'base_amount' => $perGram ? number_format($base / 1000, 2, '.', '') : Money::toAed($base),
                 'rate_percent' => Money::toAed($rate),
                 'commission_amount' => Money::toAed($commission),
                 'markup_amount' => Money::toAed($markup),

@@ -18,7 +18,7 @@
     <div class="mt-8 grid gap-4 lg:grid-cols-2">
         <div class="card p-6">
             <p class="label">{{ __('shop.affiliate.link') }}</p>
-            <p class="text-sm text-muted">{{ __('shop.affiliate.link_note', ['making' => rtrim(rtrim((string) $affiliate->making_commission_percent, '0'), '.'), 'fixed' => rtrim(rtrim((string) $affiliate->fixed_commission_percent, '0'), '.')]) }}</p>
+            <p class="text-sm text-muted">{{ __('shop.affiliate.link_note', ['gold' => $affiliate->goldCommissionLabel(), 'fixed' => rtrim(rtrim((string) $affiliate->fixed_commission_percent, '0'), '.')]) }}</p>
             <div class="mt-3 flex gap-2">
                 <input readonly value="{{ $affiliate->referralLink() }}" class="input text-xs" dir="ltr" onclick="this.select()">
                 <button type="button" class="btn-outline px-4" @click="copy(@js($affiliate->referralLink()), 'r')" x-text="copied === 'r' ? '✓' : @js(__('shop.affiliate.copy'))"></button>
