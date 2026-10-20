@@ -50,8 +50,8 @@ return new class extends Migration
                 $table->id();
                 $table->string('name');
                 $table->string('type', 10);                     // booster | target
-                $table->timestamp('starts_at');
-                $table->timestamp('ends_at');
+                $table->timestamp('starts_at')->nullable();   // nullable: MySQL/MariaDB reject a 2nd timestamp without default
+                $table->timestamp('ends_at')->nullable();
                 $table->json('affiliate_ids')->nullable();      // null = every affiliate
                 $table->foreignId('category_id')->nullable();   // booster: only this category (null = all)
                 $table->decimal('multiplier', 4, 2)->default(2); // booster: × commission
@@ -69,7 +69,7 @@ return new class extends Migration
                 $table->foreignId('affiliate_id')->constrained()->cascadeOnDelete();
                 $table->foreignId('product_id')->constrained()->cascadeOnDelete();
                 $table->json('price');                          // frozen PriceBreakdown (fils)
-                $table->timestamp('expires_at');
+                $table->timestamp('expires_at')->nullable();
                 $table->unsignedInteger('uses')->default(0);
                 $table->timestamps();
             });
