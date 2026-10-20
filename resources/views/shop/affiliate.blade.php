@@ -52,7 +52,7 @@
                         <p class="font-semibold">{{ $c->name }}</p>
                         <p class="text-xs text-muted">{{ __('shop.affiliate.until', ['date' => $c->ends_at->locale(app()->getLocale())->isoFormat('ll')]) }}</p>
                         @if ($c->type === 'booster')
-                            <p class="mt-2 text-sm">{{ __('shop.affiliate.booster_note', ['x' => rtrim(rtrim((string) $c->multiplier, '0'), '.'), 'what' => $c->category?->localized('name') ?? __('shop.affiliate.all_items')]) }}</p>
+                            <p class="mt-2 text-sm">{{ __('shop.affiliate.booster_note', ['x' => rtrim(rtrim((string) $c->multiplier, '0'), '.'), 'what' => $c->coverageLabel()]) }}</p>
                         @else
                             @php($goal = (float) $c->target_value)
                             <p class="mt-2 text-sm">{{ __('shop.affiliate.target_note', ['goal' => $c->target_metric === 'sales' ? 'AED '.number_format($goal) : number_format($goal).' '.__('shop.affiliate.pieces'), 'bonus' => 'AED '.number_format((float) $c->bonus_amount)]) }}</p>
@@ -232,6 +232,7 @@
                             <td class="px-4 py-3">{{ $c->product_name }}</td>
                             <td class="px-4 py-3"><span @class(['badge', 'bg-green-100 text-green-800' => $c->status === 'available', 'bg-red-50 text-red-700' => $c->status === 'void', 'bg-sand text-muted' => $c->status === 'pending'])>{{ __('shop.affiliate.status.'.$c->status) }}</span></td>
                             <td class="price px-4 py-3 text-end font-medium">{{ $fmt($c->amount) }}@if ((float) $c->markup_amount > 0)<span class="block text-xs text-muted">{{ __('shop.affiliate.incl_markup', ['amount' => $fmt($c->markup_amount)]) }}</span>@endif
+                                @if ((float) ($c->coupon_deduction ?? 0) > 0)<span class="block text-xs text-red-700">{{ __('shop.affiliate.incl_coupon', ['amount' => $fmt($c->coupon_deduction)]) }}</span>@endif
                                 @if ((float) ($c->bonus_amount ?? 0) > 0)<span class="block text-xs text-gold-700">{{ __('shop.affiliate.incl_bonus', ['amount' => $fmt($c->bonus_amount), 'why' => $c->bonus_note]) }}</span>@endif</td>
                         </tr>
                     @empty

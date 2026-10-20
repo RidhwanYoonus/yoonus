@@ -203,4 +203,48 @@ class AffiliateGrowthTest extends TestCase
             $this->actingAs($admin)->get($url)->assertOk();
         }
     }
+
+    public function test_customer_discount_with_affiliate_code_is_taken_from_their_commission(): void
+    {
+        $this->affiliate->update(['coupon_discount_percent' => 5]);   // 5% of 1,100 = 55
+        $this->affiliate->update(['commission_mode' => 'per_piece', 'commission_per_piece' => 100]);
+        $order = $this->checkout(1, ['coupon' => 'HUDA10']);
+        $line = AffiliateCommission::sole();
+        $this->assertSame('100.00', $line->commission_amount);
+        $this->assertSame('55.00', $line->coupon_deduction);
+        $this->assertSame('45.00', $line->amount);
+        $admin = User::factory()->create(['is_admin' => true]);
+        $this->actingAs($admin)->get('/admin/orders/'.$order->id)->assertSee('Their code discount')->assertSee('was taken from their commission');
+        $this->actingAs($admin)->get('/admin/affiliate-commissions')->assertSee('Customer discount (their code)');
+    }
+
+    public function test_discount_never_takes_affiliate_below_zero(): void
+    {
+        $this->affiliate->update(['coupon_discount_percent' => 20]);   // 220 discount, only AED 10 commission
+        $this->checkout(1, ['coupon' => 'HUDA10']);
+        $line = AffiliateCommission::sole();
+        $this->assertSame('10.00', $line->coupon_deduction);
+        $this->assertSame('0.00', $line->amount);
+    }
+
+    public function test_booster_can_target_several_categories_and_one_item_type(): void
+    {
+        $rings = \App\Models\Category::create(['name' => 'Rings', 'slug' => 'rings']);
+        $other = \App\Models\Category::create(['name' => 'Bangles', 'slug' => 'bangles']);
+        Product::first()->update(['category_id' => $rings->id]);
+        $booster = AffiliateCampaign::create(['name' => 'Rings x2', 'type' => 'booster', 'starts_at' => now()->subDay(), 'ends_at' => now()->addDay(),
+            'multiplier' => 2, 'category_ids' => [$other->id, $rings->id], 'item_type' => 'gold']);
+        $this->get('/?aff=HUDA10');
+        $this->checkout();
+        $this->assertSame('10.00', AffiliateCommission::latest('id')->first()->bonus_amount);
+
+        $booster->update(['item_type' => 'fixed']);   // only fixed-price items: the gold band no longer qualifies
+        $this->checkout();
+        $this->assertSame('0.00', AffiliateCommission::latest('id')->first()->bonus_amount);
+
+        $booster->update(['item_type' => 'all', 'category_ids' => [$other->id]]);
+        $this->checkout();
+        $this->assertSame('0.00', AffiliateCommission::latest('id')->first()->bonus_amount);
+        $this->assertSame('Bangles', $booster->fresh()->coverageLabel());
+    }
 }

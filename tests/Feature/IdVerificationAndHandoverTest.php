@@ -78,6 +78,22 @@ class IdVerificationAndHandoverTest extends TestCase
         $this->assertSame('5671', Order::sole()->id_last4);
     }
 
+    public function test_admin_can_require_or_hide_id_photos(): void
+    {
+        \App\Support\Settings::set(['id_photos' => 'required']);
+        $this->post('/cart/add/band');
+        $this->get('/checkout')->assertSee('Photo of ID (back)');
+        $fields = $this->idFields();
+        unset($fields['id_back']);
+        $this->post('/checkout', $this->delivery($fields))->assertSessionHasErrors('id_back');
+        $this->assertSame(0, Order::count());
+
+        \App\Support\Settings::set(['id_photos' => 'hidden']);
+        $this->get('/checkout')->assertDontSee('name="id_front"', false);
+        $this->post('/checkout', $this->delivery($this->idFields()))->assertSessionHasNoErrors();
+        $this->assertNull(Order::sole()->id_front_path);   // not stored even if sent
+    }
+
     public function test_logged_in_customer_can_save_id_and_reuse_it(): void
     {
         $user = User::factory()->create();

@@ -240,11 +240,14 @@ class OrderResource extends Resource
                     Infolists\Components\TextEntry::make('affiliate.user.email')->label('Email')->copyable(),
                     Infolists\Components\TextEntry::make('affiliate.user.phone')->label('Mobile')->placeholder('—')
                         ->url(fn (Order $record) => $record->affiliate?->user?->phone ? WhatsApp::link($record->affiliate->user->phone, "Order {$record->number}") : null)->openUrlInNewTab(),
-                    Infolists\Components\RepeatableEntry::make('affiliateCommissions')->label('Calculation per item')->columnSpanFull()->columns(6)->schema([
+                    Infolists\Components\RepeatableEntry::make('affiliateCommissions')->label('Calculation per item')->columnSpanFull()->columns(7)->schema([
                         Infolists\Components\TextEntry::make('product_name')->label('Item'),
                         Infolists\Components\TextEntry::make('basis')->label('How it is worked out')->formatStateUsing(fn ($state, $record) => $record->calculation()),
                         Infolists\Components\TextEntry::make('commission_amount')->label('= Commission')->money('AED'),
-                        Infolists\Components\TextEntry::make('markup_amount')->label('+ Mark-up')->money('AED'),
+                        Infolists\Components\TextEntry::make('markup_amount')->label('+ Mark-up')->money('AED')
+                            ->helperText(fn ($record) => (float) $record->bonus_amount > 0 ? '+ bonus AED '.$record->bonus_amount.' ('.$record->bonus_note.')' : null),
+                        Infolists\Components\TextEntry::make('coupon_deduction')->label('− Their code discount')->money('AED')
+                            ->color(fn ($state) => (float) $state > 0 ? 'danger' : null),
                         Infolists\Components\TextEntry::make('amount')->label('= Affiliate gets')->money('AED')->weight('bold'),
                         Infolists\Components\TextEntry::make('status')->badge()
                             ->formatStateUsing(fn (string $state) => \App\Models\AffiliateCommission::STATUSES[$state] ?? $state)
@@ -252,7 +255,9 @@ class OrderResource extends Resource
                     ]),
                     Infolists\Components\TextEntry::make('aff_paid')->label('Customer paid (excl. VAT)')->state(fn (Order $record) => $record->taxable_amount)->money('AED'),
                     Infolists\Components\TextEntry::make('aff_markup')->label('of which affiliate mark-up')->money('AED')
-                        ->state(fn (Order $record) => $record->affiliateCommissions->sum('markup_amount')),
+                        ->state(fn (Order $record) => $record->affiliateCommissions->sum('markup_amount'))
+                        ->helperText(fn (Order $record) => ($d = $record->affiliateCommissions->sum('coupon_deduction')) > 0
+                            ? 'Customer discount AED '.number_format($d, 2).' with the affiliate\'s code was taken from their commission.' : null),
                     Infolists\Components\TextEntry::make('aff_total')->label('Affiliate gets in total')->money('AED')->weight('bold')->color('warning')
                         ->state(fn (Order $record) => $record->affiliateCommissions->where('status', '!=', 'void')->sum('amount')),
                     Infolists\Components\TextEntry::make('aff_shop')->label('Shop keeps (excl. VAT)')->money('AED')->weight('bold')

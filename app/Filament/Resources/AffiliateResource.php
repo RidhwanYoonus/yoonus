@@ -57,7 +57,7 @@ class AffiliateResource extends Resource
                     ->unique(ignoreRecord: true)->helperText('Used in their links, e.g. ?aff=CODE'),
                 Forms\Components\TextInput::make('display_name')->label('Name shown to customers')->maxLength(80),
             ]),
-            Forms\Components\Section::make('Commission')->columnSpan(2)->columns(2)
+            Forms\Components\Section::make('Commission')->columnSpanFull()->columns(2)
                 ->description('Commission becomes "ready to collect" when the order is delivered / collected. Cancelled or refunded orders earn nothing.')
                 ->schema([
                     Forms\Components\ToggleButtons::make('commission_mode')->label('How is commission paid?')->inline()->required()->live()->default('by_type')->columnSpanFull()
@@ -91,33 +91,41 @@ class AffiliateResource extends Resource
                             ->helperText('Example: 2 diamond pendants × AED 10 = AED 20.'),
                     ]),
                 ]),
-            Forms\Components\Section::make('White page (own price page)')->columnSpan(1)
-                ->description('Their own link where every price includes their mark-up. They keep the full mark-up on top of the commission.')
+            Forms\Components\Section::make('White page (own price page)')->columnSpanFull()->columns(2)
+                ->description('Their own link where every price includes their mark-up. They keep the full mark-up on top of the commission. The affiliate can change the mark-up on their dashboard, up to your maximum.')
                 ->schema([
-                    Forms\Components\Toggle::make('white_page_enabled')->label('Allow white page')->live(),
-                    Forms\Components\Fieldset::make('Maximum mark-up allowed')->columns(1)->visible(fn (Forms\Get $get) => $get('white_page_enabled'))->schema([
-                        Forms\Components\TextInput::make('max_making_markup_percent')->label('By-weight items: % of making charge')->numeric()->minValue(0)->maxValue(500)->suffix('%')
-                            ->default(fn () => Settings::get('affiliate_default_max_making_markup', 30)),
-                        Forms\Components\TextInput::make('max_fixed_markup_percent')->label('Fixed-price items: % of price')->numeric()->minValue(0)->maxValue(100)->suffix('%')
-                            ->default(fn () => Settings::get('affiliate_default_max_markup', 10)),
-                        Forms\Components\TextInput::make('max_markup_amount')->label('Or amount per piece')->numeric()->minValue(0)->prefix('AED')
-                            ->default(fn () => Settings::get('affiliate_default_max_markup_amount', 100)),
-                    ]),
-                    Forms\Components\Fieldset::make('Mark-up in use')->columns(1)->visible(fn (Forms\Get $get) => $get('white_page_enabled'))->schema([
-                        Forms\Components\Radio::make('markup_mode')->hiddenLabel()->default('percent')->live()
-                            ->options(['percent' => 'Percentage', 'amount' => 'Same amount on every piece']),
-                        Forms\Components\TextInput::make('making_markup_percent')->label('By-weight items: % of making')->numeric()->minValue(0)->suffix('%')->default(0)
-                            ->lte('max_making_markup_percent')->visible(fn (Forms\Get $get) => $get('markup_mode') !== 'amount'),
-                        Forms\Components\TextInput::make('fixed_markup_percent')->label('Fixed-price items: % of price')->numeric()->minValue(0)->suffix('%')->default(0)
-                            ->lte('max_fixed_markup_percent')->visible(fn (Forms\Get $get) => $get('markup_mode') !== 'amount'),
-                        Forms\Components\TextInput::make('markup_amount')->label('Amount per piece')->numeric()->minValue(0)->prefix('AED')->default(0)
-                            ->lte('max_markup_amount')->visible(fn (Forms\Get $get) => $get('markup_mode') === 'amount'),
-                        Forms\Components\Placeholder::make('markup_hint')->hiddenLabel()->content('The affiliate can change this on their dashboard, up to the maximums.'),
-                    ]),
+                    Forms\Components\Toggle::make('white_page_enabled')->label('Allow white page')->live()->columnSpanFull(),
+                    Forms\Components\ToggleButtons::make('markup_mode')->label('How is the mark-up added?')->inline()->required()->live()->default('percent')->columnSpanFull()
+                        ->visible(fn (Forms\Get $get) => $get('white_page_enabled'))
+                        ->options(['percent' => 'Different for each item type (%)', 'amount' => 'Same amount per piece for every item']),
+                    Forms\Components\Fieldset::make('By-weight items: % of making charge')->columns(2)->columnSpan(1)
+                        ->visible(fn (Forms\Get $get) => $get('white_page_enabled') && $get('markup_mode') !== 'amount')->schema([
+                            Forms\Components\TextInput::make('making_markup_percent')->label('In use')->numeric()->minValue(0)->suffix('%')->default(0)->lte('max_making_markup_percent'),
+                            Forms\Components\TextInput::make('max_making_markup_percent')->label('Maximum allowed')->numeric()->minValue(0)->maxValue(500)->suffix('%')
+                                ->default(fn () => Settings::get('affiliate_default_max_making_markup', 30)),
+                            Forms\Components\Placeholder::make('making_markup_hint')->hiddenLabel()->columnSpanFull()
+                                ->content('Example: 20% on a ring with AED 300 making shows AED 60 more. The gold value is never marked up.'),
+                        ]),
+                    Forms\Components\Fieldset::make('Fixed-price items: % of price')->columns(2)->columnSpan(1)
+                        ->visible(fn (Forms\Get $get) => $get('white_page_enabled') && $get('markup_mode') !== 'amount')->schema([
+                            Forms\Components\TextInput::make('fixed_markup_percent')->label('In use')->numeric()->minValue(0)->suffix('%')->default(0)->lte('max_fixed_markup_percent'),
+                            Forms\Components\TextInput::make('max_fixed_markup_percent')->label('Maximum allowed')->numeric()->minValue(0)->maxValue(100)->suffix('%')
+                                ->default(fn () => Settings::get('affiliate_default_max_markup', 10)),
+                            Forms\Components\Placeholder::make('fixed_markup_hint')->hiddenLabel()->columnSpanFull()
+                                ->content('Example: 5% on a fixed-price piece of AED 2,000 shows AED 100 more.'),
+                        ]),
+                    Forms\Components\Fieldset::make('Amount added to each piece')->columns(2)->columnSpanFull()
+                        ->visible(fn (Forms\Get $get) => $get('white_page_enabled') && $get('markup_mode') === 'amount')->schema([
+                            Forms\Components\TextInput::make('markup_amount')->label('In use')->numeric()->minValue(0)->prefix('AED')->suffix('per piece')->default(0)->lte('max_markup_amount'),
+                            Forms\Components\TextInput::make('max_markup_amount')->label('Maximum allowed')->numeric()->minValue(0)->prefix('AED')->suffix('per piece')
+                                ->default(fn () => Settings::get('affiliate_default_max_markup_amount', 100)),
+                            Forms\Components\Placeholder::make('amount_markup_hint')->hiddenLabel()->columnSpanFull()
+                                ->content('Example: AED 50 per piece — 1 gold ring + 2 diamond earrings show AED 50 more each.'),
+                        ]),
                 ]),
             Forms\Components\Section::make('Growth tools')->columnSpanFull()->columns(3)->schema([
                 Forms\Components\TextInput::make('coupon_discount_percent')->label('Customer discount with their code')->numeric()->minValue(0)->maxValue(50)->suffix('%')->default(0)
-                    ->helperText('0 = off. Customers type the affiliate code at checkout, get this discount, and the order counts for the affiliate. The discount comes from the shop\'s margin.'),
+                    ->helperText('0 = off. Customers type the affiliate code at checkout and get this discount; the order counts for the affiliate and the discount is taken from the affiliate\'s commission on that order (shown in the commission report and on the order).'),
                 Forms\Components\Toggle::make('can_lock_price')->label('Can send price-lock links')->inline(false)
                     ->helperText(fn () => 'The affiliate can hold today\'s price of a piece for a customer for '.\App\Affiliates\PriceLocks::hours().' hours (Settings → Affiliates). Watch the gold rate when allowing this.'),
                 Forms\Components\Select::make('recruited_by_id')->label('Recruited by (team leader)')->searchable()

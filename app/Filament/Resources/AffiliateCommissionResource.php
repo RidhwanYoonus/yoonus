@@ -60,6 +60,8 @@ class AffiliateCommissionResource extends Resource
                 Tables\Columns\TextColumn::make('bonus_amount')->label('Level / booster bonus')->money('AED')->summarize($sum())->toggleable()
                     ->description(fn (AffiliateCommission $r) => $r->bonus_note),
                 Tables\Columns\TextColumn::make('markup_amount')->label('White-page mark-up')->money('AED')->summarize($sum())->toggleable(),
+                Tables\Columns\TextColumn::make('coupon_deduction')->label('− Customer discount (their code)')->money('AED')->summarize($sum())->toggleable()
+                    ->color(fn ($state) => (float) $state > 0 ? 'danger' : null),
                 Tables\Columns\TextColumn::make('amount')->label('Total')->money('AED')->weight('bold')->summarize($sum()),
                 Tables\Columns\TextColumn::make('status')->badge()
                     ->formatStateUsing(fn (string $state) => AffiliateCommission::STATUSES[$state] ?? $state)

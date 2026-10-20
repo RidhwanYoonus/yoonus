@@ -48,8 +48,10 @@ class AffiliateCampaignResource extends Resource
                 ->options(fn () => Affiliate::with('user')->get()->mapWithKeys(fn ($a) => [$a->id => $a->code.' — '.$a->user?->name]))->columnSpanFull(),
             Forms\Components\TextInput::make('multiplier')->label('Multiply commission by')->numeric()->minValue(1)->maxValue(10)->step(0.1)->default(2)->prefix('×')
                 ->visible(fn (Forms\Get $get) => $get('type') !== 'target')->required(fn (Forms\Get $get) => $get('type') !== 'target'),
-            Forms\Components\Select::make('category_id')->label('Only this category')->placeholder('All items')->options(fn () => Category::pluck('name', 'id'))
+            Forms\Components\Select::make('category_ids')->label('Only these categories')->multiple()->placeholder('All categories')->options(fn () => Category::pluck('name', 'id'))
                 ->visible(fn (Forms\Get $get) => $get('type') !== 'target'),
+            Forms\Components\ToggleButtons::make('item_type')->label('Items')->inline()->default('all')->columnSpanFull()
+                ->options(AffiliateCampaign::ITEM_TYPES)->visible(fn (Forms\Get $get) => $get('type') !== 'target'),
             Forms\Components\ToggleButtons::make('target_metric')->label('Goal measured in')->inline()->default('pieces')
                 ->options(['pieces' => 'Pieces sold', 'sales' => 'Sales AED (excl. VAT)'])->visible(fn (Forms\Get $get) => $get('type') === 'target'),
             Forms\Components\TextInput::make('target_value')->label('Goal')->numeric()->minValue(1)
@@ -67,7 +69,7 @@ class AffiliateCampaignResource extends Resource
             Tables\Columns\TextColumn::make('type')->badge()->formatStateUsing(fn ($state) => $state === 'target' ? 'Target bonus' : 'Booster'),
             Tables\Columns\TextColumn::make('rule')->state(fn (AffiliateCampaign $r) => $r->type === 'target'
                 ? ($r->target_metric === 'sales' ? 'AED '.number_format((float) $r->target_value) : number_format((float) $r->target_value).' pcs').' → AED '.$r->bonus_amount
-                : '× '.rtrim(rtrim((string) $r->multiplier, '0'), '.').' on '.($r->category?->name ?? 'all items')),
+                : '× '.rtrim(rtrim((string) $r->multiplier, '0'), '.').' on '.$r->coverageLabel())->wrap(),
             Tables\Columns\TextColumn::make('starts_at')->label('From')->date('d M Y'),
             Tables\Columns\TextColumn::make('ends_at')->label('Until')->date('d M Y'),
             Tables\Columns\IconColumn::make('is_active')->boolean(),

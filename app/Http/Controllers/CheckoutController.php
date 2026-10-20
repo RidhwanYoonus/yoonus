@@ -267,10 +267,17 @@ class CheckoutController extends Controller
             'id_type' => ['required', Rule::in(IdDocument::TYPES)],
             'id_number' => ['required', 'string', 'max:32', IdDocument::numberRule($request->input('id_type'))],
             'id_expiry' => ['required', 'date', 'after:today'],
-            'id_front' => ['nullable', ...$file],
-            'id_back' => ['nullable', ...$file],
+            // Settings → Delivery & pickup → ID photos: optional (default), required, or not asked.
+            'id_front' => [self::idPhotos() === 'required' ? 'required' : 'nullable', ...$file],
+            'id_back' => [self::idPhotos() === 'required' ? 'required' : 'nullable', ...$file],
             'save_id' => 'nullable|boolean',
         ];
+    }
+
+    /** optional | required | hidden */
+    public static function idPhotos(): string
+    {
+        return in_array($v = (string) \App\Support\Settings::get('id_photos', 'optional'), ['optional', 'required', 'hidden'], true) ? $v : 'optional';
     }
 
     private function usesSavedId(Request $request): bool
@@ -293,8 +300,8 @@ class CheckoutController extends Controller
         $number = IdDocument::normalise($request->input('id_type'), $request->input('id_number'));
 
         return ['type' => $request->input('id_type'), 'number' => $number, 'last4' => IdDocument::last4($number), 'expiry' => $request->input('id_expiry'),
-            'front' => $request->hasFile('id_front') ? IdDocument::store($request->file('id_front')) : null,
-            'back' => $request->hasFile('id_back') ? IdDocument::store($request->file('id_back')) : null, 'saved' => false];
+            'front' => self::idPhotos() !== 'hidden' && $request->hasFile('id_front') ? IdDocument::store($request->file('id_front')) : null,
+            'back' => self::idPhotos() !== 'hidden' && $request->hasFile('id_back') ? IdDocument::store($request->file('id_back')) : null, 'saved' => false];
     }
 
     /** Home delivery can be paused from Settings → Payments; pickup then becomes the only option. */

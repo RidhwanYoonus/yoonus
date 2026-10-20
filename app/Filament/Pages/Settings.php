@@ -139,7 +139,10 @@ class Settings extends Page implements HasForms
                     $text('delivery_off_message_ar', 'Message while delivery is paused (Arabic)')->extraInputAttributes(['dir' => 'rtl'])->hintAction(\App\Filament\Support\ArabicField::translate('delivery_off_message', 'delivery_off_message_ar'))->columnSpanFull()->visible(fn (Forms\Get $get) => ! $get('delivery_enabled')),
                     Forms\Components\Select::make('id_verification')->label('Proof of ID at checkout')->required()
                         ->options(['delivery' => 'Required for home delivery', 'all' => 'Required for every order (delivery and pickup)', 'off' => 'Not required'])
-                        ->helperText('Customers enter their ID type, number and expiry and upload a photo as the last step before payment. They can save it for next time.'),
+                        ->helperText('Customers enter their ID type, number and expiry as the last step before payment. They can save it for next time.'),
+                    Forms\Components\Select::make('id_photos')->label('Photos of the ID (front and back)')->required()
+                        ->options(['optional' => 'Optional — customer may upload', 'required' => 'Required — front and back must be uploaded', 'hidden' => 'Not asked'])
+                        ->helperText('Photos are stored privately; only admins can open them from the order.'),
                     Forms\Components\Toggle::make('handover_otp')->label('Handover code on delivery / collection')->inline(false)
                         ->helperText('A 6-digit code is emailed and WhatsApped to the customer when the order is shipped (or ready for pickup). Staff must enter it to mark the order delivered.'),
                     Forms\Components\Toggle::make('product_store_map')->label('Show store map on every product page')->inline(false)

@@ -134,12 +134,15 @@
                             <input id="id_expiry" type="date" name="id_expiry" value="{{ old('id_expiry') }}" min="{{ now()->addDay()->toDateString() }}" class="input" :required="needed && !useSaved" :disabled="!needed || useSaved">
                             @error('id_expiry')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror</div>
                         <div class="hidden sm:block"></div>
-                        <div><label class="label" for="id_front">{{ __('shop.id.front') }}</label>
-                            <input id="id_front" type="file" name="id_front" accept="image/*,.pdf" class="input file:mr-3 file:rounded-full file:border-0 file:bg-sand file:px-3 file:py-1 file:text-xs" :disabled="!needed || useSaved">
-                            @error('id_front')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror</div>
-                        <div><label class="label" for="id_back">{{ __('shop.id.back') }}</label>
-                            <input id="id_back" type="file" name="id_back" accept="image/*,.pdf" class="input file:mr-3 file:rounded-full file:border-0 file:bg-sand file:px-3 file:py-1 file:text-xs" :disabled="!needed || useSaved">
-                            @error('id_back')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror</div>
+                        @php($idPhotos = \App\Http\Controllers\CheckoutController::idPhotos())
+                        @if ($idPhotos !== 'hidden')
+                            <div><label class="label" for="id_front">{{ __($idPhotos === 'required' ? 'shop.id.front_required' : 'shop.id.front') }}</label>
+                                <input id="id_front" type="file" name="id_front" accept="image/*,.pdf" class="input file:mr-3 file:rounded-full file:border-0 file:bg-sand file:px-3 file:py-1 file:text-xs" :disabled="!needed || useSaved" @if ($idPhotos === 'required') :required="needed && !useSaved" @endif>
+                                @error('id_front')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror</div>
+                            <div><label class="label" for="id_back">{{ __($idPhotos === 'required' ? 'shop.id.back_required' : 'shop.id.back') }}</label>
+                                <input id="id_back" type="file" name="id_back" accept="image/*,.pdf" class="input file:mr-3 file:rounded-full file:border-0 file:bg-sand file:px-3 file:py-1 file:text-xs" :disabled="!needed || useSaved" @if ($idPhotos === 'required') :required="needed && !useSaved" @endif>
+                                @error('id_back')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror</div>
+                        @endif
                         @auth
                             <label class="flex items-center gap-2 text-sm sm:col-span-2"><input type="checkbox" name="save_id" value="1" @checked(old('save_id', true)) class="accent-gold-600" :disabled="!needed || useSaved"> {{ __('shop.id.save') }}</label>
                         @else

@@ -39,15 +39,23 @@ class AffiliateService
         $boosters = rescue(fn () => AffiliateCampaign::running()->where('type', 'booster')->get()
             ->filter(fn (AffiliateCampaign $c) => $c->appliesTo($affiliate)), collect(), false);
         $earned = 0;
-        foreach ($order->items()->with('product')->get() as $item) {
+        $items = $order->items()->with('product')->get();
+        $couponShares = $this->couponShares($order, $affiliate, $items);
+        foreach ($items as $item) {
             $markup = Money::toFils($item->affiliate_markup);
             $fixed = $item->product ? $item->product->isFixedPrice() : $item->karat === 'Fixed price';
-            [$basis, $baseShown, $rateShown, $commission] = $this->line($affiliate, $item, $fixed, $markup);
-            [$bonus, $bonusNote] = $this->extras($commission, $level, $boosters, $item->product);
+            // The affiliate's own code: commission is worked out on the price before that discount,
+            // then the discount is taken from the affiliate's money on this line.
+            $share = $couponShares[$item->id] ?? 0;
+            $calc = clone $item;
+            $calc->discount_amount = Money::toAed(max(0, Money::toFils($item->discount_amount) - $share));
+            [$basis, $baseShown, $rateShown, $commission] = $this->line($affiliate, $calc, $fixed, $markup);
+            [$bonus, $bonusNote] = $this->extras($commission, $level, $boosters, $item->product, $fixed);
+            $deduction = min($share, $commission + $bonus + $markup);
             if ($commission + $bonus + $markup <= 0) {
                 continue;
             }
-            $earned += $commission + $bonus;
+            $earned += max(0, $commission + $bonus - $deduction);
             AffiliateCommission::create([
                 'affiliate_id' => $affiliate->id,
                 'order_id' => $order->id,
@@ -59,7 +67,8 @@ class AffiliateService
                 'commission_amount' => Money::toAed($commission),
                 'markup_amount' => Money::toAed($markup),
                 ...(Schema::hasColumn('affiliate_commissions', 'bonus_amount') ? ['bonus_amount' => Money::toAed($bonus), 'bonus_note' => $bonusNote] : []),
-                'amount' => Money::toAed($commission + $bonus + $markup),
+                ...(Schema::hasColumn('affiliate_commissions', 'coupon_deduction') ? ['coupon_deduction' => Money::toAed($deduction)] : []),
+                'amount' => Money::toAed($commission + $bonus + $markup - $deduction),
                 'status' => 'pending',
             ]);
         }
@@ -73,7 +82,7 @@ class AffiliateService
      *
      * @return array{0: int, 1: ?string}
      */
-    private function extras(int $commission, array $level, $boosters, $product): array
+    private function extras(int $commission, array $level, $boosters, $product, bool $fixed = false): array
     {
         if ($commission <= 0) {
             return [0, null];
@@ -85,7 +94,7 @@ class AffiliateService
             $notes[] = $level['name'].' +'.rtrim(rtrim(Money::toAed($level['extra_bp']), '0'), '.').'%';
         }
         foreach ($boosters as $b) {
-            if ($b->category_id && (int) $b->category_id !== (int) $product?->category_id) {
+            if (! $b->covers($product, $fixed)) {
                 continue;
             }
             $bonus += Money::percentOf($commission, Money::scaled(max(0, (float) $b->multiplier - 1) * 100, 2));
@@ -93,6 +102,33 @@ class AffiliateService
         }
 
         return [$bonus, $notes ? implode(' · ', $notes) : null];
+    }
+
+    /**
+     * Discount the customer got with this affiliate's own coupon code, per order line (fils),
+     * split over the lines in proportion to their discount.
+     *
+     * @return array<int, int>
+     */
+    private function couponShares(Order $order, Affiliate $affiliate, $items): array
+    {
+        $redemption = \App\Models\CouponRedemption::where('order_id', $order->id)
+            ->whereHas('coupon', fn ($q) => $q->where('affiliate_id', $affiliate->id))->with('coupon')->first();
+        if (! $redemption) {
+            return [];
+        }
+        $total = Money::toFils($redemption->discount_amount);
+        $lines = $items->filter(fn ($i) => str_contains((string) $i->coupon_code_applied, $redemption->coupon->code) && Money::toFils($i->discount_amount) > 0);
+        $weight = $lines->sum(fn ($i) => Money::toFils($i->discount_amount));
+        $shares = [];
+        $left = $total;
+        foreach ($lines->values() as $n => $i) {
+            $part = $n === $lines->count() - 1 ? $left : intdiv($total * Money::toFils($i->discount_amount), max(1, $weight));
+            $shares[$i->id] = min($part, Money::toFils($i->discount_amount));
+            $left -= $shares[$i->id];
+        }
+
+        return $shares;
     }
 
     /** The affiliate who recruited this one gets a share of the commission (paid by the shop, not deducted). */

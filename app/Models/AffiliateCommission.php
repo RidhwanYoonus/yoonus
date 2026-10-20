@@ -15,7 +15,7 @@ class AffiliateCommission extends Model
     {
         return [
             'base_amount' => 'decimal:2', 'rate_percent' => 'decimal:2', 'commission_amount' => 'decimal:2',
-            'markup_amount' => 'decimal:2', 'bonus_amount' => 'decimal:2', 'amount' => 'decimal:2', 'available_at' => 'datetime',
+            'markup_amount' => 'decimal:2', 'bonus_amount' => 'decimal:2', 'coupon_deduction' => 'decimal:2', 'amount' => 'decimal:2', 'available_at' => 'datetime',
         ];
     }
 
