@@ -136,7 +136,7 @@ class AffiliateService
     {
         $pct = Money::scaled(Settings::get('affiliate_recruiter_percent', 10), 2);
         $recruiter = $affiliate->recruited_by_id ? $affiliate->recruitedBy : null;
-        if (! $recruiter || ! $recruiter->is_active || $pct <= 0 || $earned <= 0) {
+        if (! Affiliate::teamEnabled() || ! $recruiter || ! $recruiter->is_active || $pct <= 0 || $earned <= 0) {
             return;
         }
         $share = Money::percentOf($earned, $pct);

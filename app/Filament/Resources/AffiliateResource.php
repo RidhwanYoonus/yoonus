@@ -128,7 +128,7 @@ class AffiliateResource extends Resource
                     ->helperText('0 = off. Customers type the affiliate code at checkout and get this discount; the order counts for the affiliate and the discount is taken from the affiliate\'s commission on that order (shown in the commission report and on the order).'),
                 Forms\Components\Toggle::make('can_lock_price')->label('Can send price-lock links')->inline(false)
                     ->helperText(fn () => 'The affiliate can hold today\'s price of a piece for a customer for '.\App\Affiliates\PriceLocks::hours().' hours (Settings → Affiliates). Watch the gold rate when allowing this.'),
-                Forms\Components\Select::make('recruited_by_id')->label('Recruited by (team leader)')->searchable()
+                Forms\Components\Select::make('recruited_by_id')->label('Recruited by (team leader)')->searchable()->visible(fn () => Affiliate::teamEnabled())
                     ->options(fn (?Affiliate $record) => Affiliate::with('user')->whereKeyNot($record?->id)->get()->mapWithKeys(fn ($a) => [$a->id => $a->code.' — '.$a->user?->name]))
                     ->helperText('They earn a share of this affiliate\'s commission (Settings → Affiliates).'),
             ]),

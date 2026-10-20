@@ -126,7 +126,9 @@
         </section>
     @endif
 
-    <div class="mt-10 grid gap-4 lg:grid-cols-2">
+    @php($teamOn = \App\Models\Affiliate::teamEnabled())
+    <div @class(['mt-10 grid gap-4', 'lg:grid-cols-2' => $teamOn])>
+        @if ($teamOn)
         <section class="card p-6">
             <h2 class="font-display text-2xl">{{ __('shop.affiliate.team') }}</h2>
             <p class="mt-1 text-sm text-muted">{{ __('shop.affiliate.team_note', ['pct' => rtrim(rtrim(number_format((float) \App\Support\Settings::get('affiliate_recruiter_percent', 10), 2), '0'), '.')]) }}</p>
@@ -138,6 +140,7 @@
                 <ul class="mt-4 space-y-1 text-sm">@foreach ($team as $t)<li>• {{ $t->name() }} <span class="text-xs text-muted" dir="ltr">({{ $t->code }})</span></li>@endforeach</ul>
             @endif
         </section>
+        @endif
         <section class="card p-6">
             <h2 class="font-display text-2xl">{{ __('shop.affiliate.leaderboard') }}</h2>
             <ol class="mt-3 space-y-1.5 text-sm">

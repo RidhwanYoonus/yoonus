@@ -136,14 +136,16 @@ class AffiliateController extends Controller
 
     public function applyForm(Request $request)
     {
+        abort_unless(Affiliate::signupEnabled(), 404);
         return view('shop.affiliate-apply', [
             'seo' => Seo::page(__('shop.affiliate.apply_title')),
-            'ref' => Affiliate::where('code', strtoupper((string) $request->query('ref')))->where('is_active', true)->first(),
+            'ref' => ! Affiliate::teamEnabled() ? null : Affiliate::where('code', strtoupper((string) $request->query('ref')))->where('is_active', true)->first(),
         ]);
     }
 
     public function apply(Request $request)
     {
+        abort_unless(Affiliate::signupEnabled(), 404);
         $data = $request->validate([
             'name' => 'required|string|max:120',
             'email' => 'required|email:rfc|max:191',
@@ -153,7 +155,7 @@ class AffiliateController extends Controller
             'ref' => 'nullable|string|max:32',
             'website' => 'prohibited',   // bots fill the hidden field
         ]);
-        $ref = filled($data['ref'] ?? null) ? Affiliate::where('code', strtoupper($data['ref']))->value('id') : null;
+        $ref = Affiliate::teamEnabled() && filled($data['ref'] ?? null) ? Affiliate::where('code', strtoupper($data['ref']))->value('id') : null;
         \App\Models\AffiliateApplication::create(collect($data)->except(['ref', 'website'])->all() + ['referred_by_id' => $ref, 'email' => strtolower($data['email'])]);
 
         return redirect()->route('affiliate.apply')->with('status', __('shop.affiliate.apply_thanks'));

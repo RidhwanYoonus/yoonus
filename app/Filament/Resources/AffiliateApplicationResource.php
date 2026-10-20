@@ -36,6 +36,12 @@ class AffiliateApplicationResource extends Resource
 
     protected static ?int $navigationSort = 5;
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return parent::shouldRegisterNavigation()
+            && (Affiliate::signupEnabled() || rescue(fn () => AffiliateApplication::exists(), false, false));
+    }
+
     public static function getNavigationBadge(): ?string
     {
         $n = rescue(fn () => AffiliateApplication::where('status', 'new')->count(), 0, false);

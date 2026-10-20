@@ -62,6 +62,8 @@ return [
         'affiliate_default_commission_per_gram' => 2,
         'affiliate_default_commission_per_piece' => 10,
         'affiliate_notifications' => true,
+        'affiliate_signup_enabled' => false,   // public "Become an affiliate" page
+        'affiliate_team_enabled' => false,     // "Build your team" + team leader share
         'affiliate_recruiter_percent' => 10,
         'affiliate_price_lock_hours' => 24,
         'affiliate_tiers' => [

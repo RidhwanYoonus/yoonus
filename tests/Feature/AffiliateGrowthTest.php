@@ -66,6 +66,7 @@ class AffiliateGrowthTest extends TestCase
 
     public function test_affiliate_gets_share_tools_on_product_page_and_dashboard(): void
     {
+        Settings::set(['affiliate_signup_enabled' => true, 'affiliate_team_enabled' => true]);
         $this->actingAs($this->affiliate->user);
         $this->get('/product/band')->assertSee('Share this piece and earn')->assertSee('aff=HUDA10', false);
         $this->get('/affiliate')->assertOk()->assertSee('Ready-made posts')->assertSee('Band')
@@ -175,7 +176,7 @@ class AffiliateGrowthTest extends TestCase
 
     public function test_join_link_application_approval_and_team_commission(): void
     {
-        Settings::set(['affiliate_recruiter_percent' => 10]);
+        Settings::set(['affiliate_recruiter_percent' => 10, 'affiliate_signup_enabled' => true, 'affiliate_team_enabled' => true]);
         $this->get('/affiliate/join?ref=HUDA10')->assertOk()->assertSee('Huda Partner');
         $this->post('/affiliate/join', ['name' => 'Sara New', 'email' => 'sara@new.ae', 'phone' => '+971502223333', 'ref' => 'HUDA10'])->assertSessionHas('status');
         $app = AffiliateApplication::sole();
@@ -246,5 +247,20 @@ class AffiliateGrowthTest extends TestCase
         $this->checkout();
         $this->assertSame('0.00', AffiliateCommission::latest('id')->first()->bonus_amount);
         $this->assertSame('Bangles', $booster->fresh()->coverageLabel());
+    }
+
+    public function test_join_page_and_team_are_off_until_switched_on(): void
+    {
+        $this->get('/')->assertDontSee(route('affiliate.apply'), false);
+        $this->get('/affiliate/join')->assertNotFound();
+        $this->actingAs($this->affiliate->user)->get('/affiliate')->assertDontSee('Build your team');
+
+        Settings::set(['affiliate_signup_enabled' => true]);   // join page on, team still off
+        $this->get('/')->assertSee(route('affiliate.apply'), false);
+        $this->get('/affiliate/join?ref=HUDA10')->assertOk()->assertDontSee('invited you');
+        $this->actingAs($this->affiliate->user)->get('/affiliate')->assertDontSee('Build your team');
+
+        Settings::set(['affiliate_team_enabled' => true]);
+        $this->actingAs($this->affiliate->user)->get('/affiliate')->assertSee('Build your team');
     }
 }

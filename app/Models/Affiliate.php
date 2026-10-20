@@ -81,6 +81,16 @@ class Affiliate extends Model
         return $this->hasMany(self::class, 'recruited_by_id');
     }
 
+    public static function signupEnabled(): bool
+    {
+        return \App\Support\Settings::bool('affiliate_signup_enabled');
+    }
+
+    public static function teamEnabled(): bool
+    {
+        return self::signupEnabled() && \App\Support\Settings::bool('affiliate_team_enabled');
+    }
+
     public function joinLink(): string
     {
         return route('affiliate.apply', ['ref' => $this->code]);
