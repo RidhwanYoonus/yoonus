@@ -189,7 +189,9 @@ class Settings extends Page implements HasForms
                     Forms\Components\Placeholder::make('affiliate_help')->hiddenLabel()->content('Defaults for new affiliates — each affiliate can have their own rates under Affiliates.'),
                     Forms\Components\TextInput::make('affiliate_default_making_percent')->label('Default: by-gram items, % of making charge')->numeric()->minValue(0)->maxValue(100)->suffix('%'),
                     Forms\Components\TextInput::make('affiliate_default_fixed_percent')->label('Default: fixed-price items, % of item total')->numeric()->minValue(0)->maxValue(100)->suffix('%'),
-                    Forms\Components\TextInput::make('affiliate_default_max_markup')->label('Default: maximum white-page mark-up')->numeric()->minValue(0)->maxValue(100)->suffix('%'),
+                    Forms\Components\TextInput::make('affiliate_default_max_making_markup')->label('Default max mark-up: by-weight items, % of making')->numeric()->minValue(0)->maxValue(500)->suffix('%'),
+                    Forms\Components\TextInput::make('affiliate_default_max_markup')->label('Default max mark-up: fixed-price items, % of price')->numeric()->minValue(0)->maxValue(100)->suffix('%'),
+                    Forms\Components\TextInput::make('affiliate_default_max_markup_amount')->label('Default max mark-up: amount per piece')->numeric()->minValue(0)->prefix('AED'),
                 ]),
                 Forms\Components\Tabs\Tab::make('Video calls')->icon('heroicon-o-video-camera')->columns(2)->schema([
                     Forms\Components\Toggle::make('video_call_enabled')->label('Live video call button on products')->inline(false)

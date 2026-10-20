@@ -125,7 +125,7 @@ class OrderService
                     'line_total' => Money::toAed($quote->lineTotal($i)),
                     'coupon_code_applied' => implode(',', array_keys(array_filter($line->discountsByCode))) ?: null,
                     // White page: the part of the price the affiliate added on top of the shop price.
-                    ...($white && $pricing->markup() > 0
+                    ...($white && $pricing->markup()->isActive()
                         ? ['affiliate_markup' => Money::toAed(max(0, $u->subtotal - $pricing->base($line->product)->subtotal) * $line->qty)] : []),
                 ]);
                 $products[$line->product->id]->decrement('stock_qty', $line->qty);

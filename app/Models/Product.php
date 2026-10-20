@@ -149,7 +149,7 @@ class Product extends Model
     {
         // Only gold-weight (percentage) making is advertised; fixed-price and per-piece items show none.
         if ($this->isFixedPrice() || $this->manufacturer_charge_type === self::PER_PIECE || ! Settings::bool('making_badge')
-            || app(\App\Pricing\PricingService::class)->markup() > 0) {   // white page: the % would not match the price
+            || app(\App\Pricing\PricingService::class)->markup()->isActive()) {   // white page: the % would not match the price
             return null;
         }
         $value = (float) $this->manufacturer_charge_value;

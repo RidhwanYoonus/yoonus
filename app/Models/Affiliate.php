@@ -16,8 +16,8 @@ class Affiliate extends Model
         return [
             'making_commission_percent' => 'decimal:2',
             'fixed_commission_percent' => 'decimal:2',
-            'max_markup_percent' => 'decimal:2',
-            'markup_percent' => 'decimal:2',
+            'making_markup_percent' => 'decimal:2', 'fixed_markup_percent' => 'decimal:2', 'markup_amount' => 'decimal:2',
+            'max_making_markup_percent' => 'decimal:2', 'max_fixed_markup_percent' => 'decimal:2', 'max_markup_amount' => 'decimal:2',
             'white_page_enabled' => 'boolean',
             'is_active' => 'boolean',
         ];
@@ -48,14 +48,30 @@ class Affiliate extends Model
         return $this->display_name ?: ($this->user?->name ?? $this->code);
     }
 
-    /** Mark-up actually applied on the white page: the affiliate's choice, capped by the admin's maximum. */
-    public function effectiveMarkupBp(): int
+    /** Mark-up actually applied on the white page: the affiliate's choice, capped by the admin's maximums. */
+    public function effectiveMarkup(): \App\Pricing\Markup
     {
         if (! $this->white_page_enabled || ! $this->is_active) {
-            return 0;
+            return \App\Pricing\Markup::none();
+        }
+        $cap = fn (string $value, string $max) => max(0, min(Money::scaled($this->{$value}, 2), Money::scaled($this->{$max}, 2)));
+        if ($this->markup_mode === 'amount') {
+            return new \App\Pricing\Markup(amountFils: $cap('markup_amount', 'max_markup_amount'));
         }
 
-        return max(0, min(Money::scaled($this->markup_percent, 2), Money::scaled($this->max_markup_percent, 2)));
+        return new \App\Pricing\Markup(makingBp: $cap('making_markup_percent', 'max_making_markup_percent'), fixedBp: $cap('fixed_markup_percent', 'max_fixed_markup_percent'));
+    }
+
+    /** Short description, e.g. "10% of making · 5% on fixed-price items" or "AED 50 per piece". */
+    public function markupSummary(): string
+    {
+        $m = $this->effectiveMarkup();
+        $n = fn (int $v) => rtrim(rtrim(Money::toAed($v), '0'), '.');
+        if ($m->amountFils > 0) {
+            return __('shop.affiliate.summary_amount', ['amount' => Money::format($m->amountFils)]);
+        }
+
+        return __('shop.affiliate.summary_percent', ['making' => $n($m->makingBp), 'fixed' => $n($m->fixedBp)]);
     }
 
     /** All amounts in fils. */

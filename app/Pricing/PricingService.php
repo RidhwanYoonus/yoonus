@@ -17,30 +17,33 @@ use Illuminate\Support\Facades\Cache;
  */
 class PricingService
 {
-    /** White-page mark-up for the current visitor (basis points), set by the affiliate middleware. */
-    private int $markupBp = 0;
+    /** White-page mark-up for the current visitor, set by the affiliate middleware. */
+    private Markup $markup;
 
-    public function __construct(private readonly PriceCalculator $calculator) {}
-
-    public function setMarkup(int $bp): void
+    public function __construct(private readonly PriceCalculator $calculator)
     {
-        $this->markupBp = max(0, $bp);
+        $this->markup = Markup::none();
     }
 
-    public function markup(): int
+    public function setMarkup(Markup $markup): void
     {
-        return $this->markupBp;
+        $this->markup = $markup;
+    }
+
+    public function markup(): Markup
+    {
+        return $this->markup;
     }
 
     /** Price without any affiliate mark-up (what the shop itself charges). */
     public function base(Product $product): PriceBreakdown
     {
-        $saved = $this->markupBp;
-        $this->markupBp = 0;
+        $saved = $this->markup;
+        $this->markup = Markup::none();
         try {
             return $this->compute($product);
         } finally {
-            $this->markupBp = $saved;
+            $this->markup = $saved;
         }
     }
 
@@ -93,7 +96,7 @@ class PricingService
         if ($discount > 0) {
             return $this->compute($product, $discount);
         }
-        $key = sprintf('price.v%d.p%d.%s.m%d', $this->version(), $product->id, $product->updated_at?->timestamp, $this->markupBp);
+        $key = sprintf('price.v%d.p%d.%s.m%s', $this->version(), $product->id, $product->updated_at?->timestamp, $this->markup->key());
 
         return PriceBreakdown::fromArray(Cache::remember($key, $this->ttl(), fn () => $this->compute($product)->raw()));
     }
@@ -106,7 +109,7 @@ class PricingService
             $this->vatBpFor($product->gold_category_id),
             $this->roundingMode(),
             $discount,
-            $this->markupBp,
+            $this->markup,
         );
     }
 

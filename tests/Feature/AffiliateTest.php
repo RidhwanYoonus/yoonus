@@ -37,7 +37,8 @@ class AffiliateTest extends TestCase
             'weight_grams' => 0, 'manufacturer_charge_type' => 'PERCENTAGE', 'manufacturer_charge_value' => 0, 'stock_qty' => 5]);
         $user = User::factory()->create(['name' => 'Huda Partner', 'email' => 'huda@partner.ae']);
         $this->affiliate = Affiliate::create(['user_id' => $user->id, 'code' => 'HUDA10', 'making_commission_percent' => 10, 'fixed_commission_percent' => 3,
-            'white_page_enabled' => true, 'max_markup_percent' => 10, 'markup_percent' => 5]);
+            'white_page_enabled' => true, 'markup_mode' => 'percent', 'making_markup_percent' => 20, 'fixed_markup_percent' => 5,
+            'max_making_markup_percent' => 30, 'max_fixed_markup_percent' => 10, 'max_markup_amount' => 100]);
     }
 
     private function checkout(array $slugs = ['band', 'watch']): Order
@@ -83,37 +84,54 @@ class AffiliateTest extends TestCase
         $this->assertSame(2500, $t['balance']);   // AED 25 ready to collect
     }
 
-    public function test_white_page_adds_the_markup_to_prices_and_pays_it_to_the_affiliate(): void
+    public function test_white_page_marks_up_only_the_making_on_gold_items_and_the_price_on_fixed_items(): void
     {
         $this->get('/product/band')->assertSee('1,100.00');
-        $this->get('/w/HUDA10')->assertOk()->assertSee('Huda Partner')->assertSee('1,155.00')->assertSee('Watch');
-        $this->get('/product/band')->assertSee('1,155.00')->assertSee('You are shopping with');   // +5%
+        // Band: making 100 × 20% = +20 → 1,120 (the AED 1,000 gold is never marked up). Watch: 500 × 5% = +25 → 525.
+        $this->get('/w/HUDA10')->assertOk()->assertSee('Huda Partner')->assertSee('1,120.00')->assertSee('525.00');
+        $this->get('/product/band')->assertSee('1,120.00')->assertSee('You are shopping with');
 
-        $order = $this->checkout(['band']);
+        $order = $this->checkout();
         $this->assertTrue($order->affiliate_white_page);
-        $this->assertSame('1155.00', $order->taxable_amount);
-        $this->assertSame('55.00', $order->items->first()->affiliate_markup);
-        $c = AffiliateCommission::sole();
-        $this->assertSame('100.00', $c->base_amount);         // the shop's own making charge
-        $this->assertSame('10.00', $c->commission_amount);
-        $this->assertSame('55.00', $c->markup_amount);
-        $this->assertSame('65.00', $c->amount);
+        $this->assertSame('1645.00', $order->taxable_amount);   // 1,120 + 525
+        $band = AffiliateCommission::where('basis', 'making')->sole();
+        $this->assertSame('100.00', $band->base_amount);         // the shop's own making charge
+        $this->assertSame('10.00', $band->commission_amount);    // 10% of making
+        $this->assertSame('20.00', $band->markup_amount);
+        $watch = AffiliateCommission::where('basis', 'total')->sole();
+        $this->assertSame('500.00', $watch->base_amount);
+        $this->assertSame('15.00', $watch->commission_amount);   // 3% of the shop price
+        $this->assertSame('25.00', $watch->markup_amount);
 
         // Stored prices and other visitors are not affected.
         $this->assertSame('1100.00', Product::where('slug', 'band')->value('cached_subtotal'));
     }
 
+    public function test_same_amount_on_every_piece(): void
+    {
+        $this->affiliate->update(['markup_mode' => 'amount', 'markup_amount' => 50]);
+        $this->get('/w/HUDA10')->assertSee('1,150.00')->assertSee('550.00');
+        $this->checkout();
+        $this->assertSame(['50.00', '50.00'], AffiliateCommission::orderBy('id')->pluck('markup_amount')->all());
+    }
+
     public function test_markup_is_capped_by_admin_and_affiliate_cannot_go_above_it(): void
     {
-        $this->affiliate->update(['markup_percent' => 25]);   // above the 10% max set by admin
+        $this->affiliate->update(['making_markup_percent' => 90]);   // above the 30% max set by admin
         $this->get('/w/HUDA10');
-        $this->get('/product/band')->assertSee('1,210.00');    // capped at +10%
+        $this->get('/product/band')->assertSee('1,130.00');           // capped at +30% of making
 
-        $this->actingAs($this->affiliate->user)->post('/affiliate/page', ['markup_percent' => 15])->assertSessionHasErrors('markup_percent');
-        $this->actingAs($this->affiliate->user)->post('/affiliate/page', ['markup_percent' => 8, 'display_name' => 'Huda Gold'])->assertSessionHasNoErrors();
-        $this->assertSame('8.00', $this->affiliate->fresh()->markup_percent);
+        $as = $this->actingAs($this->affiliate->user);
+        $as->post('/affiliate/page', ['markup_mode' => 'percent', 'making_markup_percent' => 40, 'fixed_markup_percent' => 5])->assertSessionHasErrors('making_markup_percent');
+        $as->post('/affiliate/page', ['markup_mode' => 'amount', 'markup_amount' => 150])->assertSessionHasErrors('markup_amount');
+        $as->post('/affiliate/page', ['markup_mode' => 'amount', 'markup_amount' => 60, 'display_name' => 'Huda Gold'])->assertSessionHasNoErrors();
+        $fresh = $this->affiliate->fresh();
+        $this->assertSame('amount', $fresh->markup_mode);
+        $this->assertSame('60.00', $fresh->markup_amount);
+        $this->assertSame('Huda Gold', $fresh->display_name);
 
         $this->affiliate->update(['white_page_enabled' => false]);   // admin switches it off
+        auth()->logout();
         $this->get('/product/band')->assertSee('1,100.00');
     }
 
@@ -196,7 +214,7 @@ class AffiliateTest extends TestCase
     public function test_affiliate_previews_own_page_with_markup_but_never_earns_on_it(): void
     {
         $this->actingAs($this->affiliate->user);
-        $this->get('/w/HUDA10')->assertOk()->assertSee('Preview of your page')->assertSee('1,155.00');
+        $this->get('/w/HUDA10')->assertOk()->assertSee('Preview of your page')->assertSee('1,120.00');
         $this->get('/product/band')->assertSee('1,100.00');   // preview only; not tracked as a customer visit
         $this->assertNull(session('aff'));
     }

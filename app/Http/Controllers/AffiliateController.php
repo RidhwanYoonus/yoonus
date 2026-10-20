@@ -55,9 +55,18 @@ class AffiliateController extends Controller
         abort_unless($affiliate->white_page_enabled, 403);
         $data = $request->validate([
             'display_name' => 'nullable|string|max:80',
-            'markup_percent' => ['required', 'numeric', 'min:0', 'max:'.(float) $affiliate->max_markup_percent],
+            'markup_mode' => 'required|in:percent,amount',
+            'making_markup_percent' => ['required_if:markup_mode,percent', 'nullable', 'numeric', 'min:0', 'max:'.(float) $affiliate->max_making_markup_percent],
+            'fixed_markup_percent' => ['required_if:markup_mode,percent', 'nullable', 'numeric', 'min:0', 'max:'.(float) $affiliate->max_fixed_markup_percent],
+            'markup_amount' => ['required_if:markup_mode,amount', 'nullable', 'numeric', 'min:0', 'max:'.(float) $affiliate->max_markup_amount],
         ]);
-        $affiliate->update($data);
+        $affiliate->update([
+            'display_name' => $data['display_name'] ?? null,
+            'markup_mode' => $data['markup_mode'],
+            'making_markup_percent' => $data['making_markup_percent'] ?? 0,
+            'fixed_markup_percent' => $data['fixed_markup_percent'] ?? 0,
+            'markup_amount' => $data['markup_amount'] ?? 0,
+        ]);
 
         return back()->with('status', __('shop.affiliate.saved'));
     }

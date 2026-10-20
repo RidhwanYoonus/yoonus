@@ -7,7 +7,7 @@
         <p class="mx-auto mt-3 max-w-xl text-sm text-muted">{{ __('shop.affiliate.page_intro', ['store' => \App\Support\Seo::storeName()]) }}</p>
         @if ($preview)
             <p class="mx-auto mt-5 max-w-xl rounded-xl border border-gold-400 bg-gold-300/20 px-4 py-3 text-sm">
-                {{ __('shop.affiliate.preview', ['markup' => rtrim(rtrim((string) min((float) $affiliate->markup_percent, (float) $affiliate->max_markup_percent), '0'), '.')]) }}
+                {{ __('shop.affiliate.preview', ['markup' => $affiliate->markupSummary()]) }}
             </p>
         @elseif (! $affiliate->white_page_enabled)
             <p class="mt-3 text-xs text-muted">{{ __('shop.affiliate.page_normal_prices') }}</p>

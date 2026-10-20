@@ -19,13 +19,13 @@ class DatabaseUpdateBannerTest extends TestCase
         $this->assertSame([], PendingMigrations::list());
 
         Artisan::call('migrate:rollback', ['--step' => 1, '--force' => true]); // the newest migration
-        $this->assertFalse(Schema::hasTable('affiliates'));
+        $this->assertFalse(Schema::hasColumn('affiliates', 'markup_mode'));
         $this->assertNotEmpty(PendingMigrations::list());
 
         $this->actingAs($admin)->get('/admin')->assertOk()->assertSee('Update database now');
 
         $this->actingAs($admin)->post('/admin/update-database')->assertRedirect();
-        $this->assertTrue(Schema::hasTable('affiliates'));
+        $this->assertTrue(Schema::hasColumn('affiliates', 'markup_mode'));
         $this->assertSame([], PendingMigrations::list());
         $this->actingAs($admin)->get('/admin')->assertDontSee('Update database now');
     }

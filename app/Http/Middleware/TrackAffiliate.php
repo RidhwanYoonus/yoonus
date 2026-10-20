@@ -42,7 +42,7 @@ class TrackAffiliate
         } catch (Throwable) {
             // Before the database update has run.
         }
-        app(PricingService::class)->setMarkup($context->markupBp());
+        app(PricingService::class)->setMarkup($context->markup());
         view()->share('affiliateContext', $context);
 
         $response = $next($request);

@@ -71,11 +71,25 @@ class AffiliateResource extends Resource
                 ->description('Their own link where every price includes their mark-up. They keep the full mark-up on top of the commission.')
                 ->schema([
                     Forms\Components\Toggle::make('white_page_enabled')->label('Allow white page')->live(),
-                    Forms\Components\TextInput::make('max_markup_percent')->label('Maximum mark-up allowed')->numeric()->minValue(0)->maxValue(100)->suffix('%')
-                        ->default(fn () => Settings::get('affiliate_default_max_markup', 10))->visible(fn (Forms\Get $get) => $get('white_page_enabled')),
-                    Forms\Components\TextInput::make('markup_percent')->label('Mark-up in use')->numeric()->minValue(0)->suffix('%')->default(0)
-                        ->lte('max_markup_percent')->visible(fn (Forms\Get $get) => $get('white_page_enabled'))
-                        ->helperText('The affiliate can change this on their dashboard, up to the maximum.'),
+                    Forms\Components\Fieldset::make('Maximum mark-up allowed')->columns(1)->visible(fn (Forms\Get $get) => $get('white_page_enabled'))->schema([
+                        Forms\Components\TextInput::make('max_making_markup_percent')->label('By-weight items: % of making charge')->numeric()->minValue(0)->maxValue(500)->suffix('%')
+                            ->default(fn () => Settings::get('affiliate_default_max_making_markup', 30)),
+                        Forms\Components\TextInput::make('max_fixed_markup_percent')->label('Fixed-price items: % of price')->numeric()->minValue(0)->maxValue(100)->suffix('%')
+                            ->default(fn () => Settings::get('affiliate_default_max_markup', 10)),
+                        Forms\Components\TextInput::make('max_markup_amount')->label('Or amount per piece')->numeric()->minValue(0)->prefix('AED')
+                            ->default(fn () => Settings::get('affiliate_default_max_markup_amount', 100)),
+                    ]),
+                    Forms\Components\Fieldset::make('Mark-up in use')->columns(1)->visible(fn (Forms\Get $get) => $get('white_page_enabled'))->schema([
+                        Forms\Components\Radio::make('markup_mode')->hiddenLabel()->default('percent')->live()
+                            ->options(['percent' => 'Percentage', 'amount' => 'Same amount on every piece']),
+                        Forms\Components\TextInput::make('making_markup_percent')->label('By-weight items: % of making')->numeric()->minValue(0)->suffix('%')->default(0)
+                            ->lte('max_making_markup_percent')->visible(fn (Forms\Get $get) => $get('markup_mode') !== 'amount'),
+                        Forms\Components\TextInput::make('fixed_markup_percent')->label('Fixed-price items: % of price')->numeric()->minValue(0)->suffix('%')->default(0)
+                            ->lte('max_fixed_markup_percent')->visible(fn (Forms\Get $get) => $get('markup_mode') !== 'amount'),
+                        Forms\Components\TextInput::make('markup_amount')->label('Amount per piece')->numeric()->minValue(0)->prefix('AED')->default(0)
+                            ->lte('max_markup_amount')->visible(fn (Forms\Get $get) => $get('markup_mode') === 'amount'),
+                        Forms\Components\Placeholder::make('markup_hint')->hiddenLabel()->content('The affiliate can change this on their dashboard, up to the maximums.'),
+                    ]),
                 ]),
             Forms\Components\Textarea::make('notes')->label('Internal notes')->rows(2)->columnSpanFull(),
         ]);
