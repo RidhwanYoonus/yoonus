@@ -34,8 +34,15 @@
                 <div class="card p-4"><p class="label">{{ __('shop.checkout.delivery') }}</p><p>{{ $order->shipping_address['name'] }}<br>{{ $order->shipping_address['line1'] }} {{ $order->shipping_address['line2'] }}<br>{{ $order->shipping_address['city'] }}, {{ $order->shipping_address['zone'] }}</p></div>
             @endif
             <div class="card p-4"><p class="label">{{ __('shop.checkout.payment') }}</p><p>{{ __('shop.pay.'.$order->payment_method) }} — {{ __('shop.pay_status.'.$order->payment_status) }}</p>
-                @if ($order->payment_status === 'unpaid' && $order->status === 'pending' && in_array($order->payment_method, ['card', 'applepay', 'googlepay', 'tabby', 'tamara'], true))
+                @if ($order->awaitingPayment())
                     <form method="POST" action="{{ route('order.pay', $order->number) }}" class="mt-3">@csrf<button class="btn-gold w-full">{{ __('shop.pay.pay_now', ['amount' => \App\Pricing\Money::format(\App\Pricing\Money::toFils($order->amount_due))]) }}</button></form>
+                    @if ($order->payment_expires_at)
+                        <p class="mt-2 text-xs text-gold-700" x-data="{ left: {{ max(0, now()->diffInSeconds($order->payment_expires_at, false)) }} }" x-init="setInterval(() => { if (left > 0) left--; else location.reload() }, 1000)">
+                            {{ __('shop.pay.hold_until') }} <span class="price font-semibold" dir="ltr" x-text="Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0')"></span>
+                        </p>
+                    @endif
+                @elseif ($order->payment_status === 'expired')
+                    <p class="mt-2 text-xs text-muted">{{ __('shop.pay.expired_note') }}</p>
                 @endif
             </div>
             @if ($order->invoice_number)<a href="{{ route('order.invoice', $order->number) }}" class="btn-outline w-full">{{ __('shop.order.download_invoice') }}</a>@endif

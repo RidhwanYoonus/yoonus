@@ -185,7 +185,10 @@ class CheckoutController extends Controller
     {
         $order = Order::where('number', $order)->firstOrFail();
         abort_unless(OrderController::canView($request, $order), 403);
-        if ($order->isPaid() || ! in_array($order->payment_method, ['card', 'applepay', 'googlepay', 'tabby', 'tamara'], true) || $order->status === 'cancelled') {
+        if (app(OrderService::class)->expireUnpaid($order)) {
+            return OrderController::backToBag($order);
+        }
+        if (! $order->awaitingPayment()) {
             return redirect()->route('order.show', $order->number);
         }
 

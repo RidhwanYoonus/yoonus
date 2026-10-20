@@ -209,6 +209,7 @@
                     <div class="flex justify-between font-semibold" x-show="q.gift_card"><dt>{{ __('shop.checkout.amount_due') }}</dt><dd x-text="q.amount_due"></dd></div>
                 </dl>
                 <p class="mt-3 text-xs text-muted">{{ __('shop.checkout.vat_note') }}</p>
+                <p class="mt-2 text-xs text-gold-700">⏱ {{ __('shop.pay.hold_note', ['minutes' => \App\Shop\OrderService::paymentWindow()]) }}</p>
                 @if (\App\Support\Settings::bool('require_terms_acceptance'))
                     <label class="mt-4 flex items-start gap-2.5 rounded-xl border border-line bg-sand/50 p-3 text-xs leading-relaxed">
                         <input type="checkbox" name="accept_terms" value="1" required class="mt-0.5 h-4 w-4 shrink-0 accent-gold-600" @checked(old('accept_terms'))>

@@ -41,8 +41,28 @@ class OrderController extends Controller
         if ($request->hasValidSignature()) {
             $request->session()->push('orders', $order->number);
         }
+        if (app(\App\Shop\OrderService::class)->expireUnpaid($order)) {
+            return self::backToBag($order);
+        }
 
         return view('shop.order', ['seo' => Seo::page(__('shop.order.title', ['number' => $order->number])), 'order' => $order]);
+    }
+
+    /** Payment time ran out: put the pieces back in the bag so the customer can check out at today's price. */
+    public static function backToBag(Order $order)
+    {
+        $cart = app(\App\Shop\CartService::class);
+        foreach ($order->items()->with('product')->get() as $item) {
+            if ($item->product && $item->product->inStock()) {
+                try {
+                    $cart->add($item->product, $item->qty);
+                } catch (\Throwable) {
+                    // Sold out or hidden meanwhile: just leave it out.
+                }
+            }
+        }
+
+        return redirect()->route('cart.show')->withErrors(['payment' => __('shop.pay.expired', ['minutes' => \App\Shop\OrderService::paymentWindow()])]);
     }
 
     public function invoice(Request $request, string $order, InvoiceService $invoices)

@@ -57,6 +57,7 @@ class StripeGateway implements PaymentGateway
         $res = SecureHttp::send(fn ($http) => $http->asForm()->withToken(self::secretKey())
             ->post('https://api.stripe.com/v1/checkout/sessions', [
                 'mode' => 'payment',
+                'expires_at' => max(now()->addMinutes(31)->timestamp, $order->payment_expires_at?->timestamp ?? 0),
                 // Ask for cards explicitly so it works even when no AED methods are switched on in the dashboard.
                 'payment_method_types[0]' => 'card',
                 'client_reference_id' => $order->number,

@@ -55,6 +55,7 @@ return [
         'mettpay_merchant_key' => null,
         'mettpay_merchant_secret' => null,
         'mettpay_status_url' => null,
+        'payment_window_minutes' => 30,
         'admin_two_factor' => false,
         'require_terms_acceptance' => true,
         'policy_emirate' => 'Dubai',

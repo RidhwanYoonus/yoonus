@@ -45,6 +45,7 @@ class Order extends Model
         return $money + [
             'shipping_address' => 'array',
             'paid_at' => 'datetime',
+            'payment_expires_at' => 'datetime',
             'invoiced_at' => 'datetime',
             'conversion_sent' => 'boolean',
             'id_number' => 'encrypted',
@@ -109,6 +110,14 @@ class Order extends Model
         }
 
         return $next;
+    }
+
+    /** Unpaid online order still inside its payment window. */
+    public function awaitingPayment(): bool
+    {
+        return $this->status === 'pending' && $this->payment_status === 'unpaid'
+            && in_array($this->payment_method, ['card', 'applepay', 'googlepay', 'tabby', 'tamara'], true)
+            && (! $this->payment_expires_at || $this->payment_expires_at->isFuture());
     }
 
     public function canTransitionTo(string $status): bool

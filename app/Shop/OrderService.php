@@ -87,6 +87,8 @@ class OrderService
                 'id_expiry' => $data['id']['expiry'] ?? null,
                 'id_front_path' => $data['id']['front'] ?? null,
                 'id_back_path' => $data['id']['back'] ?? null,
+                // Online payments must be completed quickly: the gold price is only held this long.
+                'payment_expires_at' => $data['payment_method'] !== 'cod' && $quote->amountDue > 0 ? now()->addMinutes(self::paymentWindow()) : null,
             ]);
 
             foreach ($quote->lines as $i => $line) {
@@ -147,11 +149,64 @@ class OrderService
             // Fully covered by a gift card: nothing left to collect.
             if ($quote->amountDue === 0) {
                 DB::afterCommit(fn () => $this->markPaid($order->fresh(), 'giftcard', 'GC-'.$order->number));
-            } else {
+            } elseif ($data['payment_method'] === 'cod') {
                 DB::afterCommit(fn () => SendOrderNotification::dispatch($order->id, 'placed'));
             }
+            // Online payments: no "order placed" message — the customer hears from us once it is paid.
 
             return $order;
+        });
+    }
+
+    /** Minutes an unpaid online order keeps its gold price (Settings → Payments). */
+    public static function paymentWindow(): int
+    {
+        return max(10, min(240, (int) \App\Support\Settings::get('payment_window_minutes', 30)));
+    }
+
+    /** Unpaid online orders whose payment time has run out (also older orders saved before the window existed). */
+    public static function expiredUnpaid(): \Illuminate\Database\Eloquent\Builder
+    {
+        return Order::where('status', 'pending')->where('payment_status', 'unpaid')->where('payment_method', '!=', 'cod')
+            ->where(fn ($q) => $q->where('payment_expires_at', '<', now())
+                ->orWhere(fn ($q) => $q->whereNull('payment_expires_at')->where('created_at', '<', now()->subMinutes(self::paymentWindow()))));
+    }
+
+    /**
+     * The customer did not pay in time: cancel the order and give back everything it was holding
+     * (stock, coupon use, loyalty points, gift-card balance) so the price can't be claimed later.
+     */
+    public function expireUnpaid(Order $order): bool
+    {
+        if (! \Illuminate\Support\Facades\Schema::hasColumn('orders', 'payment_expires_at')) {
+            return false;   // database update not run yet
+        }
+
+        return DB::transaction(function () use ($order) {
+            $order = Order::lockForUpdate()->with('items.product')->find($order->id);
+            if (! $order || ! self::expiredUnpaid()->whereKey($order->id)->exists()) {
+                return false;
+            }
+            $order->forceFill(['status' => 'cancelled', 'payment_status' => 'expired'])->save();
+            $this->restock($order);
+            foreach (CouponRedemption::where('order_id', $order->id)->with('coupon')->get() as $redemption) {
+                $redemption->coupon?->decrement('times_used');
+                $redemption->delete();
+            }
+            $points = -1 * (int) LoyaltyEntry::where('order_id', $order->id)->where('reason', 'redeemed')->sum('points');
+            if ($points > 0 && $order->user_id) {
+                LoyaltyEntry::create(['user_id' => $order->user_id, 'order_id' => $order->id, 'points' => $points, 'reason' => 'adjustment']);
+            }
+            foreach (GiftCardTransaction::where('order_id', $order->id)->where('amount', '<', 0)->get() as $tx) {
+                $card = $tx->giftCard()->lockForUpdate()->first();
+                if ($card) {
+                    $card->update(['balance' => Money::toAed(Money::toFils($card->balance) - Money::toFils($tx->amount))]);
+                    GiftCardTransaction::create(['gift_card_id' => $card->id, 'order_id' => $order->id, 'amount' => Money::toAed(-Money::toFils($tx->amount)), 'channel' => 'online']);
+                }
+            }
+            $this->history($order, 'pending', 'cancelled', null, 'Payment not completed within '.self::paymentWindow().' minutes — order cancelled, gold price released, stock returned.');
+
+            return true;
         });
     }
 
@@ -172,6 +227,15 @@ class OrderService
             if ($order->isPaid()) {
                 return $order;
             }
+            $late = $order->payment_status === 'expired';
+            if ($late) {
+                // The bank paid after the time ran out (the customer was already on the payment page).
+                // Take the money at the price they were shown, reserve the stock again and tell staff.
+                foreach ($order->items()->with('product')->get() as $item) {
+                    $item->product?->decrement('stock_qty', $item->qty);
+                }
+                $order->status = 'pending';
+            }
             Payment::firstOrCreate(
                 ['gateway' => $gateway, 'reference' => $reference ?? $order->number],
                 ['order_id' => $order->id, 'status' => 'captured', 'amount' => $order->amount_due, 'payload' => $payload],
@@ -183,8 +247,9 @@ class OrderService
                 'paid_at' => now(),
                 'status' => in_array($order->status, ['pending'], true) ? 'paid' : $order->status,
             ])->save();
-            if ($from !== $order->status) {
-                $this->history($order, $from, $order->status, null, 'Payment confirmed via '.$gateway);
+            if ($from !== $order->status || $late) {
+                $this->history($order, $late ? 'cancelled' : $from, $order->status, null, 'Payment confirmed via '.$gateway
+                    .($late ? ' — after the payment time had run out. Stock was reserved again: please check it is still available.' : ''));
             }
 
             $this->invoices->issue($order);

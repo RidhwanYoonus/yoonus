@@ -98,6 +98,8 @@ class Settings extends Page implements HasForms
                             $secret('stripe_webhook_secret', 'Webhook signing secret (optional)')->placeholder('whsec_…')
                                 ->helperText(fn () => 'Recommended once the site is online: in Stripe → Developers → Webhooks add '.route('payments.webhook', 'stripe').' with the event checkout.session.completed, then paste its signing secret here.'),
                         ]),
+                    Forms\Components\TextInput::make('payment_window_minutes')->label('Time to pay online')->numeric()->minValue(10)->maxValue(240)->suffix('minutes')
+                        ->helperText('The gold price is held only this long. Unpaid card / Apple Pay / Google Pay / Tabby / Tamara orders are then cancelled automatically, the stock is released and no invoice is made.'),
                     Forms\Components\Toggle::make('applepay_enabled')->label('Apple Pay')->inline(false)
                         ->helperText('Shown on iPhone, iPad and Mac (Safari). Turn Apple Pay on in your Telr / Stripe account too.'),
                     Forms\Components\Toggle::make('googlepay_enabled')->label('Google Pay')->inline(false)
