@@ -24,9 +24,17 @@ class ListProducts extends ListRecords
             $this->translateMissingArabicAction(),
             Actions\Action::make('export')->label('Export CSV')->icon('heroicon-o-arrow-down-tray')->color('gray')
                 ->action(fn () => response()->streamDownload(ProductCsv::export(), 'products-'.now()->format('Ymd-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8'])),
+            Actions\ActionGroup::make([
+                Actions\Action::make('sample')->label('Download sample CSV')->icon('heroicon-o-document-text')
+                    ->action(fn () => response()->streamDownload(ProductCsv::sample(), 'products-import-sample.csv', ['Content-Type' => 'text/csv; charset=UTF-8'])),
             Actions\Action::make('import')->visible(fn () => \App\Support\StaffAccess::current('products', 'create'))->label('Import CSV')->icon('heroicon-o-arrow-up-tray')->color('gray')
-                ->modalDescription('Columns: '.implode(', ', ProductCsv::COLUMNS).'. Existing SKUs are updated; new SKUs are created. Prices are calculated automatically.')
-                ->form([Forms\Components\FileUpload::make('file')->acceptedFileTypes(['text/csv', 'text/plain', 'application/vnd.ms-excel'])->disk('local')->directory('imports')->required()])
+                ->modalDescription('Existing SKUs are updated; new SKUs are created. Prices are calculated automatically. An empty cell keeps what the product already has. Start from "Download sample CSV" in the Import menu to get the columns right.')
+                ->modalWidth('2xl')
+                ->form([
+                    Forms\Components\Placeholder::make('columns')->label('Columns')
+                        ->content(new \Illuminate\Support\HtmlString('<p class="text-sm">'.e(implode(', ', ProductCsv::COLUMNS)).'</p><ul class="mt-2 list-disc ps-5 text-xs text-gray-500">'
+                            .collect(ProductCsv::GUIDE)->map(fn ($v, $k) => '<li><b>'.e($k).'</b>: '.e($v).'</li>')->implode('').'</ul>')),
+                    Forms\Components\FileUpload::make('file')->acceptedFileTypes(['text/csv', 'text/plain', 'application/vnd.ms-excel'])->disk('local')->directory('imports')->required()])
                 ->action(function (array $data) {
                     $result = ProductCsv::import(Storage::disk('local')->path($data['file']));
                     Storage::disk('local')->delete($data['file']);
@@ -35,6 +43,8 @@ class ListProducts extends ListRecords
                         ->body($result['errors'] ? implode("\n", array_slice($result['errors'], 0, 10)) : null)
                         ->{$result['errors'] ? 'warning' : 'success'}()->persistent()->send();
                 }),
+            ])->label('Import')->icon('heroicon-o-arrow-up-tray')->button()->color('gray')
+                ->visible(fn () => \App\Support\StaffAccess::current('products', 'create')),
             Actions\CreateAction::make(),
         ];
     }
