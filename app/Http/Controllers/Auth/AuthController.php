@@ -27,7 +27,9 @@ class AuthController extends Controller
         }
         $this->keepCart($request);
 
-        return redirect()->intended(route('account'));
+        $home = rescue(fn () => $request->user()->affiliate, null, false) ? route('affiliate.dashboard') : route('account');
+
+        return redirect()->intended($home);
     }
 
     public function showRegister(Request $request)

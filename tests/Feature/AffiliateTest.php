@@ -180,4 +180,16 @@ class AffiliateTest extends TestCase
         $this->actingAs($staff)->get('/admin/affiliates')->assertForbidden();
         $this->actingAs($sara->user)->get('/admin')->assertForbidden();
     }
+
+    public function test_affiliate_signs_in_like_a_customer_lands_on_dashboard_and_can_sign_out(): void
+    {
+        $this->affiliate->user->forceFill(['password' => 'Secret123'])->save();
+        $this->post('/login', ['email' => 'huda@partner.ae', 'password' => 'Secret123'])->assertRedirect(route('affiliate.dashboard'));
+        $this->get('/')->assertSee(route('affiliate.dashboard'), false)->assertSee(route('logout'), false);
+        $this->get('/affiliate')->assertOk()->assertSee('HUDA10');
+
+        $this->post('/logout')->assertRedirect(route('home'));
+        $this->assertGuest();
+        $this->post('/logout')->assertRedirect(route('home'));   // already signed out (old tab): no error
+    }
 }

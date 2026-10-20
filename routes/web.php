@@ -54,7 +54,7 @@ Route::middleware('guest')->group(function () {
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:login');
 });
-Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Mobile number verification (6-digit code by WhatsApp) and "Continue with Google".
 Route::post('/verify-phone/send', [\App\Http\Controllers\PhoneVerificationController::class, 'send'])->middleware('throttle:6,10')->name('phone.send');

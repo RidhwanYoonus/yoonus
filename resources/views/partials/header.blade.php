@@ -3,6 +3,7 @@
     $categories = \Illuminate\Support\Facades\Cache::remember('nav.categories.'.app()->getLocale(), 300, fn () => \App\Models\Category::where('is_active', true)->orderBy('sort_order')->take(7)->get());
     $navLink = 'relative py-3 text-[0.8125rem] uppercase tracking-[0.18em] text-ink/80 transition hover:text-gold-700 after:absolute after:inset-x-0 after:bottom-0 after:h-px after:scale-x-0 after:bg-gold-silver after:transition hover:after:scale-x-100';
     $icon = 'relative h-10 w-10 items-center justify-center rounded-full text-ink/80 transition hover:bg-sand hover:text-gold-700';
+    $isAffiliate = auth()->check() && rescue(fn () => (bool) auth()->user()->affiliate, false, false);
 @endphp
 <header class="sticky top-0 z-40 border-b border-line bg-ivory/95 backdrop-blur" x-data="{ open: false }">
     {{-- Row 1: search · centred logo · icons --}}
@@ -34,9 +35,25 @@
                     <span class="absolute top-0.5 end-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold-silver px-1 text-[0.625rem] font-semibold text-zinc-900">{{ $wishlistCount }}</span>
                 @endif
             </a>
-            <a href="{{ auth()->check() ? route('account') : route('login') }}" class="{{ $icon }} hidden lg:inline-flex" aria-label="{{ __('shop.nav.account') }}">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.1a7.5 7.5 0 0115 0A17.9 17.9 0 0112 21.75c-2.68 0-5.22-.58-7.5-1.65z"/></svg>
-            </a>
+            @auth
+                {{-- Signed in: small menu with account, affiliate dashboard and sign out. --}}
+                <div class="relative hidden lg:block" x-data="{ menu: false }" @click.outside="menu = false" @keydown.escape="menu = false">
+                    <button type="button" class="{{ $icon }} inline-flex" @click="menu = !menu" :aria-expanded="menu" aria-label="{{ __('shop.nav.account') }}">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.1a7.5 7.5 0 0115 0A17.9 17.9 0 0112 21.75c-2.68 0-5.22-.58-7.5-1.65z"/></svg>
+                        <span class="absolute bottom-1.5 end-1.5 h-2 w-2 rounded-full bg-green-500 ring-2 ring-ivory"></span>
+                    </button>
+                    <div x-show="menu" x-cloak x-transition.opacity class="absolute end-0 z-50 mt-2 w-56 overflow-hidden rounded-xl border border-line bg-card text-sm shadow-lg">
+                        <p class="truncate border-b border-line px-4 py-3 text-xs text-muted">{{ auth()->user()->name }}</p>
+                        <a href="{{ route('account') }}" class="block px-4 py-2.5 hover:bg-sand">{{ __('shop.nav.account') }}</a>
+                        @if ($isAffiliate)<a href="{{ route('affiliate.dashboard') }}" class="block px-4 py-2.5 font-medium text-gold-700 hover:bg-sand">🤝 {{ __('shop.affiliate.title') }}</a>@endif
+                        <form method="POST" action="{{ route('logout') }}" class="border-t border-line">@csrf<button class="block w-full px-4 py-2.5 text-start hover:bg-sand">{{ __('shop.auth.logout') }}</button></form>
+                    </div>
+                </div>
+            @else
+                <a href="{{ route('login') }}" class="{{ $icon }} hidden lg:inline-flex" aria-label="{{ __('shop.nav.account') }}">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.1a7.5 7.5 0 0115 0A17.9 17.9 0 0112 21.75c-2.68 0-5.22-.58-7.5-1.65z"/></svg>
+                </a>
+            @endauth
             <a href="{{ route('cart.show') }}" class="{{ $icon }} inline-flex" aria-label="{{ __('shop.nav.cart') }}">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"/></svg>
                 @if ($cartCount ?? 0)
@@ -66,6 +83,10 @@
             <a href="{{ route('gift-cards') }}" class="border-b border-line/60 py-3">{{ __('shop.nav.gift_cards') }}</a>
             <a href="{{ route('compare') }}" class="border-b border-line/60 py-3">{{ __('shop.nav.compare') }}</a>
             <a href="{{ route('order.track') }}" class="border-b border-line/60 py-3">{{ __('shop.nav.track') }}</a>
+            @auth
+                @if ($isAffiliate)<a href="{{ route('affiliate.dashboard') }}" class="border-b border-line/60 py-3 font-medium text-gold-700">🤝 {{ __('shop.affiliate.title') }}</a>@endif
+                <form method="POST" action="{{ route('logout') }}" class="border-b border-line/60">@csrf<button class="w-full py-3 text-start">{{ __('shop.auth.logout') }}</button></form>
+            @endauth
             <button type="button" x-data="themeToggle" @click="toggle()" class="flex items-center justify-between py-3 text-start">
                 <span x-text="dark ? '{{ __('shop.nav.light_mode') }}' : '{{ __('shop.nav.dark_mode') }}'"></span>
                 <span class="relative inline-flex h-5 w-9 items-center rounded-full transition" :class="dark ? 'bg-gold-silver' : 'bg-line'"><span class="absolute h-4 w-4 rounded-full bg-card shadow-xs transition-all" :class="dark ? 'start-[1.1rem]' : 'start-0.5'"></span></span>
