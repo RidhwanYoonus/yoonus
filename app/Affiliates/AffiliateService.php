@@ -232,6 +232,24 @@ class AffiliateService
     }
 
     /**
+     * The affiliate's commission (fils) on a cart line before any discount, worked out on the
+     * shop's own price (without white-page mark-up). Used to size the discount of their coupon code.
+     */
+    public function commissionForCartLine(Affiliate $affiliate, \App\Shop\CartLine $line): int
+    {
+        $base = app(\App\Pricing\PricingService::class)->base($line->product);
+        $item = (object) [
+            'qty' => $line->qty,
+            'weight_grams' => (string) $line->product->weight_grams,
+            'making_fee' => Money::toAed($base->makingFee * $line->qty),
+            'subtotal' => Money::toAed($base->subtotal * $line->qty),
+            'discount_amount' => '0',
+        ];
+
+        return $this->line($affiliate, $item, $line->product->isFixedPrice(), 0)[3];
+    }
+
+    /**
      * One order line → [basis, base shown, rate shown, commission in fils].
      *   piece  : base = pieces,  rate = AED per piece
      *   gram   : base = grams,   rate = AED per gram

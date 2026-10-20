@@ -294,7 +294,7 @@ return [
         'no_products' => 'No pieces found.',
         'level' => 'Your level', 'level_none' => 'Starter', 'level_next' => 'Sell :amount more this month to reach :name.',
         'last_30' => 'Last 30 days', 'stat_visits' => 'Link visits', 'stat_views' => 'Products viewed', 'stat_orders' => 'Orders', 'stat_conversion' => 'Conversion',
-        'coupon_note' => 'Your code gives customers :pct% off — the discount comes out of your commission on that order. Orders with your code count for you, even without your link:',
+        'coupon_note' => 'Your code gives customers :pct% of your commission as a discount (e.g. AED 100 commission → AED 10 off at 10%). The discount comes out of your commission on that order. Orders with your code count for you, even without your link:',
         'campaigns' => 'Running campaigns', 'until' => 'until :date', 'all_items' => 'all items', 'pieces' => 'pieces',
         'booster_note' => '× :x commission on :what sold during this campaign.',
         'target_note' => 'Reach :goal of delivered sales and get a :bonus bonus.', 'target_reached' => 'Target reached — bonus added',

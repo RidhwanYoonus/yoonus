@@ -95,8 +95,8 @@ class AffiliateResource extends Resource
                 ->description('Their own link where every price includes their mark-up. They keep the full mark-up on top of the commission. The affiliate can change the mark-up on their dashboard, up to your maximum. Maximum 0 = no limit.')
                 ->schema(self::markupFields()),
             Forms\Components\Section::make('Growth tools')->columnSpanFull()->columns(3)->schema([
-                Forms\Components\TextInput::make('coupon_discount_percent')->label('Customer discount with their code')->numeric()->minValue(0)->maxValue(50)->suffix('%')->default(0)
-                    ->helperText('0 = off. Customers type the affiliate code at checkout and get this discount; the order counts for the affiliate and the discount is taken from the affiliate\'s commission on that order (shown in the commission report and on the order).'),
+                Forms\Components\TextInput::make('coupon_discount_percent')->label('Customer discount with their code (% of their commission)')->numeric()->minValue(0)->maxValue(100)->suffix('%')->default(0)
+                    ->helperText('0 = off. The customer gets this % of the affiliate\'s commission on their cart as a discount — e.g. commission AED 100 × 10% = AED 10 off — and it is taken from that commission (shown in the commission report and on the order). The order counts for the affiliate.'),
                 Forms\Components\Toggle::make('can_lock_price')->label('Can send price-lock links')->inline(false)
                     ->helperText(fn () => 'The affiliate can hold today\'s price of a piece for a customer for '.\App\Affiliates\PriceLocks::hours().' hours (Settings → Affiliates). Watch the gold rate when allowing this.'),
                 Forms\Components\Select::make('recruited_by_id')->label('Recruited by (team leader)')->searchable()->visible(fn () => Affiliate::teamEnabled())

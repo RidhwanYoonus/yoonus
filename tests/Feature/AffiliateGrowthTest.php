@@ -75,10 +75,10 @@ class AffiliateGrowthTest extends TestCase
 
     public function test_affiliate_coupon_code_gives_discount_and_counts_without_the_link(): void
     {
-        $this->affiliate->update(['coupon_discount_percent' => 5]);
+        $this->affiliate->update(['coupon_discount_percent' => 50]);
         $order = $this->checkout(1, ['coupon' => 'huda10']);
         $this->assertSame($this->affiliate->id, $order->affiliate_id);
-        $this->assertSame('55.00', $order->discount_total);   // 5% of 1,100
+        $this->assertSame('5.00', $order->discount_total);   // 50% of the AED 10 commission — not of the cart
         $this->assertSame(1, AffiliateCommission::count());
     }
 
@@ -207,22 +207,23 @@ class AffiliateGrowthTest extends TestCase
 
     public function test_customer_discount_with_affiliate_code_is_taken_from_their_commission(): void
     {
-        $this->affiliate->update(['coupon_discount_percent' => 5]);   // 5% of 1,100 = 55
-        $this->affiliate->update(['commission_mode' => 'per_piece', 'commission_per_piece' => 100]);
+        $this->affiliate->update(['coupon_discount_percent' => 10, 'commission_mode' => 'per_piece', 'commission_per_piece' => 100]);
         $order = $this->checkout(1, ['coupon' => 'HUDA10']);
+        $this->assertSame('10.00', $order->discount_total);   // 10% of the AED 100 commission
         $line = AffiliateCommission::sole();
         $this->assertSame('100.00', $line->commission_amount);
-        $this->assertSame('55.00', $line->coupon_deduction);
-        $this->assertSame('45.00', $line->amount);
+        $this->assertSame('10.00', $line->coupon_deduction);
+        $this->assertSame('90.00', $line->amount);
         $admin = User::factory()->create(['is_admin' => true]);
         $this->actingAs($admin)->get('/admin/orders/'.$order->id)->assertSee('Their code discount')->assertSee('was taken from their commission');
         $this->actingAs($admin)->get('/admin/affiliate-commissions')->assertSee('Customer discount (their code)');
     }
 
-    public function test_discount_never_takes_affiliate_below_zero(): void
+    public function test_full_commission_can_be_given_as_discount_but_never_more(): void
     {
-        $this->affiliate->update(['coupon_discount_percent' => 20]);   // 220 discount, only AED 10 commission
-        $this->checkout(1, ['coupon' => 'HUDA10']);
+        $this->affiliate->update(['coupon_discount_percent' => 100]);   // the whole AED 10 commission
+        $order = $this->checkout(1, ['coupon' => 'HUDA10']);
+        $this->assertSame('10.00', $order->discount_total);
         $line = AffiliateCommission::sole();
         $this->assertSame('10.00', $line->coupon_deduction);
         $this->assertSame('0.00', $line->amount);

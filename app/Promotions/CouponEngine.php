@@ -50,6 +50,21 @@ class CouponEngine
             return CouponResult::invalid($coupon, __('shop.coupon.not_applicable'));
         }
 
+        // An affiliate's own code: the customer gets X% of the affiliate's commission on the cart
+        // (which is then taken from that commission), not X% of the cart.
+        if ($coupon->affiliate_id && ($affiliate = \App\Models\Affiliate::find($coupon->affiliate_id))) {
+            $service = app(\App\Affiliates\AffiliateService::class);
+            $pct = Money::scaled($coupon->value, 2);
+            $discounts = [];
+            foreach ($eligible as $i => $line) {
+                $discounts[$i] = min(Money::percentOf($service->commissionForCartLine($affiliate, $line), $pct), $line->maxDiscount());
+            }
+
+            return array_sum($discounts) > 0
+                ? new CouponResult($coupon, array_filter($discounts))
+                : CouponResult::invalid($coupon, __('shop.coupon.not_applicable'));
+        }
+
         return match ($coupon->type) {
             'percentage' => new CouponResult($coupon, $this->percent($eligible, Money::scaled($coupon->value, 2))),
             'fixed' => new CouponResult($coupon, $this->allocate($eligible, Money::toFils($coupon->value))),
