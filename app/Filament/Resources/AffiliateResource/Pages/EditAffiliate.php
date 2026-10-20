@@ -28,7 +28,13 @@ class EditAffiliate extends EditRecord
                 ->modalSubmitAction(false)->modalCancelActionLabel('Close')
                 ->modalContent(fn () => new \Illuminate\Support\HtmlString(
                     '<p class="text-sm">Referral link (normal prices):<br><code>'.e($this->record->referralLink()).'</code></p>'
-                    .($this->record->white_page_enabled ? '<p class="mt-3 text-sm">White page (prices include their mark-up):<br><code>'.e($this->record->whitePageLink()).'</code></p>' : ''))),
+                    .($this->record->white_page_enabled ? '<p class="mt-3 text-sm">White page (prices include their mark-up):<br><code>'.e($this->record->whitePageLink()).'</code></p>' : '')
+                    .'<p class="mt-3 text-sm">Invite new affiliates (team):<br><code>'.e($this->record->joinLink()).'</code></p>'
+                    .((float) $this->record->coupon_discount_percent > 0 ? '<p class="mt-3 text-sm">Coupon code: <code>'.e($this->record->code).'</code> ('.(float) $this->record->coupon_discount_percent.'% off)</p>' : ''))),
+            \Filament\Actions\Action::make('storeSale')->label('In-store sale')->icon('heroicon-o-building-storefront')->color('warning')
+                ->visible(fn () => \App\Support\StaffAccess::current('affiliates', 'edit'))
+                ->form(\App\Filament\Resources\AffiliateResource::storeSaleForm())
+                ->action(fn (array $data) => \App\Filament\Resources\AffiliateResource::runStoreSale($this->record, $data)),
             Actions\DeleteAction::make()->visible(fn () => ! $this->record->commissions()->exists()),
         ];
     }

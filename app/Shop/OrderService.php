@@ -51,6 +51,12 @@ class OrderService
 
             // Affiliate who sent this customer (never the customer themselves).
             $affiliate = $data['affiliate'] ?? null;
+            // An affiliate's coupon code counts for that affiliate, even without their link.
+            $couponAffiliate = collect($quote->applied)->map(fn ($r) => $r->coupon->affiliate_id ?? null)->filter()->first();
+            if ($couponAffiliate && $couponAffiliate !== $affiliate?->id) {
+                $affiliate = \App\Models\Affiliate::where('is_active', true)->find($couponAffiliate);
+                $data['affiliate_white'] = false;
+            }
             if ($affiliate && ($affiliate->user_id === $user?->id || strtolower((string) $affiliate->user?->email) === strtolower($data['email']))) {
                 $affiliate = null;
             }

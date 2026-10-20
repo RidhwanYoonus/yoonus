@@ -138,6 +138,7 @@ class CheckoutController extends Controller
 
             return back()->withInput()->withErrors(['checkout' => $e->getMessage()]);
         }
+        \App\Affiliates\PriceLocks::used($order);
         if ($request->boolean('accept_terms')) {
             // Proof for card disputes: when, from where, and which policy version the customer agreed to.
             $order->forceFill(['terms_accepted_at' => now(), 'terms_accepted_ip' => $request->ip(), 'terms_version' => \App\Support\Policies::UPDATED])->save();

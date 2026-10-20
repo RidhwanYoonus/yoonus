@@ -194,6 +194,17 @@ class Settings extends Page implements HasForms
                     Forms\Components\TextInput::make('affiliate_default_max_making_markup')->label('Default max mark-up: by-weight items, % of making')->numeric()->minValue(0)->maxValue(500)->suffix('%'),
                     Forms\Components\TextInput::make('affiliate_default_max_markup')->label('Default max mark-up: fixed-price items, % of price')->numeric()->minValue(0)->maxValue(100)->suffix('%'),
                     Forms\Components\TextInput::make('affiliate_default_max_markup_amount')->label('Default max mark-up: amount per piece')->numeric()->minValue(0)->prefix('AED'),
+                    Forms\Components\Toggle::make('affiliate_notifications')->label('WhatsApp / email affiliates about new sales and money ready to collect')->inline(false),
+                    Forms\Components\TextInput::make('affiliate_recruiter_percent')->label('Team leader share of their recruits\' commission')->numeric()->minValue(0)->maxValue(50)->suffix('%')
+                        ->helperText('Paid by the shop on top — the recruit\'s own commission is not reduced. 0 = off.'),
+                    Forms\Components\TextInput::make('affiliate_price_lock_hours')->label('Price-lock links last')->numeric()->minValue(1)->maxValue(168)->suffix('hours'),
+                    Forms\Components\Repeater::make('affiliate_tiers')->label('Levels by monthly sales (excl. VAT)')->columnSpanFull()->columns(3)->reorderable(false)
+                        ->helperText('Each month an affiliate reaches a level, their commission gets the extra %. Example: Gold from AED 50,000 → +20% (10% making becomes 12%).')
+                        ->schema([
+                            Forms\Components\TextInput::make('name')->required()->maxLength(30)->placeholder('Gold'),
+                            Forms\Components\TextInput::make('min_sales')->label('From monthly sales')->numeric()->minValue(0)->prefix('AED')->required(),
+                            Forms\Components\TextInput::make('extra_percent')->label('Extra commission')->numeric()->minValue(0)->maxValue(200)->suffix('%')->required(),
+                        ])->addActionLabel('Add level'),
                 ]),
                 Forms\Components\Tabs\Tab::make('Video calls')->icon('heroicon-o-video-camera')->columns(2)->schema([
                     Forms\Components\Toggle::make('video_call_enabled')->label('Live video call button on products')->inline(false)

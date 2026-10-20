@@ -14,7 +14,9 @@ class AffiliateTotals extends StatsOverviewWidget
 
     protected function getStats(): array
     {
-        $sum = fn (string $status) => Money::toFils((string) AffiliateCommission::where('status', $status)->sum('amount'));
+        // Commission lines plus bonuses / in-store sales.
+        $sum = fn (string $status) => Money::toFils((string) AffiliateCommission::where('status', $status)->sum('amount'))
+            + rescue(fn () => Money::toFils((string) \App\Models\AffiliateAdjustment::where('status', $status)->sum('amount')), 0, false);
         $earned = $sum('available');
         $collected = Money::toFils((string) AffiliatePayout::sum('amount'));
 

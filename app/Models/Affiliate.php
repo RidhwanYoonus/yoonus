@@ -23,12 +23,101 @@ class Affiliate extends Model
             'max_making_markup_percent' => 'decimal:2', 'max_fixed_markup_percent' => 'decimal:2', 'max_markup_amount' => 'decimal:2',
             'white_page_enabled' => 'boolean',
             'is_active' => 'boolean',
+            'coupon_discount_percent' => 'decimal:2',
+            'can_lock_price' => 'boolean',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        // The affiliate's code also works as a coupon at checkout when a customer discount is set.
+        static::saved(fn (Affiliate $a) => $a->syncCoupon());
+    }
+
+    public function syncCoupon(): void
+    {
+        try {
+            $coupon = Coupon::where('affiliate_id', $this->id)->first();
+            $active = ($this->is_active ?? true) && (float) $this->coupon_discount_percent > 0;   // new records: DB default is active
+            if (! $coupon && ! $active) {
+                return;
+            }
+            $taken = Coupon::where('code', $this->code)->where(fn ($q) => $q->whereNull('affiliate_id')->orWhere('affiliate_id', '!=', $this->id))->exists();
+            if ($taken) {
+                return;   // an ordinary coupon already uses this code
+            }
+            ($coupon ?? new Coupon)->forceFill([
+                'affiliate_id' => $this->id, 'code' => $this->code, 'name' => 'Affiliate '.$this->code,
+                'type' => 'percentage', 'value' => (float) $this->coupon_discount_percent, 'scope' => 'cart',
+                'stackable' => false, 'auto_apply' => false, 'is_active' => $active,
+            ])->save();
+        } catch (\Throwable $e) {
+            report($e);   // e.g. before the database update has run
+        }
     }
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function adjustments(): HasMany
+    {
+        return $this->hasMany(AffiliateAdjustment::class);
+    }
+
+    public function clicks(): HasMany
+    {
+        return $this->hasMany(AffiliateClick::class);
+    }
+
+    public function recruitedBy(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'recruited_by_id');
+    }
+
+    public function recruits(): HasMany
+    {
+        return $this->hasMany(self::class, 'recruited_by_id');
+    }
+
+    public function joinLink(): string
+    {
+        return route('affiliate.apply', ['ref' => $this->code]);
+    }
+
+    /** Sales (excl. VAT) of this affiliate's orders in the month, not counting cancelled / unpaid ones. In fils. */
+    public function monthlySales(?\Illuminate\Support\Carbon $month = null): int
+    {
+        $month ??= now();
+
+        return Money::toFils((string) Order::where('affiliate_id', $this->id)
+            ->whereBetween('created_at', [$month->copy()->startOfMonth(), $month->copy()->endOfMonth()])
+            ->whereNotIn('status', ['cancelled', 'refunded'])->where('payment_status', '!=', 'expired')
+            ->sum('taxable_amount'));
+    }
+
+    /**
+     * Level from Settings → Affiliates (e.g. Silver / Gold / Platinum by monthly sales).
+     *
+     * @return array{name: ?string, extra_bp: int, next: ?array{name: string, needed: int}}
+     */
+    public function level(?int $salesFils = null): array
+    {
+        $sales = $salesFils ?? $this->monthlySales();
+        $tiers = collect((array) \App\Support\Settings::get('affiliate_tiers', []))
+            ->filter(fn ($t) => filled($t['name'] ?? null))
+            ->map(fn ($t) => ['name' => $t['name'], 'min' => Money::toFils((string) ($t['min_sales'] ?? 0)), 'extra_bp' => Money::scaled($t['extra_percent'] ?? 0, 2)])
+            ->sortBy('min')->values();
+        $current = $tiers->last(fn ($t) => $sales >= $t['min']);
+        $next = $tiers->first(fn ($t) => $t['min'] > $sales);
+
+        return [
+            'name' => $current['name'] ?? null,
+            'extra_bp' => $current['extra_bp'] ?? 0,
+            'next' => $next ? ['name' => $next['name'], 'needed' => $next['min'] - $sales] : null,
+            'progress' => $next ? (int) round(100 * $sales / max(1, $next['min'])) : 100,
+        ];
     }
 
     public function commissions(): HasMany
@@ -104,7 +193,8 @@ class Affiliate extends Model
     /** All amounts in fils. */
     public function totals(): array
     {
-        $sum = fn (string $status) => Money::toFils((string) $this->commissions()->where('status', $status)->sum('amount'));
+        $sum = fn (string $status) => Money::toFils((string) $this->commissions()->where('status', $status)->sum('amount'))
+            + rescue(fn () => Money::toFils((string) $this->adjustments()->where('status', $status)->sum('amount')), 0, false);
         $available = $sum('available');
         $collected = Money::toFils((string) $this->payouts()->sum('amount'));
 

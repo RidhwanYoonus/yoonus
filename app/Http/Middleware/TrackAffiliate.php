@@ -44,6 +44,9 @@ class TrackAffiliate
         }
         app(PricingService::class)->setMarkup($context->markup());
         view()->share('affiliateContext', $context);
+        if ($context->affiliate && ! $context->preview) {
+            $this->track($request, $context);
+        }
 
         $response = $next($request);
         if ($context->affiliate && ! $context->preview && ($request->query('aff') || $request->routeIs('affiliate.page'))) {
@@ -58,6 +61,32 @@ class TrackAffiliate
         return $response;
     }
 
+    /** Visits through the link (once per visitor per 30 min) and product views (once per visitor per product per day). */
+    private function track(Request $request, AffiliateContext $context): void
+    {
+        try {
+            $visitor = substr(hash('sha256', $request->ip().'|'.$request->userAgent().'|'.config('app.key')), 0, 40);
+            $entry = $request->query('aff') || $request->routeIs('affiliate.page');
+            $product = $request->routeIs('product.show') ? $request->route('product') : null;
+            $productId = $product instanceof \App\Models\Product ? $product->id : null;
+            $log = function (string $type, ?int $productId, int $minutes) use ($context, $visitor) {
+                $key = "aff_click.{$context->affiliate->id}.{$type}.{$productId}.{$visitor}";
+                if (\Illuminate\Support\Facades\Cache::add($key, 1, now()->addMinutes($minutes))) {
+                    \App\Models\AffiliateClick::create(['affiliate_id' => $context->affiliate->id, 'type' => $type, 'product_id' => $productId,
+                        'white_page' => $context->whitePage, 'visitor' => $visitor, 'created_at' => now()]);
+                }
+            };
+            if ($entry) {
+                $log('visit', null, 30);
+            }
+            if ($productId) {
+                $log('product', $productId, 1440);
+            }
+        } catch (Throwable) {
+            // Tracking must never break the shop.
+        }
+    }
+
     /** @return array{0: ?string, 1: bool} */
     private function fromRequest(Request $request): array
     {
@@ -65,7 +94,8 @@ class TrackAffiliate
             return [strtoupper((string) $request->route('code')), true];
         }
         if ($request->query('aff')) {
-            return [strtoupper(substr((string) $request->query('aff'), 0, 32)), false];
+            // &w=1: a product shared by the affiliate from their own price page.
+            return [strtoupper(substr((string) $request->query('aff'), 0, 32)), $request->query('w') === '1'];
         }
         $cookie = (string) ($request->hasSession() ? $request->session()->get(self::COOKIE) : null) ?: (string) $request->cookie(self::COOKIE);
         if ($cookie !== '' && str_contains($cookie, '|')) {

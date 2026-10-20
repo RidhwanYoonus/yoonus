@@ -60,6 +60,14 @@ return [
         'affiliate_default_making_percent' => 10,
         'affiliate_default_commission_per_gram' => 2,
         'affiliate_default_commission_per_piece' => 10,
+        'affiliate_notifications' => true,
+        'affiliate_recruiter_percent' => 10,
+        'affiliate_price_lock_hours' => 24,
+        'affiliate_tiers' => [
+            ['name' => 'Silver', 'min_sales' => 0, 'extra_percent' => 0],
+            ['name' => 'Gold', 'min_sales' => 50000, 'extra_percent' => 20],
+            ['name' => 'Platinum', 'min_sales' => 150000, 'extra_percent' => 50],
+        ],
         'affiliate_default_fixed_percent' => 3,
         'affiliate_default_max_markup' => 10,          // fixed-price items, % of price
         'affiliate_default_max_making_markup' => 30,   // by-weight items, % of making charge

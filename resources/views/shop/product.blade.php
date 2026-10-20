@@ -92,6 +92,41 @@
                 <a href="{{ \App\Messaging\WhatsApp::link($whatsapp, $enquireText) }}" target="_blank" rel="noopener" class="btn-whatsapp">{{ __('shop.whatsapp.enquire_cta') }}</a>
                 <a href="https://wa.me/?text={{ rawurlencode($shareText) }}" target="_blank" rel="noopener" class="btn-outline">{{ __('shop.whatsapp.share_cta') }}</a>
             </div>
+
+            @if ($lock = \App\Affiliates\PriceLocks::forProduct($product->id))
+                <p class="mt-3 rounded-xl border border-gold-400 bg-gold-300/20 px-4 py-2.5 text-sm">⏱ {{ __('shop.affiliate.lock_badge', ['time' => $lock->expires_at->locale(app()->getLocale())->isoFormat('lll')]) }}</p>
+            @endif
+
+            {{-- Affiliates: share this piece with their link --}}
+            @php($me = auth()->check() ? rescue(fn () => auth()->user()->affiliate, null, false) : null)
+            @if ($me && $me->is_active)
+                @php($myLink = route('product.show', $product).'?aff='.$me->code.($me->white_page_enabled ? '&w=1' : ''))
+                @php($myText = __('shop.affiliate.caption', ['name' => $product->localized('name'), 'karat' => $product->goldCategory?->name ?? '', 'url' => $myLink]))
+                <div class="mt-3 rounded-xl border border-gold-300 bg-sand/60 p-4" x-data="{ c: false }">
+                    <p class="text-sm font-medium">🤝 {{ __('shop.affiliate.share_earn') }}</p>
+                    <div class="mt-2 flex gap-2">
+                        <a class="btn-whatsapp flex-1" target="_blank" rel="noopener" href="https://wa.me/?text={{ rawurlencode($myText) }}">WhatsApp</a>
+                        <button type="button" class="btn-outline flex-1" @click="navigator.clipboard?.writeText(@js($myLink)); c = true; setTimeout(() => c = false, 1500)" x-text="c ? '✓' : @js(__('shop.affiliate.copy_link'))"></button>
+                    </div>
+                </div>
+            @endif
+
+            {{-- Book a store visit to see the piece --}}
+            <div x-data="{ open: {{ $errors->has('preferred_at') ? 'true' : 'false' }} }" class="mt-3">
+                <button type="button" @click="open = !open" class="btn-outline w-full">🏬 {{ __('shop.affiliate.visit_cta') }}</button>
+                <form x-show="open" x-cloak method="POST" action="{{ route('store-visit.store') }}" class="card mt-2 grid gap-3 p-4 text-sm">
+                    @csrf
+                    <input type="hidden" name="product_id" value="{{ $product->id }}">
+                    <input name="name" required maxlength="120" placeholder="{{ __('shop.affiliate.visit_name') }}" class="input" value="{{ auth()->user()?->name }}">
+                    <input name="phone" required maxlength="32" placeholder="+971 5X XXX XXXX" class="input" dir="ltr" value="{{ auth()->user()?->phone }}">
+                    <input name="preferred_at" type="datetime-local" class="input" min="{{ now()->addHour()->format('Y-m-d\TH:i') }}" aria-label="{{ __('shop.affiliate.visit_when') }}">
+                    @php($visitBranches = \App\Models\Branch::orderBy('name')->get())
+                    @if ($visitBranches->count() > 1)
+                        <select name="branch_id" class="input">@foreach ($visitBranches as $b)<option value="{{ $b->id }}">{{ $b->localized('name') }}</option>@endforeach</select>
+                    @elseif ($visitBranches->count() === 1)<input type="hidden" name="branch_id" value="{{ $visitBranches->first()->id }}">@endif
+                    <button class="btn-gold h-10">{{ __('shop.affiliate.visit_send') }}</button>
+                </form>
+            </div>
             @if ($product->videoCallAvailable())
                 <div x-data="{ open: {{ $errors->has('name') || $errors->has('phone') ? 'true' : 'false' }} }" class="mt-3">
                     <button type="button" @click="open = true" class="btn-outline w-full gap-2">

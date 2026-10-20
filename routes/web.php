@@ -107,7 +107,12 @@ Route::get('/{slug}', [\App\Http\Controllers\PolicyController::class, 'show'])
 
 // Affiliates: white page (/w/CODE), dashboard for the affiliate.
 Route::get('/w/{code}', [\App\Http\Controllers\AffiliateController::class, 'page'])->where('code', '[A-Za-z0-9]{2,32}')->name('affiliate.page');
+Route::get('/l/{token}', [\App\Http\Controllers\AffiliateController::class, 'openLock'])->where('token', '[A-Za-z0-9]{32}')->name('affiliate.lock');
+Route::post('/visit', [\App\Http\Controllers\AffiliateController::class, 'visit'])->middleware('throttle:5,10')->name('store-visit.store');
+Route::get('/affiliate/join', [\App\Http\Controllers\AffiliateController::class, 'applyForm'])->name('affiliate.apply');
+Route::post('/affiliate/join', [\App\Http\Controllers\AffiliateController::class, 'apply'])->middleware('throttle:3,10')->name('affiliate.apply.store');
 Route::middleware('auth')->group(function () {
     Route::get('/affiliate', [\App\Http\Controllers\AffiliateController::class, 'dashboard'])->name('affiliate.dashboard');
     Route::post('/affiliate/page', [\App\Http\Controllers\AffiliateController::class, 'update'])->middleware('throttle:10,1')->name('affiliate.update');
+    Route::post('/affiliate/lock', [\App\Http\Controllers\AffiliateController::class, 'lock'])->middleware('throttle:20,60')->name('affiliate.lock.create');
 });

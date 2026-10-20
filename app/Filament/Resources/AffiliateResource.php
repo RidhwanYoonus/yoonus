@@ -115,8 +115,69 @@ class AffiliateResource extends Resource
                         Forms\Components\Placeholder::make('markup_hint')->hiddenLabel()->content('The affiliate can change this on their dashboard, up to the maximums.'),
                     ]),
                 ]),
+            Forms\Components\Section::make('Growth tools')->columnSpanFull()->columns(3)->schema([
+                Forms\Components\TextInput::make('coupon_discount_percent')->label('Customer discount with their code')->numeric()->minValue(0)->maxValue(50)->suffix('%')->default(0)
+                    ->helperText('0 = off. Customers type the affiliate code at checkout, get this discount, and the order counts for the affiliate. The discount comes from the shop\'s margin.'),
+                Forms\Components\Toggle::make('can_lock_price')->label('Can send price-lock links')->inline(false)
+                    ->helperText(fn () => 'The affiliate can hold today\'s price of a piece for a customer for '.\App\Affiliates\PriceLocks::hours().' hours (Settings → Affiliates). Watch the gold rate when allowing this.'),
+                Forms\Components\Select::make('recruited_by_id')->label('Recruited by (team leader)')->searchable()
+                    ->options(fn (?Affiliate $record) => Affiliate::with('user')->whereKeyNot($record?->id)->get()->mapWithKeys(fn ($a) => [$a->id => $a->code.' — '.$a->user?->name]))
+                    ->helperText('They earn a share of this affiliate\'s commission (Settings → Affiliates).'),
+            ]),
             Forms\Components\Textarea::make('notes')->label('Internal notes')->rows(2)->columnSpanFull(),
         ]);
+    }
+
+    /** Customer sent by the affiliate bought at the counter: give the commission now. */
+    public static function storeSaleAction(): Tables\Actions\Action
+    {
+        return Tables\Actions\Action::make('storeSale')->label('In-store sale')->icon('heroicon-o-building-storefront')->color('warning')
+            ->visible(fn () => \App\Support\StaffAccess::current('affiliates', 'edit'))
+            ->modalDescription('The customer bought in the shop. Commission is worked out with this affiliate\'s rates and is ready to collect at once.')
+            ->form(self::storeSaleForm())
+            ->action(fn (Affiliate $record, array $data) => self::runStoreSale($record, $data));
+    }
+
+    public static function storeSaleForm(): array
+    {
+        return [
+            Forms\Components\ToggleButtons::make('item_type')->label('Item')->inline()->required()->live()->default('gold')
+                ->options(['gold' => 'Priced by weight', 'fixed' => 'Fixed price']),
+            Forms\Components\TextInput::make('pieces')->numeric()->minValue(1)->default(1)->required(),
+            Forms\Components\TextInput::make('making_charge')->label('Making charge (all pieces, excl. VAT)')->numeric()->prefix('AED')->minValue(0)
+                ->visible(fn (Forms\Get $get) => $get('item_type') === 'gold'),
+            Forms\Components\TextInput::make('weight_grams')->label('Total weight')->numeric()->suffix('g')->minValue(0)
+                ->visible(fn (Forms\Get $get) => $get('item_type') === 'gold'),
+            Forms\Components\TextInput::make('price')->label('Price (all pieces, excl. VAT)')->numeric()->prefix('AED')->minValue(0)
+                ->visible(fn (Forms\Get $get) => $get('item_type') === 'fixed'),
+            Forms\Components\TextInput::make('receipt')->label('Shop receipt / invoice no.')->maxLength(64),
+        ];
+    }
+
+    public static function runStoreSale(Affiliate $record, array $data): void
+    {
+        try {
+            $adj = app(AffiliateService::class)->storeSale($record, $data, auth()->user());
+            Notification::make()->success()->title('In-store sale credited: AED '.$adj->amount)->send();
+        } catch (\RuntimeException $e) {
+            Notification::make()->danger()->title('Not saved')->body($e->getMessage())->send();
+        }
+    }
+
+    /** Manual bonus or correction (negative to take back). */
+    public static function adjustAction(): Tables\Actions\Action
+    {
+        return Tables\Actions\Action::make('adjust')->label('Bonus / correction')->icon('heroicon-o-plus-circle')->color('gray')
+            ->visible(fn () => (bool) auth()->user()?->is_admin)
+            ->form([
+                Forms\Components\TextInput::make('amount')->numeric()->prefix('AED')->required()->helperText('Use a minus amount to take money back.'),
+                Forms\Components\TextInput::make('description')->required()->maxLength(191),
+            ])
+            ->action(function (Affiliate $record, array $data) {
+                \App\Models\AffiliateAdjustment::create(['affiliate_id' => $record->id, 'type' => 'manual', 'amount' => $data['amount'], 'status' => 'available',
+                    'description' => $data['description'], 'created_by' => auth()->id()]);
+                Notification::make()->success()->title('Saved')->send();
+            });
     }
 
     public static function table(Table $table): Table
@@ -131,6 +192,9 @@ class AffiliateResource extends Resource
                 Tables\Columns\TextColumn::make('rates')->label('Commission')
                     ->state(fn (Affiliate $r) => $r->commissionSummary())->wrap(),
                 Tables\Columns\IconColumn::make('white_page_enabled')->label('White page')->boolean(),
+                Tables\Columns\TextColumn::make('level')->label('Level')->badge()->color('warning')->state(fn (Affiliate $r) => $r->level()['name'] ?? '—')->toggleable(),
+                Tables\Columns\TextColumn::make('clicks30')->label('Visits (30 d)')->toggleable()
+                    ->state(fn (Affiliate $r) => rescue(fn () => $r->clicks()->where('type', 'visit')->where('created_at', '>=', now()->subDays(30))->count(), 0, false)),
                 Tables\Columns\TextColumn::make('pending')->label('Pending')->state($money('pending'))->color('gray'),
                 Tables\Columns\TextColumn::make('earned')->label('Earned')->state($money('earned')),
                 Tables\Columns\TextColumn::make('collected')->label('Collected')->state($money('collected')),
@@ -138,7 +202,7 @@ class AffiliateResource extends Resource
                 Tables\Columns\IconColumn::make('is_active')->label('Active')->boolean(),
             ])
             ->filters([Tables\Filters\TernaryFilter::make('is_active')->label('Active')])
-            ->actions([self::collectAction(), Tables\Actions\EditAction::make()]);
+            ->actions([self::collectAction(), Tables\Actions\ActionGroup::make([self::storeSaleAction(), self::adjustAction()]), Tables\Actions\EditAction::make()]);
     }
 
     /** Staff hand over the affiliate's money at the store. */
@@ -166,7 +230,7 @@ class AffiliateResource extends Resource
 
     public static function getRelations(): array
     {
-        return [RelationManagers\CommissionsRelationManager::class, RelationManagers\PayoutsRelationManager::class];
+        return [RelationManagers\CommissionsRelationManager::class, RelationManagers\AdjustmentsRelationManager::class, RelationManagers\PayoutsRelationManager::class];
     }
 
     public static function getPages(): array

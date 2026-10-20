@@ -96,6 +96,10 @@ class PricingService
         if ($discount > 0) {
             return $this->compute($product, $discount);
         }
+        // An affiliate's price-lock link opened by this visitor keeps the price frozen until it expires.
+        if ($locked = \App\Affiliates\PriceLocks::lockedPrice($product->id)) {
+            return $locked;
+        }
         $key = sprintf('price.v%d.p%d.%s.m%s', $this->version(), $product->id, $product->updated_at?->timestamp, $this->markup->key());
 
         return PriceBreakdown::fromArray(Cache::remember($key, $this->ttl(), fn () => $this->compute($product)->raw()));

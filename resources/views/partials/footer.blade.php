@@ -17,6 +17,7 @@
                 <li><a href="{{ route('order.track') }}" class="hover:text-gold-300">{{ __('shop.nav.track') }}</a></li>
                 <li><a href="{{ route('gift-cards') }}" class="hover:text-gold-300">{{ __('shop.nav.gift_cards') }}</a></li>
                 <li><a href="{{ route('compare') }}" class="hover:text-gold-300">{{ __('shop.nav.compare') }}</a></li>
+                <li><a href="{{ route('affiliate.apply') }}" class="hover:text-gold-300">{{ __('shop.affiliate.apply_link') }}</a></li>
                 <li><a href="{{ \App\Messaging\WhatsApp::link(Settings::get('whatsapp_number'), __('shop.whatsapp.hello')) }}" target="_blank" rel="noopener" class="hover:text-gold-300">WhatsApp</a></li>
             </ul>
         </div>

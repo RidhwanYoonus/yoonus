@@ -3,12 +3,17 @@
 namespace App\Affiliates;
 
 use App\Models\Affiliate;
+use App\Models\AffiliateAdjustment;
+use App\Models\AffiliateCampaign;
 use App\Models\AffiliateCommission;
 use App\Models\AffiliatePayout;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\User;
 use App\Pricing\Money;
+use App\Support\Settings;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use RuntimeException;
 
 /**
@@ -29,13 +34,20 @@ class AffiliateService
         if (! $affiliate || AffiliateCommission::where('order_id', $order->id)->exists()) {
             return;
         }
+        // Level from this month's sales before this order, and campaign boosters running now.
+        $level = $affiliate->level(max(0, $affiliate->monthlySales() - Money::toFils($order->taxable_amount)));
+        $boosters = rescue(fn () => AffiliateCampaign::running()->where('type', 'booster')->get()
+            ->filter(fn (AffiliateCampaign $c) => $c->appliesTo($affiliate)), collect(), false);
+        $earned = 0;
         foreach ($order->items()->with('product')->get() as $item) {
             $markup = Money::toFils($item->affiliate_markup);
             $fixed = $item->product ? $item->product->isFixedPrice() : $item->karat === 'Fixed price';
             [$basis, $baseShown, $rateShown, $commission] = $this->line($affiliate, $item, $fixed, $markup);
-            if ($commission + $markup <= 0) {
+            [$bonus, $bonusNote] = $this->extras($commission, $level, $boosters, $item->product);
+            if ($commission + $bonus + $markup <= 0) {
                 continue;
             }
+            $earned += $commission + $bonus;
             AffiliateCommission::create([
                 'affiliate_id' => $affiliate->id,
                 'order_id' => $order->id,
@@ -46,11 +58,141 @@ class AffiliateService
                 'rate_percent' => $rateShown,
                 'commission_amount' => Money::toAed($commission),
                 'markup_amount' => Money::toAed($markup),
-                'amount' => Money::toAed($commission + $markup),
+                ...(Schema::hasColumn('affiliate_commissions', 'bonus_amount') ? ['bonus_amount' => Money::toAed($bonus), 'bonus_note' => $bonusNote] : []),
+                'amount' => Money::toAed($commission + $bonus + $markup),
                 'status' => 'pending',
             ]);
         }
+        $this->recruiterShare($order, $affiliate, $earned);
         $this->sync($order);
+        DB::afterCommit(fn () => $this->notify($affiliate, 'new_sale', $order));
+    }
+
+    /**
+     * Extra on top of the commission: level % (Settings → Affiliates) and campaign boosters (× commission).
+     *
+     * @return array{0: int, 1: ?string}
+     */
+    private function extras(int $commission, array $level, $boosters, $product): array
+    {
+        if ($commission <= 0) {
+            return [0, null];
+        }
+        $bonus = 0;
+        $notes = [];
+        if ($level['extra_bp'] > 0) {
+            $bonus += Money::percentOf($commission, $level['extra_bp']);
+            $notes[] = $level['name'].' +'.rtrim(rtrim(Money::toAed($level['extra_bp']), '0'), '.').'%';
+        }
+        foreach ($boosters as $b) {
+            if ($b->category_id && (int) $b->category_id !== (int) $product?->category_id) {
+                continue;
+            }
+            $bonus += Money::percentOf($commission, Money::scaled(max(0, (float) $b->multiplier - 1) * 100, 2));
+            $notes[] = $b->name.' ×'.rtrim(rtrim((string) $b->multiplier, '0'), '.');
+        }
+
+        return [$bonus, $notes ? implode(' · ', $notes) : null];
+    }
+
+    /** The affiliate who recruited this one gets a share of the commission (paid by the shop, not deducted). */
+    private function recruiterShare(Order $order, Affiliate $affiliate, int $earned): void
+    {
+        $pct = Money::scaled(Settings::get('affiliate_recruiter_percent', 10), 2);
+        $recruiter = $affiliate->recruited_by_id ? $affiliate->recruitedBy : null;
+        if (! $recruiter || ! $recruiter->is_active || $pct <= 0 || $earned <= 0) {
+            return;
+        }
+        $share = Money::percentOf($earned, $pct);
+        AffiliateCommission::create([
+            'affiliate_id' => $recruiter->id, 'order_id' => $order->id, 'order_item_id' => null,
+            'product_name' => 'Team sale by '.$affiliate->code, 'basis' => 'team',
+            'base_amount' => Money::toAed($earned), 'rate_percent' => Money::toAed($pct),
+            'commission_amount' => Money::toAed($share), 'markup_amount' => 0, 'amount' => Money::toAed($share), 'status' => 'pending',
+        ]);
+    }
+
+    /** Commission for a sale made at the counter (customer sent by the affiliate). Ready to collect at once. */
+    public function storeSale(Affiliate $affiliate, array $data, ?User $by): AffiliateAdjustment
+    {
+        $fixed = ($data['item_type'] ?? 'gold') === 'fixed';
+        $qty = max(1, (int) ($data['pieces'] ?? 1));
+        $item = (object) [
+            'qty' => $qty,
+            'weight_grams' => (float) ($data['weight_grams'] ?? 0) / $qty,
+            'making_fee' => (string) ($data['making_charge'] ?? 0),
+            'subtotal' => (string) ($data['price'] ?? 0),
+            'discount_amount' => '0',
+        ];
+        [$basis, $base, $rate, $commission] = $this->line($affiliate, $item, $fixed, 0);
+        if ($commission <= 0) {
+            throw new RuntimeException('This sale gives no commission with the affiliate\'s current rates.');
+        }
+        $line = AffiliateCommission::make(['basis' => $basis, 'base_amount' => $base, 'rate_percent' => $rate]);
+        $adjustment = AffiliateAdjustment::create([
+            'affiliate_id' => $affiliate->id, 'type' => 'store_sale', 'amount' => Money::toAed($commission), 'status' => 'available',
+            'description' => 'In-store sale'.(filled($data['receipt'] ?? null) ? ' · receipt '.$data['receipt'] : '').' — '.$line->calculation(),
+            'details' => $data, 'created_by' => $by?->id,
+        ]);
+        $this->notify($affiliate, 'store_sale', null, $commission);
+
+        return $adjustment;
+    }
+
+    /** Target campaigns: once delivered sales in the period reach the target, add the bonus (only once). */
+    public function evaluateTargets(Affiliate $affiliate): void
+    {
+        $targets = rescue(fn () => AffiliateCampaign::where('type', 'target')->where('is_active', true)
+            ->where('starts_at', '<=', now())->where('ends_at', '>=', now()->subDays(30))->get(), collect(), false);
+        foreach ($targets as $t) {
+            if (! $t->appliesTo($affiliate) || AffiliateAdjustment::where('affiliate_id', $affiliate->id)->where('campaign_id', $t->id)->exists()) {
+                continue;
+            }
+            [$pieces, $sales] = $this->deliveredIn($affiliate, $t->starts_at, $t->ends_at);
+            $reached = $t->target_metric === 'sales' ? $sales >= Money::toFils($t->target_value) : $pieces >= (float) $t->target_value;
+            if ($reached && (float) $t->bonus_amount > 0) {
+                AffiliateAdjustment::create([
+                    'affiliate_id' => $affiliate->id, 'type' => 'bonus', 'amount' => $t->bonus_amount, 'status' => 'available',
+                    'description' => 'Target reached: '.$t->name, 'campaign_id' => $t->id,
+                ]);
+                $this->notify($affiliate, 'bonus', null, Money::toFils($t->bonus_amount), $t->name);
+            }
+        }
+    }
+
+    /** @return array{0: int, 1: int} pieces, sales in fils */
+    public function deliveredIn(Affiliate $affiliate, $from, $to): array
+    {
+        $orders = Order::where('affiliate_id', $affiliate->id)->where('status', 'delivered')->whereBetween('created_at', [$from, $to]);
+
+        return [
+            (int) OrderItem::whereIn('order_id', (clone $orders)->select('id'))->sum('qty'),
+            Money::toFils((string) (clone $orders)->sum('taxable_amount')),
+        ];
+    }
+
+    /** WhatsApp + email to the affiliate (new sale, ready to collect, bonus). */
+    public function notify(Affiliate $affiliate, string $event, ?Order $order = null, int $amount = 0, string $extra = ''): void
+    {
+        if (! Settings::bool('affiliate_notifications')) {
+            return;
+        }
+        try {
+            $user = $affiliate->user;
+            $locale = $user?->locale === 'ar' ? 'ar' : 'en';
+            $amount = $amount ?: ($order ? Money::toFils((string) AffiliateCommission::where('order_id', $order->id)->where('affiliate_id', $affiliate->id)->sum('amount')) : 0);
+            if ($amount <= 0) {
+                return;
+            }
+            $text = __('shop.affiliate.notify.'.$event, ['amount' => Money::format($amount), 'order' => $order?->number, 'name' => $extra], $locale);
+            $messenger = app(\App\Messaging\Messenger::class);
+            $messenger->email($user?->email, new \App\Mail\ShopMessage($text, [$text], __('shop.affiliate.title', [], $locale), route('affiliate.dashboard'), $locale), 'affiliate_'.$event);
+            if ($user?->phone) {
+                $messenger->whatsapp($user->phone, $text.' '.route('affiliate.dashboard'), 'affiliate_'.$event);
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     /**
@@ -98,11 +240,20 @@ class AffiliateService
             $order->status === 'delivered' => 'available',
             default => 'pending',
         };
-        AffiliateCommission::where('order_id', $order->id)->where('status', '!=', $status)->get()
+        $changed = AffiliateCommission::where('order_id', $order->id)->where('status', '!=', $status)->get()
             ->each(fn (AffiliateCommission $c) => $c->update([
                 'status' => $status,
                 'available_at' => $status === 'available' ? ($c->available_at ?? now()) : null,
             ]));
+        if ($status === 'available' && $changed->isNotEmpty()) {
+            DB::afterCommit(function () use ($changed, $order) {
+                foreach ($changed->groupBy('affiliate_id') as $rows) {
+                    $affiliate = $rows->first()->affiliate;
+                    $this->notify($affiliate, 'ready', $order, Money::toFils((string) $rows->sum('amount')));
+                    $this->evaluateTargets($affiliate);
+                }
+            });
+        }
     }
 
     /** Staff hand over cash at the store: it is taken off the affiliate's balance. */

@@ -15,7 +15,7 @@ class AffiliateCommission extends Model
     {
         return [
             'base_amount' => 'decimal:2', 'rate_percent' => 'decimal:2', 'commission_amount' => 'decimal:2',
-            'markup_amount' => 'decimal:2', 'amount' => 'decimal:2', 'available_at' => 'datetime',
+            'markup_amount' => 'decimal:2', 'bonus_amount' => 'decimal:2', 'amount' => 'decimal:2', 'available_at' => 'datetime',
         ];
     }
 
@@ -27,6 +27,7 @@ class AffiliateCommission extends Model
         return match ($this->basis) {
             'gram' => $this->base_amount.' g × AED '.$this->rate_percent.' per gram',
             'piece' => (int) $this->base_amount.' pc × AED '.$this->rate_percent.' per piece',
+            'team' => 'Team commission AED '.$this->base_amount.' × '.$pct.'%',
             'making' => 'Making AED '.$this->base_amount.' × '.$pct.'%',
             default => 'Item total AED '.$this->base_amount.' × '.$pct.'%',
         };
