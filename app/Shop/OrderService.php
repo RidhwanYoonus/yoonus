@@ -326,6 +326,68 @@ class OrderService
     }
 
     /**
+     * Status the order can go back to with "Undo last status" (the one before the latest change),
+     * or null when undoing is not allowed: never back to unpaid, never out of a refund, and not for
+     * orders cancelled automatically because payment time ran out.
+     */
+    public function revertTarget(Order $order): ?string
+    {
+        // The latest real change into the current status (skipping earlier undos, so undo can go back step by step).
+        $last = $order->statusHistory()->where('to_status', $order->status)
+            ->where(fn ($q) => $q->whereNull('note')->orWhere('note', 'not like', 'Undone%'))->first();
+        $to = $last?->from_status;
+        if (! $to || $to === $order->status || $to === 'pending' || $order->status === 'refunded' || $order->payment_status === 'expired') {
+            return null;
+        }
+
+        return $to;
+    }
+
+    /** Admin fixes a status changed by mistake, undoing what that change did. */
+    public function revertStatus(Order $order, User $by, string $reason): Order
+    {
+        $to = $this->revertTarget($order);
+        if (! $to) {
+            throw new RuntimeException('This status change cannot be undone here.');
+        }
+
+        return DB::transaction(function () use ($order, $to, $by, $reason) {
+            $order = Order::lockForUpdate()->with('items.product')->find($order->id);
+            $from = $order->status;
+            if ($from === 'cancelled') {
+                // Cancelling put the stock back; take it again (refuse if it has been sold meanwhile).
+                foreach ($order->items as $item) {
+                    if ($item->product && $item->product->stock_qty < $item->qty) {
+                        throw new RuntimeException("Not enough stock of {$item->product_name} to restore this order.");
+                    }
+                }
+                foreach ($order->items as $item) {
+                    $item->product?->decrement('stock_qty', $item->qty);
+                }
+            }
+            $changes = ['status' => $to];
+            if ($from === 'delivered') {
+                // Not handed over after all: the handover code is needed again and sold-out pieces come back.
+                $changes += ['handover_verified_at' => null, 'handover_verified_via' => null];
+                foreach ($order->items as $item) {
+                    $item->product?->forceFill(['hidden_after_sale' => false])->saveQuietly();
+                }
+                if ($order->payment_method === 'cod') {
+                    // Cash was recorded at the door; it was not collected after all.
+                    Payment::where('order_id', $order->id)->where('gateway', 'cod')->delete();
+                    $changes += ['payment_status' => 'cod', 'paid_at' => null];
+                }
+                \App\Support\StorefrontCache::flushPriceDependent();
+            }
+            $order->forceFill($changes)->save();
+            $this->history($order, $from, $to, $by, 'Undone (status set by mistake): '.$reason);
+            app(\App\Affiliates\AffiliateService::class)->sync($order);
+
+            return $order;
+        });
+    }
+
+    /**
      * Once the last piece has been handed over, take it out of the shop so nobody can order
      * stock we no longer have. Adding stock in the admin shows it again (Product::booted).
      */

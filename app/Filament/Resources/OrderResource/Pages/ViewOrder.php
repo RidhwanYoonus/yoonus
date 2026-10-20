@@ -22,6 +22,25 @@ class ViewOrder extends ViewRecord
     {
         return [
             OrderResource::invoiceAction(),
+            Actions\Action::make('undoStatus')->label('Undo last status')->icon('heroicon-o-arrow-uturn-left')->color('gray')
+                ->visible(fn (Order $record) => (bool) Auth::user()?->is_admin && app(OrderService::class)->revertTarget($record))
+                ->modalHeading('Undo last status change')
+                ->modalDescription(fn (Order $record) => 'Move this order back from "'.$record->statusLabel().'" to "'.$record->statusLabel(app(OrderService::class)->revertTarget($record)).'". '
+                    .match ($record->status) {
+                        'cancelled' => 'The stock is taken again. ',
+                        'delivered' => 'The handover must be confirmed again (send a new code), sold-out pieces show in the shop again'.($record->payment_method === 'cod' ? ' and the cash payment is removed' : '').'. ',
+                        default => '',
+                    }.'The customer is not notified. This is recorded in the status history.')
+                ->form([\Filament\Forms\Components\TextInput::make('reason')->label('Why? (kept in the history)')->required()->maxLength(191)])
+                ->action(function (Order $record, array $data) {
+                    try {
+                        app(OrderService::class)->revertStatus($record, Auth::user(), $data['reason']);
+                        \Filament\Notifications\Notification::make()->success()->title('Status changed back')->send();
+                    } catch (\RuntimeException $e) {
+                        \Filament\Notifications\Notification::make()->danger()->title('Not changed')->body($e->getMessage())->send();
+                    }
+                    $this->redirect(OrderResource::getUrl('view', ['record' => $record]));
+                }),
             Actions\Action::make('handover')->label(fn (Order $record) => $record->isPickup() ? 'Customer collected' : 'Hand over to customer')
                 ->icon('heroicon-o-shield-check')->color('success')
                 ->visible(fn (Order $record) => $record->canTransitionTo('delivered') && \App\Support\StaffAccess::current('orders', 'edit'))
