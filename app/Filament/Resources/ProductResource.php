@@ -70,9 +70,12 @@ class ProductResource extends Resource
                 ]),
                 Forms\Components\Section::make('Pricing')->columns(3)->schema([
                     Forms\Components\ToggleButtons::make('pricing_type')->label('How is this product priced?')->inline()->required()->default('GOLD_RATE')->live()->columnSpanFull()
-                        ->options(['GOLD_RATE' => 'By weight × today\'s gold rate', 'FIXED' => 'Fixed price'])
-                        ->icons(['GOLD_RATE' => 'heroicon-o-scale', 'FIXED' => 'heroicon-o-tag']),
-                    Forms\Components\TextInput::make('fixed_price')->label('Selling price (excl. VAT)')->numeric()->minValue(0.01)->prefix('AED')->live(debounce: 400)
+                        ->options(['GOLD_RATE' => 'By weight × today\'s gold rate', 'FIXED' => 'Fixed price per piece'])
+                        ->icons(['GOLD_RATE' => 'heroicon-o-scale', 'FIXED' => 'heroicon-o-tag'])
+                        ->helperText(fn (Forms\Get $get) => $get('pricing_type') === 'FIXED'
+                            ? 'Fixed price per piece: one set price for each piece. The gold rate and weight do not change it, and no making charge is added.'
+                            : 'Price = weight × today\'s gold rate for the karat + making charge (+ stone, wastage). It changes when the gold rate changes.'),
+                    Forms\Components\TextInput::make('fixed_price')->label('Price per piece (excl. VAT)')->numeric()->minValue(0.01)->prefix('AED')->live(debounce: 400)
                         ->visible(fn (Forms\Get $get) => $get('pricing_type') === 'FIXED')->required(fn (Forms\Get $get) => $get('pricing_type') === 'FIXED')
                         ->helperText('Shown in the shop as the price before VAT; 5% VAT is added at checkout. Gold-rate changes do not affect it.'),
                     Forms\Components\Select::make('gold_category_id')->label(fn (Forms\Get $get) => $get('pricing_type') === 'FIXED' ? 'Karat (optional, for display)' : 'Karat')->relationship('goldCategory', 'name')
@@ -81,10 +84,14 @@ class ProductResource extends Resource
                     Forms\Components\TextInput::make('weight_grams')->label(fn (Forms\Get $get) => $get('pricing_type') === 'FIXED' ? 'Weight (g, optional)' : 'Weight (g)')
                         ->required(fn (Forms\Get $get) => $get('pricing_type') !== 'FIXED')->numeric()->minValue(0)->step(0.001)->default(0)->live(debounce: 400),
                     Forms\Components\TextInput::make('wastage_percent')->visible(fn (Forms\Get $get) => $get('pricing_type') !== 'FIXED')->label('Wastage %')->numeric()->default(0)->minValue(0)->maxValue(100)->live(debounce: 400),
-                    Forms\Components\ToggleButtons::make('manufacturer_charge_type')->label('Making charge type')->inline()->required()->default('PERCENTAGE')->live()
+                    Forms\Components\ToggleButtons::make('manufacturer_charge_type')->label('Making charge type')->inline()->required()->default('PERCENTAGE')->live()->columnSpan(2)
                         ->visible(fn (Forms\Get $get) => $get('pricing_type') !== 'FIXED')
-                        ->options(['PERCENTAGE' => '% of gold value', 'PER_PIECE' => 'Fixed AED per piece']),
-                    Forms\Components\TextInput::make('manufacturer_charge_value')->label('Making charge')->required()->numeric()->default(0)->minValue(0)->live(debounce: 400)
+                        ->options(['PERCENTAGE' => '% of gold value', 'PER_PIECE' => 'Fixed making AED per piece'])
+                        ->icons(['PERCENTAGE' => 'heroicon-o-receipt-percent', 'PER_PIECE' => 'heroicon-o-banknotes'])
+                        ->helperText(fn (Forms\Get $get) => $get('manufacturer_charge_type') === 'PER_PIECE'
+                            ? 'Fixed making per piece: the same AED making charge for each piece, whatever its weight. The gold itself is still priced by weight × gold rate.'
+                            : 'Making charge is a % of the gold value, so it goes up and down with the gold rate.'),
+                    Forms\Components\TextInput::make('manufacturer_charge_value')->label(fn (Forms\Get $get) => $get('manufacturer_charge_type') === 'PER_PIECE' ? 'Making per piece' : 'Making charge')->required()->numeric()->default(0)->minValue(0)->live(debounce: 400)
                         ->visible(fn (Forms\Get $get) => $get('pricing_type') !== 'FIXED')
                         ->prefix(fn (Forms\Get $get) => $get('manufacturer_charge_type') === 'PER_PIECE' ? 'AED' : null)
                         ->suffix(fn (Forms\Get $get) => $get('manufacturer_charge_type') === 'PER_PIECE' ? null : '%'),
@@ -176,10 +183,10 @@ class ProductResource extends Resource
                 Tables\Columns\TextColumn::make('name')->searchable(['name', 'name_ar', 'sku'])->description(fn (Product $record) => $record->sku)->limit(40),
                 Tables\Columns\TextColumn::make('goldCategory.name')->label('Karat')->badge()->sortable()->placeholder('—'),
                 Tables\Columns\TextColumn::make('pricing_type')->label('Pricing')->badge()
-                    ->formatStateUsing(fn (string $state) => $state === 'FIXED' ? 'Fixed' : 'Gold rate')->color(fn (string $state) => $state === 'FIXED' ? 'info' : 'warning'),
+                    ->formatStateUsing(fn (string $state) => $state === 'FIXED' ? 'Fixed per piece' : 'Gold rate')->color(fn (string $state) => $state === 'FIXED' ? 'info' : 'warning'),
                 Tables\Columns\TextColumn::make('weight_grams')->label('Weight')->suffix(' g')->sortable()->toggleable(),
                 Tables\Columns\TextColumn::make('making')->label('Making')->toggleable(isToggledHiddenByDefault: true)
-                    ->state(fn (Product $record) => $record->isFixedPrice() ? '—' : ($record->manufacturer_charge_type === 'PER_PIECE' ? 'AED '.$record->manufacturer_charge_value : $record->manufacturer_charge_value.'%')),
+                    ->state(fn (Product $record) => $record->isFixedPrice() ? '—' : ($record->manufacturer_charge_type === 'PER_PIECE' ? 'AED '.$record->manufacturer_charge_value.' / piece' : $record->manufacturer_charge_value.'%')),
                 Tables\Columns\TextColumn::make('cached_subtotal')->label('Price (excl. VAT)')->money('AED')->sortable()->weight('bold'),
                 Tables\Columns\TextColumn::make('price_calculated_at')->label('Recalculated')->since()->sortable()->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('stock_qty')->label('Stock')->sortable()
@@ -192,7 +199,7 @@ class ProductResource extends Resource
                 Tables\Filters\SelectFilter::make('gold_category_id')->label('Karat')->relationship('goldCategory', 'name'),
                 Tables\Filters\SelectFilter::make('category_id')->label('Category')->relationship('category', 'name'),
                 Tables\Filters\Filter::make('low_stock')->label('Low stock')->query(fn (Builder $query) => $query->whereColumn('stock_qty', '<=', 'low_stock_threshold')),
-                Tables\Filters\SelectFilter::make('pricing_type')->label('Pricing')->options(['GOLD_RATE' => 'Gold rate', 'FIXED' => 'Fixed price']),
+                Tables\Filters\SelectFilter::make('pricing_type')->label('Pricing')->options(['GOLD_RATE' => 'Gold rate', 'FIXED' => 'Fixed price per piece']),
                 Tables\Filters\TernaryFilter::make('is_active')->label('Live'),
             ])
             ->actions([
