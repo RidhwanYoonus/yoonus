@@ -264,4 +264,21 @@ class AffiliateGrowthTest extends TestCase
         Settings::set(['affiliate_team_enabled' => true]);
         $this->actingAs($this->affiliate->user)->get('/affiliate')->assertSee('Build your team');
     }
+
+    public function test_affiliate_code_always_uses_shop_prices_even_after_visiting_their_white_page(): void
+    {
+        $this->affiliate->update(['coupon_discount_percent' => 10, 'white_page_enabled' => true, 'markup_mode' => 'amount', 'markup_amount' => 50]);
+        $this->get('/w/HUDA10');
+        $this->get('/product/band')->assertSee('1,150.00');   // white-page price remembered
+
+        $order = $this->checkout(1, ['coupon' => 'HUDA10']);
+        $this->assertFalse($order->affiliate_white_page);
+        $this->assertSame('0.00', $order->items->first()->affiliate_markup);
+        $this->assertSame('1100.00', $order->items->first()->subtotal);   // shop price
+        $line = AffiliateCommission::sole();
+        $this->assertSame('0.00', $line->markup_amount);
+        $this->assertSame('1.00', $line->coupon_deduction);   // 10% of AED 10 commission
+        $this->assertSame('9.00', $line->amount);
+        $this->actingAs(User::factory()->create(['is_admin' => true]))->get('/admin/orders/'.$order->id)->assertSee('used the affiliate');
+    }
 }

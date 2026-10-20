@@ -213,6 +213,12 @@ class CheckoutController extends Controller
     private function buildFrom(Request $request): Quote
     {
         $fulfilment = $request->input('fulfilment') === 'pickup' || ! self::deliveryEnabled() ? 'pickup' : 'delivery';
+        // An affiliate's coupon code is a "code sale": normal shop prices, never their white-page mark-up.
+        if (($code = strtoupper(trim((string) $request->input('coupon')))) !== ''
+            && rescue(fn () => \App\Models\Coupon::where('code', $code)->whereNotNull('affiliate_id')->exists(), false, false)) {
+            app(\App\Pricing\PricingService::class)->setMarkup(\App\Pricing\Markup::none());
+            app(\App\Affiliates\AffiliateContext::class)->whitePage = false;
+        }
 
         return $this->quotes->build(
             $this->cart->lines(),

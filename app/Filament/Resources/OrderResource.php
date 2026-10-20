@@ -69,7 +69,8 @@ class OrderResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('number')->searchable()->weight('bold')->copyable(),
                 Tables\Columns\TextColumn::make('affiliate.code')->label('Affiliate')->badge()->color('warning')->icon('heroicon-o-user-plus')->placeholder('—')
-                    ->description(fn (Order $record) => $record->affiliate ? ($record->affiliate_white_page ? 'Own page' : 'Link').' · '.$record->affiliate->user?->name : null)
+                    ->description(fn (Order $record) => $record->affiliate
+                        ? (in_array($record->affiliate->code, explode(',', (string) $record->coupon_code), true) ? 'Code' : ($record->affiliate_white_page ? 'Own page' : 'Link')).' · '.$record->affiliate->user?->name : null)
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('created_at')->label('Date')->dateTime('d M Y H:i')->sortable(),
                 Tables\Columns\TextColumn::make('customer_name')->searchable(['customer_name', 'email', 'phone'])->description(fn (Order $record) => $record->phone),
@@ -227,9 +228,12 @@ class OrderResource extends Resource
                 Infolists\Components\TextEntry::make('amount_due')->money('AED'),
             ]),
             Infolists\Components\Section::make('Affiliate')->icon('heroicon-o-user-plus')->columnSpanFull()->columns(4)
-                ->description(fn (Order $record) => $record->affiliate_white_page
-                    ? 'Ordered on the affiliate\'s own page — prices included their mark-up.'
-                    : 'Customer came through the affiliate\'s link — normal shop prices.')
+                ->description(fn (Order $record) => match (true) {
+                    $record->affiliate && in_array($record->affiliate->code, explode(',', (string) $record->coupon_code), true)
+                        => 'Customer used the affiliate\'s code '.$record->affiliate->code.' — normal shop prices (no mark-up).',
+                    $record->affiliate_white_page => 'Ordered on the affiliate\'s own page — prices included their mark-up.',
+                    default => 'Customer came through the affiliate\'s link — normal shop prices.',
+                })
                 ->extraAttributes(['class' => 'affiliate-order-section'])
                 ->visible(fn (Order $record) => (bool) $record->affiliate_id)
                 ->schema([
