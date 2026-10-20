@@ -59,6 +59,17 @@ class CheckoutFlowTest extends TestCase
         $this->get(route('checkout.complete', $order->number))->assertOk()->assertSee($order->number);
     }
 
+    public function test_applied_code_keeps_its_discount_after_a_failed_submit(): void
+    {
+        Coupon::create(['code' => 'OFF10', 'name' => 'Ten', 'type' => 'fixed', 'value' => 10, 'scope' => 'cart']);
+        $this->post('/cart/add/band');
+
+        $this->from('/checkout')->post('/checkout', $this->form(['coupon' => 'OFF10', 'name' => '']))->assertSessionHasErrors('name');
+        $page = $this->get('/checkout')->assertOk()->assertSee('OFF10');
+        $this->assertStringContainsString('AED 10.00', html_entity_decode($page->getContent()));
+        $this->assertSame(0, Order::count());
+    }
+
     public function test_price_change_during_checkout_is_flagged_not_charged(): void
     {
         $this->post('/cart/add/band');

@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Storage;
 
 class ListProducts extends ListRecords
 {
+    use \App\Filament\Concerns\ExportsTable;
+
     use \App\Filament\Concerns\TranslatesMissingArabic;
 
     protected static string $resource = ProductResource::class;

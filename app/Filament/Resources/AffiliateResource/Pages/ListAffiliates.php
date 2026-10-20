@@ -8,6 +8,8 @@ use Filament\Resources\Pages\ListRecords;
 
 class ListAffiliates extends ListRecords
 {
+    use \App\Filament\Concerns\ExportsTable;
+
     protected static string $resource = AffiliateResource::class;
 
     protected function getHeaderActions(): array

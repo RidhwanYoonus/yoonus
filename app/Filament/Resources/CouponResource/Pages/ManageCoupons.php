@@ -8,6 +8,8 @@ use Filament\Resources\Pages\ManageRecords;
 
 class ManageCoupons extends ManageRecords
 {
+    use \App\Filament\Concerns\ExportsTable;
+
     protected static string $resource = CouponResource::class;
 
     protected function getHeaderActions(): array

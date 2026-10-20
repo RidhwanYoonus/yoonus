@@ -8,6 +8,8 @@ use Filament\Resources\Pages\ManageRecords;
 
 class ManageVatSettings extends ManageRecords
 {
+    use \App\Filament\Concerns\ExportsTable;
+
     protected static string $resource = VatSettingResource::class;
 
     protected function getHeaderActions(): array

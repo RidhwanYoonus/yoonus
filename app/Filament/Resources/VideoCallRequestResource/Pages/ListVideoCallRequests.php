@@ -7,5 +7,7 @@ use Filament\Resources\Pages\ListRecords;
 
 class ListVideoCallRequests extends ListRecords
 {
+    use \App\Filament\Concerns\ExportsTable;
+
     protected static string $resource = VideoCallRequestResource::class;
 }

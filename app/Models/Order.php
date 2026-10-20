@@ -136,6 +136,16 @@ class Order extends Model
         return in_array($status, $this->allowedTransitions(), true);
     }
 
+    /** How an affiliate order came in: their coupon code, their own (white) page, or their link. Null when not an affiliate order. */
+    public function affiliateSource(): ?string
+    {
+        if (! $this->affiliate_id || ! $this->affiliate) {
+            return null;
+        }
+
+        return in_array($this->affiliate->code, explode(',', (string) $this->coupon_code), true) ? 'Code' : ($this->affiliate_white_page ? 'Own page' : 'Link');
+    }
+
     /** Status name for staff and customers; "delivered" reads as "Collected" for pickup orders. */
     public function statusLabel(?string $status = null): string
     {

@@ -8,6 +8,8 @@ use Filament\Resources\Pages\ListRecords;
 
 class ListPendingCarts extends ListRecords
 {
+    use \App\Filament\Concerns\ExportsTable;
+
     protected static string $resource = PendingCartResource::class;
 
     protected function getHeaderWidgets(): array

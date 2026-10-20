@@ -8,6 +8,8 @@ use Filament\Resources\Pages\ListRecords;
 
 class ListOrders extends ListRecords
 {
+    use \App\Filament\Concerns\ExportsTable;
+
     protected static string $resource = OrderResource::class;
 
     public function getTabs(): array

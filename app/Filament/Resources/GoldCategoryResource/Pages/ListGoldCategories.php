@@ -16,6 +16,8 @@ use Throwable;
 
 class ListGoldCategories extends ListRecords
 {
+    use \App\Filament\Concerns\ExportsTable;
+
     protected static string $resource = GoldCategoryResource::class;
 
     protected function getHeaderActions(): array

@@ -8,6 +8,8 @@ use Filament\Resources\Pages\ManageRecords;
 
 class ManageShippingZones extends ManageRecords
 {
+    use \App\Filament\Concerns\ExportsTable;
+
     use \App\Filament\Concerns\TranslatesMissingArabic;
 
     protected static string $resource = ShippingZoneResource::class;

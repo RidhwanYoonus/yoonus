@@ -94,6 +94,10 @@ Route::get('/admin/video-calls/{id}/join', \App\Http\Controllers\Admin\VideoCall
 Route::get('/admin/id-documents/{owner}/{id}/{side}', \App\Http\Controllers\Admin\IdDocumentController::class)
     ->middleware(['auth', \App\Http\Middleware\AdminSecurity::class])->whereIn('owner', ['order', 'user'])->whereNumber('id')->whereIn('side', ['front', 'back'])->name('admin.id-document');
 
+// Printable copy of a list from the admin "Print / Export" button.
+Route::get('/admin/print/{token}', \App\Http\Controllers\Admin\PrintController::class)
+    ->middleware(['auth', \App\Http\Middleware\AdminSecurity::class])->where('token', '[A-Za-z0-9]{40}')->name('admin.print');
+
 // Admin two-step sign-in (Settings → Security). Outside /admin so the panel's own check doesn't loop.
 Route::middleware('auth')->prefix('admin-verify')->group(function () {
     Route::get('/', [\App\Http\Controllers\Admin\TwoFactorController::class, 'show'])->name('admin.two-factor');

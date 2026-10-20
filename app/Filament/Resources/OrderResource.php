@@ -70,7 +70,7 @@ class OrderResource extends Resource
                 Tables\Columns\TextColumn::make('number')->searchable()->weight('bold')->copyable(),
                 Tables\Columns\TextColumn::make('affiliate.code')->label('Affiliate')->badge()->color('warning')->icon('heroicon-o-user-plus')->placeholder('—')
                     ->description(fn (Order $record) => $record->affiliate
-                        ? (in_array($record->affiliate->code, explode(',', (string) $record->coupon_code), true) ? 'Code' : ($record->affiliate_white_page ? 'Own page' : 'Link')).' · '.$record->affiliate->user?->name : null)
+                        ? $record->affiliateSource().' · '.$record->affiliate->user?->name : null)
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('created_at')->label('Date')->dateTime('d M Y H:i')->sortable(),
                 Tables\Columns\TextColumn::make('customer_name')->searchable(['customer_name', 'email', 'phone'])->description(fn (Order $record) => $record->phone),

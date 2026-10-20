@@ -44,7 +44,7 @@ class AffiliateCommissionResource extends Resource
         $sum = fn () => Sum::make()->money('AED')->label('');
 
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->with(['affiliate.user', 'order']))
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['affiliate.user', 'order.affiliate']))
             ->defaultSort('created_at', 'desc')
             ->columns(array_values(array_filter([
                 Tables\Columns\TextColumn::make('created_at')->label('Date')->dateTime('d M Y')->sortable(),
@@ -53,9 +53,14 @@ class AffiliateCommissionResource extends Resource
                 Tables\Columns\TextColumn::make('order.number')->label('Order')->searchable()
                     ->url(fn (AffiliateCommission $r) => $r->order ? OrderResource::getUrl('view', ['record' => $r->order]) : null)
                     ->description(fn (AffiliateCommission $r) => $r->order?->statusLabel()),
+                Tables\Columns\TextColumn::make('order.customer_name')->label('Customer')->searchable()->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('source')->label('Sale via')->badge()->color('gray')->toggleable(isToggledHiddenByDefault: true)
+                    ->state(fn (AffiliateCommission $r) => $r->basis === 'team' ? 'Team' : ($r->order?->affiliateSource() ?? '—')),
                 Tables\Columns\TextColumn::make('product_name')->label('Item')->limit(30),
                 Tables\Columns\TextColumn::make('basis')->label('Based on')
                     ->formatStateUsing(fn (string $state, AffiliateCommission $r) => $r->calculation()),
+                Tables\Columns\TextColumn::make('base_amount')->label('Amount it is worked on')->money('AED')->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('rate_percent')->label('Rate %')->suffix('%')->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('commission_amount')->label('Commission')->money('AED')->summarize($sum()),
                 Tables\Columns\TextColumn::make('bonus_amount')->label('Level / booster bonus')->money('AED')->summarize($sum())->toggleable()
                     ->description(fn (AffiliateCommission $r) => $r->bonus_note),
@@ -67,6 +72,9 @@ class AffiliateCommissionResource extends Resource
                     ->formatStateUsing(fn (string $state) => AffiliateCommission::STATUSES[$state] ?? $state)
                     ->color(fn (string $state) => match ($state) { 'available' => 'success', 'void' => 'danger', default => 'gray' }),
                 Tables\Columns\TextColumn::make('available_at')->label('Earned on')->date('d M Y')->placeholder('—')->toggleable(),
+                Tables\Columns\TextColumn::make('order.status')->label('Order status')->badge()->toggleable(isToggledHiddenByDefault: true)
+                    ->formatStateUsing(fn ($state, AffiliateCommission $r) => $r->order?->statusLabel() ?? $state),
+                Tables\Columns\TextColumn::make('order.payment_status')->label('Payment')->badge()->toggleable(isToggledHiddenByDefault: true),
             ])))
             ->filters(array_values(array_filter([
                 $withAffiliate ? Tables\Filters\SelectFilter::make('affiliate_id')->label('Affiliate')->multiple()

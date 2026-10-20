@@ -2,7 +2,7 @@
 
 namespace App\Support;
 
-/** Applies the email (SMTP) details entered in Settings → Email over the .env defaults. */
+/** Applies the email (SMTP or Resend API) details entered in Settings → Email over the .env defaults. */
 class MailSettings
 {
     public static function apply(): void
@@ -12,6 +12,14 @@ class MailSettings
         }
         config(['mail.from.name' => Settings::get('mail_from_name') ?: Settings::get('store_name', config('mail.from.name'))]);
 
+        if (Settings::get('mail_mailer') === 'resend' && Settings::get('resend_api_key')) {
+            config(['mail.default' => 'resend_api', 'mail.mailers.resend_api' => ['transport' => 'resend_api']]);
+            self::forget();
+            $key = (string) Settings::get('resend_api_key');
+            \Illuminate\Support\Facades\Mail::extend('resend_api', fn () => new \App\Mail\ResendTransport($key));
+
+            return;
+        }
         if (Settings::get('mail_mailer') !== 'smtp' || ! Settings::get('mail_host')) {
             return;
         }
@@ -25,7 +33,12 @@ class MailSettings
             'mail.mailers.smtp.password' => Settings::get('mail_password'),
             'mail.mailers.smtp.timeout' => 20,
         ]);
-        // Settings may change while a queue worker keeps running: drop the cached mailer.
+        self::forget();
+    }
+
+    /** Settings may change while a queue worker keeps running: drop the cached mailer. */
+    private static function forget(): void
+    {
         app()->forgetInstance('mail.manager');
         app()->forgetInstance('mailer');
         \Illuminate\Support\Facades\Mail::clearResolvedInstances();

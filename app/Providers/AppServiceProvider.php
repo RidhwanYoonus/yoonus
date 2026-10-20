@@ -48,6 +48,8 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Every admin list gets the column menu, so staff choose which columns to show, print and export.
+        \Filament\Tables\Columns\Column::configureUsing(fn (\Filament\Tables\Columns\Column $column) => $column->toggleable());
         if ($this->app->isProduction()) {
             URL::forceScheme('https');
         }

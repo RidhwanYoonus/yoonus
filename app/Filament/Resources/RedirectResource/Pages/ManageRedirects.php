@@ -8,6 +8,8 @@ use Filament\Resources\Pages\ManageRecords;
 
 class ManageRedirects extends ManageRecords
 {
+    use \App\Filament\Concerns\ExportsTable;
+
     protected static string $resource = RedirectResource::class;
 
     protected function getHeaderActions(): array

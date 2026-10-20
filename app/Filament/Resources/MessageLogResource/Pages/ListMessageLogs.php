@@ -8,6 +8,8 @@ use Filament\Resources\Pages\ListRecords;
 
 class ListMessageLogs extends ListRecords
 {
+    use \App\Filament\Concerns\ExportsTable;
+
     protected static string $resource = MessageLogResource::class;
 
     protected function getHeaderWidgets(): array

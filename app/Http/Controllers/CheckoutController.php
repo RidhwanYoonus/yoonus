@@ -45,6 +45,10 @@ class CheckoutController extends Controller
         // Card is the default (Apple Pay is listed first but only shows on Apple devices).
         $method = old('payment_method', isset($offered['card']) ? 'card' : array_key_first($offered));
         $quote = $this->quotes->build($this->cart->lines(), $request->user(), $request->user()?->email, zone: $zone, fulfilment: $fulfilment, paymentMethod: $method);
+        // Back from a failed submit (e.g. a missing ID photo): price with what was entered, so an applied code keeps its discount.
+        if ($old = $request->session()->getOldInput()) {
+            $quote = $this->buildFrom($request->duplicate($old));
+        }
 
         return view('shop.checkout', [
             'seo' => Seo::page(__('shop.checkout.title')),

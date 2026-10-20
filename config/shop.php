@@ -134,7 +134,8 @@ return [
         'meta_wa_invoice_template' => null,     // approved template with a Document header + body {{1}}
         'meta_wa_template_lang' => 'en',
         'whatsapp_send_invoice' => true,
-        'mail_mailer' => null,                  // smtp to send real email; empty = use the .env setting
+        'mail_mailer' => null,                  // resend (API) or smtp to send real email; empty = use the .env setting
+        'resend_api_key' => null,
         'mail_host' => null,
         'mail_port' => 587,
         'mail_username' => null,

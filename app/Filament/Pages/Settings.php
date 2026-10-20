@@ -263,10 +263,15 @@ class Settings extends Page implements HasForms
                 ]),
                 Forms\Components\Tabs\Tab::make('Email')->icon('heroicon-o-envelope')->columns(2)->schema([
                     Forms\Components\Select::make('mail_mailer')->label('Send email')->live()
-                        ->options(['smtp' => 'Through my email provider (SMTP)', 'log' => 'Not yet — keep emails in the log (testing)'])
+                        ->options(['resend' => 'Resend (email API — resend.com)', 'smtp' => 'Through my email provider (SMTP)', 'log' => 'Not yet — keep emails in the log (testing)'])
                         ->helperText('Works with Google Workspace / Gmail, Microsoft 365 / Outlook, Zoho, your web host\'s email, Brevo, Mailgun and others.'),
                     $text('mail_from_address', 'Send from (email address)')->email()->placeholder('orders@yourshop.ae'),
                     $text('mail_from_name', 'Sender name')->placeholder('Your Jewellery Shop'),
+                    Forms\Components\Section::make('Resend API')->columns(1)->visible(fn (Forms\Get $get) => $get('mail_mailer') === 'resend')
+                        ->description('In resend.com: Domains → add and verify your shop\'s domain, then API Keys → create a key with "Sending access". The "Send from" address above must use that verified domain (e.g. orders@yourshop.ae).')
+                        ->schema([
+                            $secret('resend_api_key', 'Resend API key')->placeholder('re_…')->helperText('Starts with re_. Stored only here, never in the code.'),
+                        ]),
                     Forms\Components\Section::make('SMTP server')->columns(3)->visible(fn (Forms\Get $get) => $get('mail_mailer') === 'smtp')
                         ->description('Gmail / Google Workspace: smtp.gmail.com · 587 · TLS, password = an App password. Microsoft 365: smtp.office365.com · 587 · TLS. Zoho: smtp.zoho.com · 465 · SSL.')
                         ->schema([
@@ -296,7 +301,7 @@ class Settings extends Page implements HasForms
                         \App\Support\MailSettings::apply();
                         \Illuminate\Support\Facades\Mail::to($data['to'])->send(new \App\Mail\ShopMessage('Test email from '.Store::get('store_name'), ['Your shop can send email. 🎉']));
                         config('mail.default') === 'log'
-                            ? Notification::make()->warning()->title('Email is still in test mode')->body('Choose "Through my email provider (SMTP)" in Settings → Email and save.')->send()
+                            ? Notification::make()->warning()->title('Email is still in test mode')->body('Choose Resend or SMTP in Settings → Email and save.')->send()
                             : Notification::make()->success()->title('Test email sent to '.$data['to'])->send();
                     } catch (\Throwable $e) {
                         Notification::make()->danger()->title('Email failed')->body($e->getMessage())->persistent()->send();

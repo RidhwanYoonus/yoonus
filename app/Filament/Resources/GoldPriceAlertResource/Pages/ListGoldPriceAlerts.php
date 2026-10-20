@@ -7,5 +7,7 @@ use Filament\Resources\Pages\ListRecords;
 
 class ListGoldPriceAlerts extends ListRecords
 {
+    use \App\Filament\Concerns\ExportsTable;
+
     protected static string $resource = GoldPriceAlertResource::class;
 }

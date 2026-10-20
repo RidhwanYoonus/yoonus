@@ -29,6 +29,7 @@ class Product extends Model
             'weight_grams' => 'decimal:3',
             'manufacturer_charge_value' => 'decimal:2',
             'stone_value' => 'decimal:2',
+            'diamond_carat' => 'decimal:3',
             'wastage_percent' => 'decimal:2',
             'is_active' => 'boolean',
             'is_featured' => 'boolean',
@@ -53,6 +54,18 @@ class Product extends Model
     public function goldCategory(): BelongsTo
     {
         return $this->belongsTo(GoldCategory::class);
+    }
+
+    public function certificateLab(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(CertificateLab::class);
+    }
+
+    /** True when the piece has diamond / certificate details to show. */
+    public function hasCertificate(): bool
+    {
+        return filled($this->certificate_number) || filled($this->certificate_file) || $this->certificate_lab_id
+            || filled($this->diamond_carat) || filled($this->diamond_color) || filled($this->diamond_clarity);
     }
 
     public function category(): BelongsTo

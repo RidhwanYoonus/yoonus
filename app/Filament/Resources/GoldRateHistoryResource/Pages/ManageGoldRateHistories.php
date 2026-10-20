@@ -7,5 +7,7 @@ use Filament\Resources\Pages\ManageRecords;
 
 class ManageGoldRateHistories extends ManageRecords
 {
+    use \App\Filament\Concerns\ExportsTable;
+
     protected static string $resource = GoldRateHistoryResource::class;
 }

@@ -8,6 +8,8 @@ use Filament\Resources\Pages\ManageRecords;
 
 class ManageCampaigns extends ManageRecords
 {
+    use \App\Filament\Concerns\ExportsTable;
+
     use \App\Filament\Concerns\TranslatesMissingArabic;
 
     protected static string $resource = CampaignResource::class;

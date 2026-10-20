@@ -213,13 +213,22 @@ class AffiliateResource extends Resource
         $money = fn (string $key) => fn (Affiliate $record) => Money::format($record->totals()[$key]);
 
         return $table
-            ->modifyQueryUsing(fn ($query) => $query->with('user'))
+            ->modifyQueryUsing(fn ($query) => $query->with(['user', 'recruitedBy']))
             ->columns([
                 Tables\Columns\TextColumn::make('code')->badge()->searchable()->copyable(),
                 Tables\Columns\TextColumn::make('user.name')->label('Name')->searchable()->description(fn (Affiliate $r) => $r->user?->email),
                 Tables\Columns\TextColumn::make('rates')->label('Commission')
                     ->state(fn (Affiliate $r) => $r->commissionSummary())->wrap(),
+                Tables\Columns\TextColumn::make('user.phone')->label('Phone')->searchable()->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\IconColumn::make('white_page_enabled')->label('White page')->boolean(),
+                Tables\Columns\TextColumn::make('markup')->label('White-page mark-up')->wrap()->toggleable(isToggledHiddenByDefault: true)
+                    ->state(fn (Affiliate $r) => $r->white_page_enabled ? $r->markupSummary() : '—'),
+                Tables\Columns\TextColumn::make('coupon_discount_percent')->label('Code discount (% of commission)')->suffix('%')->placeholder('—')->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\IconColumn::make('can_lock_price')->label('Price lock')->boolean()->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('recruitedBy.code')->label('Recruited by')->placeholder('—')->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('month_sales')->label('Sales this month')->toggleable(isToggledHiddenByDefault: true)
+                    ->state(fn (Affiliate $r) => Money::format(rescue(fn () => $r->monthlySales(), 0, false))),
+                Tables\Columns\TextColumn::make('orders_count')->label('Orders')->counts('orders')->sortable()->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('level')->label('Level')->badge()->color('warning')->state(fn (Affiliate $r) => $r->level()['name'] ?? '—')->toggleable(),
                 Tables\Columns\TextColumn::make('clicks30')->label('Visits (30 d)')->toggleable()
                     ->state(fn (Affiliate $r) => rescue(fn () => $r->clicks()->where('type', 'visit')->where('created_at', '>=', now()->subDays(30))->count(), 0, false)),
@@ -228,6 +237,7 @@ class AffiliateResource extends Resource
                 Tables\Columns\TextColumn::make('collected')->label('Collected')->state($money('collected')),
                 Tables\Columns\TextColumn::make('balance')->label('To collect')->state($money('balance'))->weight('bold')->color('success'),
                 Tables\Columns\IconColumn::make('is_active')->label('Active')->boolean(),
+                Tables\Columns\TextColumn::make('created_at')->label('Joined')->date('d M Y')->sortable()->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([Tables\Filters\TernaryFilter::make('is_active')->label('Active')])
             ->actions([self::collectAction(), Tables\Actions\ActionGroup::make([self::storeSaleAction(), self::adjustAction()]), Tables\Actions\EditAction::make()]);

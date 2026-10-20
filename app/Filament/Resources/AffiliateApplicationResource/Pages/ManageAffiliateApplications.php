@@ -7,5 +7,7 @@ use Filament\Resources\Pages\ManageRecords;
 
 class ManageAffiliateApplications extends ManageRecords
 {
+    use \App\Filament\Concerns\ExportsTable;
+
     protected static string $resource = AffiliateApplicationResource::class;
 }

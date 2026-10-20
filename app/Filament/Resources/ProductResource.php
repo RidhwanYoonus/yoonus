@@ -99,6 +99,22 @@ class ProductResource extends Resource
                         ->visible(fn (Forms\Get $get) => $get('pricing_type') !== 'FIXED'),
                     Forms\Components\TextInput::make('stone_type')->placeholder('Diamond, Emerald…')->maxLength(64),
                 ]),
+                Forms\Components\Section::make('Diamond certificate')->columns(3)->collapsible()
+                    ->collapsed(fn (?Product $record) => ! $record?->hasCertificate())
+                    ->description('Optional. Shown on the product page with the lab\'s small logo. Labs are listed in Catalogue → Certificate labs.')
+                    ->schema([
+                        Forms\Components\Select::make('certificate_lab_id')->label('Lab')->relationship('certificateLab', 'name', fn ($query) => $query->where('is_active', true)->orderBy('sort_order'))
+                            ->getOptionLabelFromRecordUsing(fn (\App\Models\CertificateLab $record) => $record->short_name ? "{$record->short_name} — {$record->name}" : $record->name)
+                            ->searchable()->preload()->createOptionForm(\App\Filament\Resources\CertificateLabResource::fields()),
+                        Forms\Components\TextInput::make('certificate_number')->label('Certificate no.')->maxLength(64),
+                        Forms\Components\FileUpload::make('certificate_file')->label('Certificate copy (PDF / image)')->disk('public')->directory('certificates')
+                            ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png', 'image/webp'])->maxSize(8192)->openable()->downloadable(),
+                        Forms\Components\TextInput::make('diamond_carat')->label('Total carat')->numeric()->minValue(0)->step(0.001)->suffix('ct'),
+                        Forms\Components\Select::make('diamond_shape')->label('Shape')->options(array_combine($shapes = ['Round', 'Princess', 'Oval', 'Emerald', 'Cushion', 'Pear', 'Marquise', 'Radiant', 'Asscher', 'Heart', 'Baguette', 'Mixed'], $shapes)),
+                        Forms\Components\Select::make('diamond_color')->label('Colour')->options(array_combine($c = ['D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'D-F', 'G-H', 'I-J', 'Fancy'], $c)),
+                        Forms\Components\Select::make('diamond_clarity')->label('Clarity')->options(array_combine($c = ['FL', 'IF', 'VVS1', 'VVS2', 'VS1', 'VS2', 'SI1', 'SI2', 'I1', 'I2', 'I3', 'VVS', 'VS', 'SI'], $c)),
+                        Forms\Components\Select::make('diamond_cut')->label('Cut')->options(array_combine($c = ['Excellent', 'Ideal', 'Very Good', 'Good', 'Fair'], $c)),
+                    ]),
                 Forms\Components\Section::make('Images')->schema([
                     Forms\Components\FileUpload::make('images')->multiple()->reorderable()->image()->imageEditor()
                         ->disk('public')->directory('products')->maxSize(8192)->maxFiles(8)

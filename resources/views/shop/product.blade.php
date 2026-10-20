@@ -74,6 +74,10 @@
                 <p class="border-t border-line px-5 py-2.5 text-xs text-muted">{{ __('shop.breakdown.vat_at_checkout', ['vat' => rtrim(rtrim($price->vatPercent(), '0'), '.')]) }}</p>
             </div>
 
+            @if ($product->hasCertificate())
+                @include('partials.certificate', ['product' => $product])
+            @endif
+
             @if ($product->inStock())
                 <form id="add-to-bag" method="POST" action="{{ route('cart.add', $product) }}" class="mt-6 flex gap-3">
                     @csrf

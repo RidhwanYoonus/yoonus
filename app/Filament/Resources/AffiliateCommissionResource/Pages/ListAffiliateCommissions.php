@@ -7,6 +7,8 @@ use Filament\Resources\Pages\ListRecords;
 
 class ListAffiliateCommissions extends ListRecords
 {
+    use \App\Filament\Concerns\ExportsTable;
+
     protected static string $resource = AffiliateCommissionResource::class;
 
     protected function getHeaderWidgets(): array

@@ -67,6 +67,18 @@ return [
         'making_fixed' => 'Making AED :amount',
     ],
 
+    'certificate' => [
+        'title' => 'Diamond certificate',
+        'lab' => 'Lab',
+        'number' => 'Certificate no.',
+        'carat' => 'Total carat',
+        'shape' => 'Shape',
+        'color' => 'Colour',
+        'clarity' => 'Clarity',
+        'cut' => 'Cut',
+        'verify' => 'Verify on the lab website',
+        'view' => 'View certificate',
+    ],
     'breakdown' => [
         'title' => 'Price breakdown',
         'gold' => 'Gold value (:weight g × AED :rate)',

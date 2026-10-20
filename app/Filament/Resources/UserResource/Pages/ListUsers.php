@@ -8,6 +8,8 @@ use Filament\Resources\Pages\ListRecords;
 
 class ListUsers extends ListRecords
 {
+    use \App\Filament\Concerns\ExportsTable;
+
     protected static string $resource = UserResource::class;
 
     protected function getHeaderActions(): array
