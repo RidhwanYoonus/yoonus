@@ -231,7 +231,7 @@ class AffiliateTest extends TestCase
         $as->post('/affiliate/page', ['markup_mode' => 'amount', 'markup_amount' => 500])->assertSessionHasErrors(['markup_amount' => 'The most the shop allows here is 100.']);
 
         $this->affiliate->fresh()->update(['max_markup_amount' => 0, 'max_making_markup_percent' => 0, 'max_fixed_markup_percent' => 0]);
-        $this->actingAs($this->affiliate->user->fresh())->get('/affiliate')->assertSee('Mark-up is not switched on');
+        $this->actingAs($this->affiliate->user->fresh())->get('/affiliate')->assertSee('no limit');   // maximum 0 = no limit
     }
 
     public function test_commission_can_be_a_fixed_amount_per_gram_on_gold_items(): void
@@ -284,5 +284,26 @@ class AffiliateTest extends TestCase
         $this->checkout();
         $this->assertSame('12.00', AffiliateCommission::where('basis', 'piece')->sole()->amount);   // watch
         $this->assertSame('10.00', AffiliateCommission::where('basis', 'making')->sole()->amount);  // band still 10% of making
+    }
+
+    public function test_white_page_markup_per_gram_and_per_piece_and_zero_max_means_no_limit(): void
+    {
+        // Band 5 g: + AED 3/g = 15 → 1,115. Watch: + AED 40 per piece → 540.
+        $this->affiliate->update(['markup_mode' => 'percent', 'making_markup_type' => 'per_gram', 'making_markup_per_gram' => 3, 'max_making_markup_per_gram' => 0,
+            'fixed_markup_type' => 'per_piece', 'fixed_markup_amount' => 40, 'max_fixed_markup_amount' => 25]);
+        $this->get('/w/HUDA10')->assertSee('1,115.00')->assertSee('525.00');   // per piece capped at AED 25; per gram has no limit
+        $this->affiliate->update(['max_fixed_markup_amount' => 0]);
+        $this->get('/w/HUDA10')->assertSee('540.00');
+        $order = $this->checkout();
+        $this->assertSame(['15.00', '40.00'], AffiliateCommission::orderBy('id')->pluck('markup_amount')->all());
+
+        $as = $this->actingAs($this->affiliate->user->fresh());
+        $as->get('/affiliate')->assertSee('AED per gram')->assertSee('AED per piece');
+        $as->post('/affiliate/page', ['markup_mode' => 'percent', 'making_markup_type' => 'per_gram', 'making_markup_per_gram' => 999,
+            'fixed_markup_type' => 'percent', 'fixed_markup_percent' => 15])->assertSessionHasErrors('fixed_markup_percent')   // max 10%
+            ->assertSessionDoesntHaveErrors('making_markup_per_gram');                                                        // max 0 = no limit
+        $as->post('/affiliate/page', ['markup_mode' => 'percent', 'making_markup_type' => 'per_gram', 'making_markup_per_gram' => 999,
+            'fixed_markup_type' => 'percent', 'fixed_markup_percent' => 8])->assertSessionHasNoErrors();
+        $this->assertSame('999.00', $this->affiliate->fresh()->making_markup_per_gram);
     }
 }

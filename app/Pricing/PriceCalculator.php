@@ -32,7 +32,7 @@ final class PriceCalculator
         $gold = Money::divRound($in->weightMg * $rateFils, 1000);
         $making = $in->chargeType === 'PER_PIECE' ? $in->chargeValue : Money::percentOf($gold, $in->chargeValue);
         $wastage = Money::percentOf($gold, $in->wastageBp);
-        $making += $markup->onMaking($making);
+        $making += $markup->onMaking($making, $in->weightMg);
         $base = $gold + $making + $in->stoneFils + $wastage;
 
         // Undiscounted reference price (for strikethrough display).

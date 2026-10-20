@@ -21,6 +21,8 @@ class Affiliate extends Model
             'fixed_commission_percent' => 'decimal:2',
             'making_markup_percent' => 'decimal:2', 'fixed_markup_percent' => 'decimal:2', 'markup_amount' => 'decimal:2',
             'max_making_markup_percent' => 'decimal:2', 'max_fixed_markup_percent' => 'decimal:2', 'max_markup_amount' => 'decimal:2',
+            'making_markup_per_gram' => 'decimal:2', 'max_making_markup_per_gram' => 'decimal:2',
+            'fixed_markup_amount' => 'decimal:2', 'max_fixed_markup_amount' => 'decimal:2',
             'white_page_enabled' => 'boolean',
             'is_active' => 'boolean',
             'coupon_discount_percent' => 'decimal:2',
@@ -156,12 +158,25 @@ class Affiliate extends Model
         if (! $this->white_page_enabled || ! $this->is_active) {
             return \App\Pricing\Markup::none();
         }
-        $cap = fn (string $value, string $max) => max(0, min(Money::scaled($this->{$value}, 2), Money::scaled($this->{$max}, 2)));
+        // Maximum 0 = no limit.
+        $cap = function (string $value, string $max) {
+            $v = max(0, Money::scaled($this->{$value} ?? 0, 2));
+            $m = Money::scaled($this->{$max} ?? 0, 2);
+
+            return $m > 0 ? min($v, $m) : $v;
+        };
         if ($this->markup_mode === 'amount') {
             return new \App\Pricing\Markup(amountFils: $cap('markup_amount', 'max_markup_amount'));
         }
+        $perGram = $this->making_markup_type === 'per_gram';
+        $perPiece = $this->fixed_markup_type === 'per_piece';
 
-        return new \App\Pricing\Markup(makingBp: $cap('making_markup_percent', 'max_making_markup_percent'), fixedBp: $cap('fixed_markup_percent', 'max_fixed_markup_percent'));
+        return new \App\Pricing\Markup(
+            makingBp: $perGram ? 0 : $cap('making_markup_percent', 'max_making_markup_percent'),
+            fixedBp: $perPiece ? 0 : $cap('fixed_markup_percent', 'max_fixed_markup_percent'),
+            perGramFils: $perGram ? $cap('making_markup_per_gram', 'max_making_markup_per_gram') : 0,
+            fixedPieceFils: $perPiece ? $cap('fixed_markup_amount', 'max_fixed_markup_amount') : 0,
+        );
     }
 
     /** Whole commission rule in one line, for the admin list and the affiliate's dashboard. */
@@ -192,12 +207,14 @@ class Affiliate extends Model
     public function markupSummary(): string
     {
         $m = $this->effectiveMarkup();
-        $n = fn (int $v) => rtrim(rtrim(Money::toAed($v), '0'), '.');
-        if ($m->amountFils > 0) {
+        $n = fn (int $v) => rtrim(rtrim(Money::toAed($v), '0'), '.') ?: '0';
+        if ($this->markup_mode === 'amount') {
             return __('shop.affiliate.summary_amount', ['amount' => Money::format($m->amountFils)]);
         }
+        $gold = $m->perGramFils > 0 ? __('shop.affiliate.per_gram_label', ['amount' => 'AED '.$n($m->perGramFils)]) : __('shop.affiliate.making_label', ['pct' => $n($m->makingBp)]);
+        $fixed = $m->fixedPieceFils > 0 ? __('shop.affiliate.fixed_per_piece', ['amount' => 'AED '.$n($m->fixedPieceFils)]) : __('shop.affiliate.fixed_percent', ['pct' => $n($m->fixedBp)]);
 
-        return __('shop.affiliate.summary_percent', ['making' => $n($m->makingBp), 'fixed' => $n($m->fixedBp)]);
+        return __('shop.affiliate.by_type', ['gold' => $gold, 'fixed' => $fixed]);
     }
 
     /** All amounts in fils. */

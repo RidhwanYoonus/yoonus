@@ -92,37 +92,8 @@ class AffiliateResource extends Resource
                     ]),
                 ]),
             Forms\Components\Section::make('White page (own price page)')->columnSpanFull()->columns(2)
-                ->description('Their own link where every price includes their mark-up. They keep the full mark-up on top of the commission. The affiliate can change the mark-up on their dashboard, up to your maximum.')
-                ->schema([
-                    Forms\Components\Toggle::make('white_page_enabled')->label('Allow white page')->live()->columnSpanFull(),
-                    Forms\Components\ToggleButtons::make('markup_mode')->label('How is the mark-up added?')->inline()->required()->live()->default('percent')->columnSpanFull()
-                        ->visible(fn (Forms\Get $get) => $get('white_page_enabled'))
-                        ->options(['percent' => 'Different for each item type (%)', 'amount' => 'Same amount per piece for every item']),
-                    Forms\Components\Fieldset::make('By-weight items: % of making charge')->columns(2)->columnSpan(1)
-                        ->visible(fn (Forms\Get $get) => $get('white_page_enabled') && $get('markup_mode') !== 'amount')->schema([
-                            Forms\Components\TextInput::make('making_markup_percent')->label('In use')->numeric()->minValue(0)->suffix('%')->default(0)->lte('max_making_markup_percent'),
-                            Forms\Components\TextInput::make('max_making_markup_percent')->label('Maximum allowed')->numeric()->minValue(0)->maxValue(500)->suffix('%')
-                                ->default(fn () => Settings::get('affiliate_default_max_making_markup', 30)),
-                            Forms\Components\Placeholder::make('making_markup_hint')->hiddenLabel()->columnSpanFull()
-                                ->content('Example: 20% on a ring with AED 300 making shows AED 60 more. The gold value is never marked up.'),
-                        ]),
-                    Forms\Components\Fieldset::make('Fixed-price items: % of price')->columns(2)->columnSpan(1)
-                        ->visible(fn (Forms\Get $get) => $get('white_page_enabled') && $get('markup_mode') !== 'amount')->schema([
-                            Forms\Components\TextInput::make('fixed_markup_percent')->label('In use')->numeric()->minValue(0)->suffix('%')->default(0)->lte('max_fixed_markup_percent'),
-                            Forms\Components\TextInput::make('max_fixed_markup_percent')->label('Maximum allowed')->numeric()->minValue(0)->maxValue(100)->suffix('%')
-                                ->default(fn () => Settings::get('affiliate_default_max_markup', 10)),
-                            Forms\Components\Placeholder::make('fixed_markup_hint')->hiddenLabel()->columnSpanFull()
-                                ->content('Example: 5% on a fixed-price piece of AED 2,000 shows AED 100 more.'),
-                        ]),
-                    Forms\Components\Fieldset::make('Amount added to each piece')->columns(2)->columnSpanFull()
-                        ->visible(fn (Forms\Get $get) => $get('white_page_enabled') && $get('markup_mode') === 'amount')->schema([
-                            Forms\Components\TextInput::make('markup_amount')->label('In use')->numeric()->minValue(0)->prefix('AED')->suffix('per piece')->default(0)->lte('max_markup_amount'),
-                            Forms\Components\TextInput::make('max_markup_amount')->label('Maximum allowed')->numeric()->minValue(0)->prefix('AED')->suffix('per piece')
-                                ->default(fn () => Settings::get('affiliate_default_max_markup_amount', 100)),
-                            Forms\Components\Placeholder::make('amount_markup_hint')->hiddenLabel()->columnSpanFull()
-                                ->content('Example: AED 50 per piece — 1 gold ring + 2 diamond earrings show AED 50 more each.'),
-                        ]),
-                ]),
+                ->description('Their own link where every price includes their mark-up. They keep the full mark-up on top of the commission. The affiliate can change the mark-up on their dashboard, up to your maximum. Maximum 0 = no limit.')
+                ->schema(self::markupFields()),
             Forms\Components\Section::make('Growth tools')->columnSpanFull()->columns(3)->schema([
                 Forms\Components\TextInput::make('coupon_discount_percent')->label('Customer discount with their code')->numeric()->minValue(0)->maxValue(50)->suffix('%')->default(0)
                     ->helperText('0 = off. Customers type the affiliate code at checkout and get this discount; the order counts for the affiliate and the discount is taken from the affiliate\'s commission on that order (shown in the commission report and on the order).'),
@@ -134,6 +105,55 @@ class AffiliateResource extends Resource
             ]),
             Forms\Components\Textarea::make('notes')->label('Internal notes')->rows(2)->columnSpanFull(),
         ]);
+    }
+
+    /** White-page mark-up, laid out like the commission: per item type (two options each) or one amount per piece. */
+    private static function markupFields(): array
+    {
+        $on = fn (Forms\Get $get) => (bool) $get('white_page_enabled');
+        $byType = fn (Forms\Get $get) => $on($get) && $get('markup_mode') !== 'amount';
+        // "In use" may not go above the maximum, unless the maximum is 0 (no limit).
+        $capped = fn (string $max) => fn (Forms\Get $get) => (float) $get($max) > 0 ? 'max:'.(float) $get($max) : 'min:0';
+        $pair = fn (string $value, string $max, string $prefix, string $suffix, $visible, ?string $defaultKey = null) => [
+            Forms\Components\TextInput::make($value)->label('In use')->numeric()->minValue(0)->default(0)->prefix($prefix ?: null)->suffix($suffix)
+                ->rule($capped($max))->visible($visible),
+            Forms\Components\TextInput::make($max)->label('Maximum allowed')->numeric()->minValue(0)->prefix($prefix ?: null)->suffix($suffix)
+                ->default(fn () => $defaultKey ? Settings::get($defaultKey, 0) : 0)
+                ->helperText('0 = no limit')->visible($visible),
+        ];
+
+        return [
+            Forms\Components\Toggle::make('white_page_enabled')->label('Allow white page')->live()->columnSpanFull(),
+            Forms\Components\ToggleButtons::make('markup_mode')->label('How is the mark-up added?')->inline()->required()->live()->default('percent')->columnSpanFull()
+                ->visible($on)->options(['percent' => 'Different for each item type', 'amount' => 'Same amount per piece for every item']),
+
+            Forms\Components\Fieldset::make('By-weight items: mark-up as')->columns(2)->columnSpan(1)->visible($byType)->schema([
+                Forms\Components\ToggleButtons::make('making_markup_type')->hiddenLabel()->inline()->live()->default('percent')->columnSpanFull()
+                    ->options(['percent' => '% of making charge', 'per_gram' => 'Fixed AED per gram']),
+                ...$pair('making_markup_percent', 'max_making_markup_percent', '', '%', fn (Forms\Get $get) => $get('making_markup_type') !== 'per_gram', 'affiliate_default_max_making_markup'),
+                ...$pair('making_markup_per_gram', 'max_making_markup_per_gram', 'AED', 'per gram', fn (Forms\Get $get) => $get('making_markup_type') === 'per_gram'),
+                Forms\Components\Placeholder::make('making_markup_hint')->hiddenLabel()->columnSpanFull()
+                    ->content(fn (Forms\Get $get) => $get('making_markup_type') === 'per_gram'
+                        ? 'Example: AED 3 per gram on a 12.5 g chain shows AED 37.50 more.'
+                        : 'Example: 20% on a ring with AED 300 making shows AED 60 more. The gold value is never marked up.'),
+            ]),
+            Forms\Components\Fieldset::make('Fixed-price items: mark-up as')->columns(2)->columnSpan(1)->visible($byType)->schema([
+                Forms\Components\ToggleButtons::make('fixed_markup_type')->hiddenLabel()->inline()->live()->default('percent')->columnSpanFull()
+                    ->options(['percent' => '% of price', 'per_piece' => 'Fixed AED per piece']),
+                ...$pair('fixed_markup_percent', 'max_fixed_markup_percent', '', '%', fn (Forms\Get $get) => $get('fixed_markup_type') !== 'per_piece', 'affiliate_default_max_markup'),
+                ...$pair('fixed_markup_amount', 'max_fixed_markup_amount', 'AED', 'per piece', fn (Forms\Get $get) => $get('fixed_markup_type') === 'per_piece'),
+                Forms\Components\Placeholder::make('fixed_markup_hint')->hiddenLabel()->columnSpanFull()
+                    ->content(fn (Forms\Get $get) => $get('fixed_markup_type') === 'per_piece'
+                        ? 'Example: AED 25 per piece on 2 diamond pendants shows AED 25 more each.'
+                        : 'Example: 5% on a fixed-price piece of AED 2,000 shows AED 100 more.'),
+            ]),
+            Forms\Components\Fieldset::make('Amount added to each piece (any item)')->columns(2)->columnSpanFull()
+                ->visible(fn (Forms\Get $get) => $on($get) && $get('markup_mode') === 'amount')->schema([
+                    ...$pair('markup_amount', 'max_markup_amount', 'AED', 'per piece', fn () => true, 'affiliate_default_max_markup_amount'),
+                    Forms\Components\Placeholder::make('amount_markup_hint')->hiddenLabel()->columnSpanFull()
+                        ->content('Example: AED 50 per piece — 1 gold ring + 2 diamond earrings show AED 50 more each.'),
+                ]),
+        ];
     }
 
     /** Customer sent by the affiliate bought at the counter: give the commission now. */
