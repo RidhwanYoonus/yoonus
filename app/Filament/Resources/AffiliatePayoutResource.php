@@ -58,7 +58,7 @@ class AffiliatePayoutResource extends Resource
                 $withAffiliate ? Tables\Filters\SelectFilter::make('affiliate_id')->label('Affiliate')->multiple()
                     ->options(fn () => Affiliate::with('user')->get()->mapWithKeys(fn ($a) => [$a->id => $a->code.' — '.$a->user?->name])) : null,
                 Tables\Filters\Filter::make('paid_at')->form([Forms\Components\DatePicker::make('from'), Forms\Components\DatePicker::make('until')])
-                    ->query(fn (Builder $q, array $data) => $q
+                    ->query(fn (Builder $query, array $data) => $query
                         ->when($data['from'] ?? null, fn ($q, $v) => $q->whereDate('paid_at', '>=', $v))
                         ->when($data['until'] ?? null, fn ($q, $v) => $q->whereDate('paid_at', '<=', $v))),
             ])))

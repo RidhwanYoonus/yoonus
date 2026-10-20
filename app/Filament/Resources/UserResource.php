@@ -61,6 +61,9 @@ class UserResource extends Resource
             Tables\Columns\TextColumn::make('created_at')->date()->label('Joined'),
         ])->filters([
         ])->actions([
+            Tables\Actions\Action::make('activity')->label('Activity')->icon('heroicon-o-finger-print')->color('gray')
+                ->visible(fn () => \App\Support\StaffAccess::current('activity'))
+                ->url(fn (User $record) => \App\Filament\Resources\ActivityLogResource::urlFor($record->id)),
             Tables\Actions\Action::make('points')->visible(fn () => \App\Support\StaffAccess::current('customers', 'edit'))->label('Adjust points')->icon('heroicon-o-star')
                 ->form([Forms\Components\TextInput::make('points')->integer()->required()->helperText('Negative to deduct')])
                 ->action(function (User $record, array $data) {

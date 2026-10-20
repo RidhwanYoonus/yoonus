@@ -82,7 +82,7 @@ class AffiliateCommissionResource extends Resource
                 Tables\Filters\SelectFilter::make('status')->options(AffiliateCommission::STATUSES)->multiple(),
                 Tables\Filters\SelectFilter::make('basis')->label('Item type')->options(['making' => 'By-weight (% of making)', 'gram' => 'By-weight (AED per gram)', 'total' => 'Fixed price (% of total)', 'piece' => 'Per piece', 'team' => 'Team (recruits\' sales)']),
                 Tables\Filters\Filter::make('created_at')->form([Forms\Components\DatePicker::make('from'), Forms\Components\DatePicker::make('until')])
-                    ->query(fn (Builder $q, array $data) => $q
+                    ->query(fn (Builder $query, array $data) => $query
                         ->when($data['from'] ?? null, fn ($q, $v) => $q->whereDate('created_at', '>=', $v))
                         ->when($data['until'] ?? null, fn ($q, $v) => $q->whereDate('created_at', '<=', $v))),
             ])))

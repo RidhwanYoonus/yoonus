@@ -21,10 +21,10 @@ class DataCleanup
         'affiliates' => ['Affiliate data', 'Affiliates, their commissions, collections, adjustments, clicks, price-lock links, applications, boosters / targets and their coupon codes. Their login accounts stay (as customers).',
             ['affiliate_commissions', 'affiliate_payouts', 'affiliate_adjustments', 'affiliate_clicks', 'affiliate_price_locks', 'affiliate_applications', 'affiliate_campaigns', 'affiliates']],
         'customers' => ['Customer accounts', 'Customer logins (not admin or staff) with their addresses, wishlists, reviews, loyalty points and ID photos. Their past orders stay, without the account link.',
-            ['addresses', 'wishlists', 'loyalty_ledger', 'reviews']],
+            ['addresses', 'wishlists', 'loyalty_ledger', 'reviews', 'activity_log']],
         'enquiries' => ['Enquiries', 'Video-call requests, store-visit bookings, gold price alerts and newsletter sign-ups.',
             ['video_call_requests', 'store_visits', 'gold_price_alerts', 'newsletter_subscribers']],
-        'logs' => ['Logs', 'Messages sent log, security log and price recalculation log.', ['notification_log', 'security_events', 'price_recalc_log']],
+        'logs' => ['Logs', 'Messages sent log, security log, visitor activity log and price recalculation log.', ['notification_log', 'security_events', 'activity_log', 'price_recalc_log']],
         'images' => ['Unused images', 'Photo files no product, review, campaign, lab or certificate uses any more (e.g. photos of deleted products). Images in use are kept.', []],
     ];
 
@@ -74,7 +74,7 @@ class DataCleanup
                 foreach ($tables as $table) {
                     if (Schema::hasTable($table)) {
                         $rows = DB::table($table)->delete();
-                        $count += in_array($table, ['orders', 'carts', 'affiliates', 'notification_log', 'security_events', 'video_call_requests', 'store_visits', 'gold_price_alerts', 'newsletter_subscribers', 'price_recalc_log', 'wishlists'], true) ? $rows : 0;
+                        $count += in_array($table, ['orders', 'carts', 'affiliates', 'notification_log', 'security_events', 'activity_log', 'video_call_requests', 'store_visits', 'gold_price_alerts', 'newsletter_subscribers', 'price_recalc_log', 'wishlists'], true) ? $rows : 0;
                     }
                 }
                 if ($group === 'orders') {
@@ -143,7 +143,7 @@ class DataCleanup
             'orders' => $n('orders'), 'carts' => $n('carts'), 'affiliates' => $n('affiliates'),
             'customers' => self::customers(DB::table('users'))->count(),
             'enquiries' => $n('video_call_requests') + $n('store_visits') + $n('gold_price_alerts') + $n('newsletter_subscribers'),
-            'logs' => $n('notification_log') + $n('security_events') + $n('price_recalc_log'),
+            'logs' => $n('notification_log') + $n('security_events') + $n('activity_log') + $n('price_recalc_log'),
             'images' => count(self::unusedImages()),
         ];
     }

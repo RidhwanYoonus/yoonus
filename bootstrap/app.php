@@ -14,7 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->web(prepend: [HandleRedirects::class], append: [SetLocale::class, \App\Http\Middleware\TrackAffiliate::class, SecurityHeaders::class]);
+        $middleware->web(prepend: [HandleRedirects::class], append: [SetLocale::class, \App\Http\Middleware\TrackAffiliate::class, \App\Http\Middleware\LogActivity::class, SecurityHeaders::class]);
         // Signing out from an old tab must never fail with "Page expired"; a forced sign-out is harmless.
         $middleware->validateCsrfTokens(except: ['webhooks/*', 'logout']);
         $middleware->trustProxies(at: '*');   // behind Cloudflare / load balancer

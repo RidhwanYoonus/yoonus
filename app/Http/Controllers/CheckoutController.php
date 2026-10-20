@@ -163,6 +163,7 @@ class CheckoutController extends Controller
 
         $this->cart->markConverted($order->id);
         $request->session()->push('orders', $order->number);
+        $request->attributes->set('activity_order', $order->number);   // for the Activity log
 
         if (in_array($order->payment_method, ['cod', 'giftcard'], true)) {
             return redirect()->route('checkout.complete', $order->number);

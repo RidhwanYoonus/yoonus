@@ -80,6 +80,8 @@ return [
         'policy_emirate' => 'Dubai',
         'policy_report_hours' => 48,
         'admin_idle_minutes' => 30,
+        'activity_log_enabled' => true,          // Customers → Activity log / Live visitors
+        'activity_log_days' => 90,               // 0 = keep for ever
         'stripe_secret_key' => null,
         'stripe_webhook_secret' => null,
         'tabby_enabled' => true,

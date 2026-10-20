@@ -328,4 +328,14 @@ class AffiliateTest extends TestCase
         $this->assertTrue($this->affiliate->fresh()->is_active);
         $this->assertTrue((bool) \App\Models\Coupon::where('code', 'HUDA10')->value('is_active'));
     }
+
+    public function test_collections_date_filter_works(): void
+    {
+        \App\Models\AffiliatePayout::create(['affiliate_id' => $this->affiliate->id, 'amount' => 10, 'paid_at' => now()->subDays(20)]);
+        \App\Models\AffiliatePayout::create(['affiliate_id' => $this->affiliate->id, 'amount' => 20, 'paid_at' => now()]);
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('admin'));
+        \Livewire\Livewire::test(\App\Filament\Resources\AffiliatePayoutResource\Pages\ListAffiliatePayouts::class)
+            ->assertCountTableRecords(2)->set('tableFilters.paid_at.from', now()->subDays(5)->toDateString())->assertCountTableRecords(1);
+    }
 }

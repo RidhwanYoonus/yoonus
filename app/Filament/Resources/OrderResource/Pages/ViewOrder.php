@@ -22,6 +22,9 @@ class ViewOrder extends ViewRecord
     {
         return [
             OrderResource::invoiceAction(),
+            Actions\Action::make('activity')->label('Customer activity')->icon('heroicon-o-finger-print')->color('gray')
+                ->visible(fn () => \App\Support\StaffAccess::current('activity'))
+                ->url(fn () => \App\Filament\Resources\ActivityLogResource::urlFor($this->record->user_id, $this->record->user_id ? null : $this->record->email)),
             Actions\Action::make('undoStatus')->label('Undo last status')->icon('heroicon-o-arrow-uturn-left')->color('gray')
                 ->visible(fn (Order $record) => (bool) Auth::user()?->is_admin && app(OrderService::class)->revertTarget($record))
                 ->modalHeading('Undo last status change')

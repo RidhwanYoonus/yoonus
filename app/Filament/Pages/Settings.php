@@ -162,6 +162,10 @@ class Settings extends Page implements HasForms
                     ->visible(fn () => (bool) auth()->user()?->is_admin)->schema([
                     Forms\Components\Toggle::make('admin_two_factor')->label('Two-step sign-in for admin & staff')->inline(false)
                         ->helperText('After the password, a 6-digit code is emailed (and WhatsApped if the staff member has a mobile number). Press "Send test email" first so you are not locked out. Locked out? Run: php artisan shop:two-factor off'),
+                    Forms\Components\Toggle::make('activity_log_enabled')->label('Record visitor activity')->inline(false)
+                        ->helperText('Customers → Live visitors and Activity log: every page and step of customers, guests and staff, with IP and device.'),
+                    Forms\Components\TextInput::make('activity_log_days')->label('Keep activity log for')->numeric()->minValue(0)->maxValue(3650)->suffix('days')
+                        ->helperText('Older entries are deleted every night. 0 = keep for ever (the table grows quickly on a busy shop).'),
                     Forms\Components\TextInput::make('admin_idle_minutes')->label('Sign out admin after inactivity')->numeric()->minValue(0)->maxValue(720)->suffix('minutes')
                         ->helperText('0 = never. 15–30 minutes is recommended, especially on a shared shop computer.'),
                     Forms\Components\Placeholder::make('security_notes')->hiddenLabel()->columnSpanFull()->content(new \Illuminate\Support\HtmlString(
