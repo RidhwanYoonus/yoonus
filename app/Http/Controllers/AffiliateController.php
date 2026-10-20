@@ -56,10 +56,11 @@ class AffiliateController extends Controller
         $data = $request->validate([
             'display_name' => 'nullable|string|max:80',
             'markup_mode' => 'required|in:percent,amount',
-            'making_markup_percent' => ['required_if:markup_mode,percent', 'nullable', 'numeric', 'min:0', 'max:'.(float) $affiliate->max_making_markup_percent],
-            'fixed_markup_percent' => ['required_if:markup_mode,percent', 'nullable', 'numeric', 'min:0', 'max:'.(float) $affiliate->max_fixed_markup_percent],
-            'markup_amount' => ['required_if:markup_mode,amount', 'nullable', 'numeric', 'min:0', 'max:'.(float) $affiliate->max_markup_amount],
-        ]);
+            'making_markup_percent' => ['nullable', 'numeric', 'min:0', 'max:'.(float) $affiliate->max_making_markup_percent],
+            'fixed_markup_percent' => ['nullable', 'numeric', 'min:0', 'max:'.(float) $affiliate->max_fixed_markup_percent],
+            'markup_amount' => ['nullable', 'numeric', 'min:0', 'max:'.(float) $affiliate->max_markup_amount],
+        ], collect(['making_markup_percent', 'fixed_markup_percent', 'markup_amount'])
+            ->mapWithKeys(fn ($f) => ["{$f}.max" => __('shop.affiliate.over_max', ['max' => ':max'])])->all());
         $affiliate->update([
             'display_name' => $data['display_name'] ?? null,
             'markup_mode' => $data['markup_mode'],

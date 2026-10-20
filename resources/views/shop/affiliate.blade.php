@@ -34,22 +34,25 @@
                     <input readonly value="{{ $affiliate->whitePageLink() }}" class="input text-xs" dir="ltr" onclick="this.select()">
                     <button type="button" class="btn-outline px-4" @click="copy(@js($affiliate->whitePageLink()), 'w')" x-text="copied === 'w' ? '✓' : @js(__('shop.affiliate.copy'))"></button>
                 </div>
-                @php($num = fn ($v) => rtrim(rtrim((string) $v, '0'), '.'))
+                @php($num = fn ($v) => ((float) $v == (int) $v) ? (string) (int) $v : rtrim(rtrim(number_format((float) $v, 2, '.', ''), '0'), '.'))
+                @php($canPercent = (float) $affiliate->max_making_markup_percent > 0 || (float) $affiliate->max_fixed_markup_percent > 0)
+                @php($canAmount = (float) $affiliate->max_markup_amount > 0)
                 <label class="mt-4 grid gap-1 text-sm">{{ __('shop.affiliate.display_name') }}
                     <input name="display_name" value="{{ old('display_name', $affiliate->display_name) }}" maxlength="80" class="input">
                 </label>
-                <div class="mt-4" x-data="{ mode: @js(old('markup_mode', $affiliate->markup_mode ?: 'percent')) }">
+                <div class="mt-4" x-data="{ mode: @js(old('markup_mode', $canAmount && ! $canPercent ? 'amount' : ($canPercent && ! $canAmount ? 'percent' : ($affiliate->markup_mode ?: 'percent')))) }">
                     <p class="text-sm">{{ __('shop.affiliate.markup') }}</p>
                     <div class="mt-2 flex flex-wrap gap-2">
-                        <label class="flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm" :class="mode === 'percent' ? 'border-gold-500 bg-gold-300/20' : 'border-line'"><input type="radio" name="markup_mode" value="percent" x-model="mode" class="accent-gold-600"> {{ __('shop.affiliate.mode_percent') }}</label>
-                        <label class="flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm" :class="mode === 'amount' ? 'border-gold-500 bg-gold-300/20' : 'border-line'"><input type="radio" name="markup_mode" value="amount" x-model="mode" class="accent-gold-600"> {{ __('shop.affiliate.mode_amount') }}</label>
+                        @if ($canPercent)<label class="flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm" :class="mode === 'percent' ? 'border-gold-500 bg-gold-300/20' : 'border-line'"><input type="radio" name="markup_mode" value="percent" x-model="mode" class="accent-gold-600"> {{ __('shop.affiliate.mode_percent') }}</label>@endif
+                        @if ($canAmount)<label class="flex cursor-pointer items-center gap-2 rounded-full border px-4 py-2 text-sm" :class="mode === 'amount' ? 'border-gold-500 bg-gold-300/20' : 'border-line'"><input type="radio" name="markup_mode" value="amount" x-model="mode" class="accent-gold-600"> {{ __('shop.affiliate.mode_amount') }}</label>@endif
+                        @unless ($canPercent || $canAmount)<p class="text-sm text-muted">{{ __('shop.affiliate.no_markup_allowed') }}</p>@endunless
                     </div>
                     <div class="mt-3 grid gap-3 sm:grid-cols-2" x-show="mode === 'percent'">
                         <label class="grid gap-1 text-sm">{{ __('shop.affiliate.making_markup') }} <span class="text-xs text-muted">{{ __('shop.affiliate.max', ['max' => $num($affiliate->max_making_markup_percent).'%']) }}</span>
-                            <span class="flex items-center gap-2"><input name="making_markup_percent" type="number" step="0.01" min="0" max="{{ (float) $affiliate->max_making_markup_percent }}" value="{{ old('making_markup_percent', (float) $affiliate->making_markup_percent) }}" class="input" dir="ltr"> %</span>
+                            <span class="flex items-center gap-2"><input name="making_markup_percent" @disabled((float) $affiliate->max_making_markup_percent <= 0) type="number" step="0.01" min="0" max="{{ (float) $affiliate->max_making_markup_percent }}" value="{{ old('making_markup_percent', (float) $affiliate->making_markup_percent) }}" class="input" dir="ltr"> %</span>
                         </label>
                         <label class="grid gap-1 text-sm">{{ __('shop.affiliate.fixed_markup') }} <span class="text-xs text-muted">{{ __('shop.affiliate.max', ['max' => $num($affiliate->max_fixed_markup_percent).'%']) }}</span>
-                            <span class="flex items-center gap-2"><input name="fixed_markup_percent" type="number" step="0.01" min="0" max="{{ (float) $affiliate->max_fixed_markup_percent }}" value="{{ old('fixed_markup_percent', (float) $affiliate->fixed_markup_percent) }}" class="input" dir="ltr"> %</span>
+                            <span class="flex items-center gap-2"><input name="fixed_markup_percent" @disabled((float) $affiliate->max_fixed_markup_percent <= 0) type="number" step="0.01" min="0" max="{{ (float) $affiliate->max_fixed_markup_percent }}" value="{{ old('fixed_markup_percent', (float) $affiliate->fixed_markup_percent) }}" class="input" dir="ltr"> %</span>
                         </label>
                         <p class="text-xs text-muted sm:col-span-2">{{ __('shop.affiliate.percent_example') }}</p>
                     </div>

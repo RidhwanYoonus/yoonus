@@ -268,6 +268,8 @@ return [
         'mode_percent' => 'Percentage', 'mode_amount' => 'Same amount on every piece',
         'making_markup' => 'Items priced by weight: % of making charge', 'fixed_markup' => 'Fixed-price items: % of price',
         'amount_markup' => 'Amount added to each piece', 'max' => 'up to :max',
+        'over_max' => 'The most the shop allows here is :max.',
+        'no_markup_allowed' => 'Mark-up is not switched on for your account yet. Please contact the shop.',
         'percent_example' => 'Example: 20% on a ring with AED 300 making shows AED 60 more. 5% on a fixed-price piece of AED 2,000 shows AED 100 more. The gold value is never marked up.',
         'amount_example' => 'Example: AED 50 adds AED 50 (+ VAT) to every piece, whatever its price.',
         'summary_percent' => ':making% of making on gold items · :fixed% on fixed-price items', 'summary_amount' => ':amount added to each piece',

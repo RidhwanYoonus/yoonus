@@ -218,4 +218,19 @@ class AffiliateTest extends TestCase
         $this->get('/product/band')->assertSee('1,100.00');   // preview only; not tracked as a customer visit
         $this->assertNull(session('aff'));
     }
+
+    public function test_old_affiliates_get_an_amount_limit_and_form_explains_limits(): void
+    {
+        $this->affiliate->update(['max_markup_amount' => 0]);
+        (require database_path('migrations/2026_10_21_000300_default_affiliate_amount_markup_limit.php'))->up();
+        $this->assertSame('100.00', $this->affiliate->fresh()->max_markup_amount);
+
+        $as = $this->actingAs($this->affiliate->user);
+        $as->get('/affiliate')->assertSee('up to AED 100')->assertSee('up to 30%');
+        $as->post('/affiliate/page', ['markup_mode' => 'amount', 'markup_amount' => 50])->assertSessionHasNoErrors();
+        $as->post('/affiliate/page', ['markup_mode' => 'amount', 'markup_amount' => 500])->assertSessionHasErrors(['markup_amount' => 'The most the shop allows here is 100.']);
+
+        $this->affiliate->fresh()->update(['max_markup_amount' => 0, 'max_making_markup_percent' => 0, 'max_fixed_markup_percent' => 0]);
+        $this->actingAs($this->affiliate->user->fresh())->get('/affiliate')->assertSee('Mark-up is not switched on');
+    }
 }
