@@ -7,7 +7,8 @@ use App\Models\Affiliate;
 /** Which affiliate (if any) sent the current visitor, and whether they came through the white page. */
 class AffiliateContext
 {
-    public function __construct(public ?Affiliate $affiliate = null, public bool $whitePage = false) {}
+    /** $preview: the affiliate looking at their own page — prices shown with the mark-up, nothing is tracked. */
+    public function __construct(public ?Affiliate $affiliate = null, public bool $whitePage = false, public bool $preview = false) {}
 
     public function markupBp(): int
     {

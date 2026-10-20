@@ -86,7 +86,7 @@ class AffiliateTest extends TestCase
     public function test_white_page_adds_the_markup_to_prices_and_pays_it_to_the_affiliate(): void
     {
         $this->get('/product/band')->assertSee('1,100.00');
-        $this->get('/w/HUDA10')->assertRedirect(route('home'));
+        $this->get('/w/HUDA10')->assertOk()->assertSee('Huda Partner')->assertSee('1,155.00')->assertSee('Watch');
         $this->get('/product/band')->assertSee('1,155.00')->assertSee('You are shopping with');   // +5%
 
         $order = $this->checkout(['band']);
@@ -191,5 +191,13 @@ class AffiliateTest extends TestCase
         $this->post('/logout')->assertRedirect(route('home'));
         $this->assertGuest();
         $this->post('/logout')->assertRedirect(route('home'));   // already signed out (old tab): no error
+    }
+
+    public function test_affiliate_previews_own_page_with_markup_but_never_earns_on_it(): void
+    {
+        $this->actingAs($this->affiliate->user);
+        $this->get('/w/HUDA10')->assertOk()->assertSee('Preview of your page')->assertSee('1,155.00');
+        $this->get('/product/band')->assertSee('1,100.00');   // preview only; not tracked as a customer visit
+        $this->assertNull(session('aff'));
     }
 }

@@ -31,10 +31,12 @@ class TrackAffiliate
             [$code, $white] = $this->fromRequest($request);
             if ($code !== null) {
                 $affiliate = Affiliate::where('code', $code)->where('is_active', true)->first();
-                // Affiliates don't earn on their own purchases.
-                if ($affiliate && $affiliate->user_id !== $request->user()?->id) {
+                // Affiliates don't earn on their own purchases, but may preview their own page.
+                $own = $affiliate && $affiliate->user_id === $request->user()?->id;
+                if ($affiliate && (! $own || $request->routeIs('affiliate.page'))) {
                     $context->affiliate = $affiliate;
                     $context->whitePage = $white && $affiliate->white_page_enabled;
+                    $context->preview = $own;
                 }
             }
         } catch (Throwable) {
@@ -44,7 +46,7 @@ class TrackAffiliate
         view()->share('affiliateContext', $context);
 
         $response = $next($request);
-        if ($context->affiliate && ($request->query('aff') || $request->routeIs('affiliate.page'))) {
+        if ($context->affiliate && ! $context->preview && ($request->query('aff') || $request->routeIs('affiliate.page'))) {
             $value = $context->affiliate->code.'|'.($context->whitePage ? 'w' : 'r');
             $days = max(1, (int) Settings::get('affiliate_cookie_days', 30));
             Cookie::queue(self::COOKIE, $value, $days * 1440);

@@ -272,6 +272,12 @@ return [
         'status' => ['pending' => 'Pending', 'available' => 'Ready to collect', 'void' => 'Cancelled'],
         'welcome' => 'Welcome! You are shopping with :name.',
         'shopping_with' => 'You are shopping with :name',
+        'page_eyebrow' => 'Curated collection',
+        'page_intro' => 'Fine gold and diamond jewellery from :store. All prices are shown before VAT, which is added at checkout.',
+        'page_normal_prices' => 'Shop prices',
+        'preview' => 'Preview of your page: customers see these prices (your :markup% mark-up included). Orders you place yourself earn no commission.',
+        'all' => 'All', 'sort_featured' => 'Featured', 'sort_low' => 'Price: low to high', 'sort_high' => 'Price: high to low',
+        'no_products' => 'No pieces found.',
     ],
 
     'footer' => [

@@ -8,12 +8,31 @@ use Illuminate\Http\Request;
 
 class AffiliateController extends Controller
 {
-    /** /w/CODE — the affiliate's white page: the shop with their mark-up in every price. */
-    public function page(string $code)
+    /**
+     * /w/CODE — the affiliate's own page: their name on top and the collection with their
+     * mark-up in every price. The visitor stays linked to them while browsing the shop.
+     */
+    public function page(Request $request, string $code)
     {
         $affiliate = Affiliate::where('code', strtoupper($code))->where('is_active', true)->firstOrFail();
+        $filters = $request->validate(['category' => 'nullable|integer', 'q' => 'nullable|string|max:100', 'sort' => 'nullable|in:newest,price_asc,price_desc']);
+        $query = \App\Models\Product::with('goldCategory', 'category')->active()
+            ->when($filters['category'] ?? null, fn ($q, $id) => $q->where('category_id', $id))
+            ->when($filters['q'] ?? null, fn ($q, $s) => $q->where(fn ($q) => $q->where('name', 'like', "%{$s}%")->orWhere('name_ar', 'like', "%{$s}%")));
+        match ($filters['sort'] ?? 'newest') {
+            'price_asc' => $query->orderBy('cached_subtotal'),
+            'price_desc' => $query->orderByDesc('cached_subtotal'),
+            default => $query->orderByDesc('is_featured')->latest(),
+        };
 
-        return redirect()->route('home')->with('status', __('shop.affiliate.welcome', ['name' => $affiliate->name()]));
+        return view('shop.affiliate-page', [
+            'seo' => Seo::page($affiliate->name()),
+            'affiliate' => $affiliate,
+            'products' => $query->paginate(24)->withQueryString(),
+            'categories' => \App\Models\Category::where('is_active', true)->orderBy('sort_order')->get(),
+            'filters' => $filters,
+            'preview' => app(\App\Affiliates\AffiliateContext::class)->preview,
+        ]);
     }
 
     public function dashboard(Request $request)

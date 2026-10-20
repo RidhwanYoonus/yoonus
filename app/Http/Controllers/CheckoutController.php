@@ -130,7 +130,7 @@ class CheckoutController extends Controller
         try {
             $affiliate = app(\App\Affiliates\AffiliateContext::class);
             $order = app(OrderService::class)->place($quote, $data + ['address' => $address, 'id' => $id,
-                'affiliate' => $affiliate->affiliate, 'affiliate_white' => $affiliate->whitePage], $request->user());
+                'affiliate' => $affiliate->preview ? null : $affiliate->affiliate, 'affiliate_white' => $affiliate->whitePage], $request->user());
         } catch (OutOfStockException $e) {
             if ($id && ! $id['saved']) {
                 IdDocument::delete($id['front'], $id['back']);
