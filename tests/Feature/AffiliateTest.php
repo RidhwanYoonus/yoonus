@@ -248,4 +248,21 @@ class AffiliateTest extends TestCase
         $this->actingAs(\App\Models\User::factory()->create(['is_admin' => true]))->get('/admin/affiliate-commissions')->assertSee('10.00 g × AED 2.50 per gram');
         $this->actingAs($this->affiliate->user->fresh())->get('/affiliate')->assertSee('AED 2.5 per gram');
     }
+
+    public function test_admin_sees_affiliate_orders_highlighted_with_full_calculation(): void
+    {
+        $this->get('/w/HUDA10');
+        $order = $this->checkout();
+        $plain = Order::create(collect($order->getAttributes())->except(['id', 'number', 'affiliate_id', 'affiliate_white_page'])->all() + ['number' => 'JW-PLAIN']);
+        $admin = User::factory()->create(['is_admin' => true]);
+
+        $list = $this->actingAs($admin)->get('/admin/orders')->assertOk()->assertSee('HUDA10')->assertSee('affiliate-order-row');
+        $this->assertSame(1, substr_count($list->getContent(), 'affiliate-order-row"') + substr_count($list->getContent(), 'affiliate-order-row '));
+        \Livewire\Livewire::actingAs($admin)->test(\App\Filament\Resources\OrderResource\Pages\ListOrders::class)
+            ->filterTable('affiliate_id', true)->assertCanSeeTableRecords([$order])->assertCanNotSeeTableRecords([$plain]);
+
+        $this->actingAs($admin)->get('/admin/orders/'.$order->id)->assertOk()
+            ->assertSee('Calculation per item')->assertSee('Making AED 100.00 × 10%')->assertSee('Item total AED 500.00 × 3%')
+            ->assertSee('Huda Partner')->assertSee('Shop keeps')->assertSee('70.00')->assertSee('1,575.00');   // affiliate 10 + 20 + 15 + 25; shop 1,645 − 70
+    }
 }

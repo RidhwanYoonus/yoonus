@@ -66,6 +66,11 @@ class Order extends Model
         return $this->belongsTo(Affiliate::class);
     }
 
+    public function affiliateCommissions(): HasMany
+    {
+        return $this->hasMany(AffiliateCommission::class);
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

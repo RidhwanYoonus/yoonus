@@ -39,6 +39,12 @@ class AdminPanelProvider extends PanelProvider
             ->navigationItems([
                 NavigationItem::make('View shop')->url('/', shouldOpenInNewTab: true)->icon('heroicon-o-arrow-top-right-on-square')->sort(99),
             ])
+            ->renderHook(PanelsRenderHook::STYLES_AFTER, fn () => '<style>
+                .affiliate-order-row{background:rgba(184,149,74,.10)}
+                .affiliate-order-row:hover{background:rgba(184,149,74,.16)!important}
+                .affiliate-order-row>td:first-child{box-shadow:inset 4px 0 0 #b8954a}
+                .affiliate-order-section{border:1px solid rgba(184,149,74,.55)!important;background:rgba(184,149,74,.06)}
+            </style>')
             ->renderHook(PanelsRenderHook::BODY_START, fn () => view('filament.database-update-banner')->render().view('filament.stale-rate-banner')->render())
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')

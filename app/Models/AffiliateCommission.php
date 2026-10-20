@@ -19,6 +19,18 @@ class AffiliateCommission extends Model
         ];
     }
 
+    /** How the line was worked out, e.g. "Making AED 300 × 10%" or "12.50 g × AED 2 per gram". */
+    public function calculation(): string
+    {
+        $pct = rtrim(rtrim((string) $this->rate_percent, '0'), '.');
+
+        return match ($this->basis) {
+            'gram' => $this->base_amount.' g × AED '.$this->rate_percent.' per gram',
+            'making' => 'Making AED '.$this->base_amount.' × '.$pct.'%',
+            default => 'Item total AED '.$this->base_amount.' × '.$pct.'%',
+        };
+    }
+
     public function affiliate(): BelongsTo
     {
         return $this->belongsTo(Affiliate::class);

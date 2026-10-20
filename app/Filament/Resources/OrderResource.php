@@ -63,8 +63,14 @@ class OrderResource extends Resource
     {
         return $table
             ->defaultSort('created_at', 'desc')
+            ->modifyQueryUsing(fn (Builder $query) => $query->with('affiliate.user'))
+            // Affiliate orders stand out (colour defined in the panel's render hook).
+            ->recordClasses(fn (Order $record) => $record->affiliate_id ? 'affiliate-order-row' : null)
             ->columns([
                 Tables\Columns\TextColumn::make('number')->searchable()->weight('bold')->copyable(),
+                Tables\Columns\TextColumn::make('affiliate.code')->label('Affiliate')->badge()->color('warning')->icon('heroicon-o-user-plus')->placeholder('—')
+                    ->description(fn (Order $record) => $record->affiliate ? ($record->affiliate_white_page ? 'Own page' : 'Link').' · '.$record->affiliate->user?->name : null)
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('created_at')->label('Date')->dateTime('d M Y H:i')->sortable(),
                 Tables\Columns\TextColumn::make('customer_name')->searchable(['customer_name', 'email', 'phone'])->description(fn (Order $record) => $record->phone),
                 Tables\Columns\TextColumn::make('status')->badge()->color(fn (string $state) => self::statusColor($state))
@@ -82,6 +88,9 @@ class OrderResource extends Resource
                     'unpaid' => 'Unpaid (waiting for payment)', 'expired' => 'Unpaid — time ran out (cancelled)', 'cod' => 'Cash on delivery (not collected yet)',
                     'verifying' => 'Payment to confirm', 'paid' => 'Paid', 'refunded' => 'Refunded',
                 ]),
+                Tables\Filters\TernaryFilter::make('affiliate_id')->label('Affiliate orders')->nullable()
+                    ->trueLabel('Only affiliate orders')->falseLabel('Without affiliate'),
+                Tables\Filters\SelectFilter::make('affiliate')->label('Affiliate')->relationship('affiliate', 'code')->searchable()->preload(),
                 Tables\Filters\SelectFilter::make('fulfilment')->options(['delivery' => 'Delivery', 'pickup' => 'Store pickup']),
                 Tables\Filters\SelectFilter::make('payment_method')->options(['applepay' => 'Apple Pay', 'googlepay' => 'Google Pay', 'card' => 'Card', 'tabby' => 'Tabby', 'tamara' => 'Tamara', 'cod' => 'Cash on delivery', 'giftcard' => 'Gift card']),
                 Tables\Filters\Filter::make('created_at')->form([
@@ -217,6 +226,39 @@ class OrderResource extends Resource
                 Infolists\Components\TextEntry::make('grand_total')->money('AED')->weight('bold')->size('lg'),
                 Infolists\Components\TextEntry::make('amount_due')->money('AED'),
             ]),
+            Infolists\Components\Section::make('Affiliate')->icon('heroicon-o-user-plus')->columnSpanFull()->columns(4)
+                ->description(fn (Order $record) => $record->affiliate_white_page
+                    ? 'Ordered on the affiliate\'s own page — prices included their mark-up.'
+                    : 'Customer came through the affiliate\'s link — normal shop prices.')
+                ->extraAttributes(['class' => 'affiliate-order-section'])
+                ->visible(fn (Order $record) => (bool) $record->affiliate_id)
+                ->schema([
+                    Infolists\Components\TextEntry::make('affiliate.code')->label('Affiliate')->badge()->color('warning')
+                        ->url(fn (Order $record) => $record->affiliate ? AffiliateResource::getUrl('edit', ['record' => $record->affiliate]) : null),
+                    Infolists\Components\TextEntry::make('affiliate.user.name')->label('Name')
+                        ->helperText(fn (Order $record) => $record->affiliate?->display_name ? 'Page name: '.$record->affiliate->display_name : null),
+                    Infolists\Components\TextEntry::make('affiliate.user.email')->label('Email')->copyable(),
+                    Infolists\Components\TextEntry::make('affiliate.user.phone')->label('Mobile')->placeholder('—')
+                        ->url(fn (Order $record) => $record->affiliate?->user?->phone ? WhatsApp::link($record->affiliate->user->phone, "Order {$record->number}") : null)->openUrlInNewTab(),
+                    Infolists\Components\RepeatableEntry::make('affiliateCommissions')->label('Calculation per item')->columnSpanFull()->columns(6)->schema([
+                        Infolists\Components\TextEntry::make('product_name')->label('Item'),
+                        Infolists\Components\TextEntry::make('basis')->label('How it is worked out')->formatStateUsing(fn ($state, $record) => $record->calculation()),
+                        Infolists\Components\TextEntry::make('commission_amount')->label('= Commission')->money('AED'),
+                        Infolists\Components\TextEntry::make('markup_amount')->label('+ Mark-up')->money('AED'),
+                        Infolists\Components\TextEntry::make('amount')->label('= Affiliate gets')->money('AED')->weight('bold'),
+                        Infolists\Components\TextEntry::make('status')->badge()
+                            ->formatStateUsing(fn (string $state) => \App\Models\AffiliateCommission::STATUSES[$state] ?? $state)
+                            ->color(fn (string $state) => match ($state) { 'available' => 'success', 'void' => 'danger', default => 'gray' }),
+                    ]),
+                    Infolists\Components\TextEntry::make('aff_paid')->label('Customer paid (excl. VAT)')->state(fn (Order $record) => $record->taxable_amount)->money('AED'),
+                    Infolists\Components\TextEntry::make('aff_markup')->label('of which affiliate mark-up')->money('AED')
+                        ->state(fn (Order $record) => $record->affiliateCommissions->sum('markup_amount')),
+                    Infolists\Components\TextEntry::make('aff_total')->label('Affiliate gets in total')->money('AED')->weight('bold')->color('warning')
+                        ->state(fn (Order $record) => $record->affiliateCommissions->where('status', '!=', 'void')->sum('amount')),
+                    Infolists\Components\TextEntry::make('aff_shop')->label('Shop keeps (excl. VAT)')->money('AED')->weight('bold')
+                        ->state(fn (Order $record) => (float) $record->taxable_amount - $record->affiliateCommissions->where('status', '!=', 'void')->sum('amount'))
+                        ->helperText('Before gold cost, delivery and payment fee'),
+                ]),
             Infolists\Components\Section::make('Status history')->columnSpan(1)->schema([
                 Infolists\Components\RepeatableEntry::make('statusHistory')->hiddenLabel()->schema([
                     Infolists\Components\TextEntry::make('to_status')->hiddenLabel()->badge()

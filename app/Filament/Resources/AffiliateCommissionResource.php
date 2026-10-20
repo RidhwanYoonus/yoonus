@@ -55,11 +55,7 @@ class AffiliateCommissionResource extends Resource
                     ->description(fn (AffiliateCommission $r) => $r->order?->statusLabel()),
                 Tables\Columns\TextColumn::make('product_name')->label('Item')->limit(30),
                 Tables\Columns\TextColumn::make('basis')->label('Based on')
-                    ->formatStateUsing(fn (string $state, AffiliateCommission $r) => match ($state) {
-                        'gram' => $r->base_amount.' g × AED '.$r->rate_percent.' per gram',
-                        'making' => 'Making AED '.$r->base_amount.' × '.rtrim(rtrim((string) $r->rate_percent, '0'), '.').'%',
-                        default => 'Item total AED '.$r->base_amount.' × '.rtrim(rtrim((string) $r->rate_percent, '0'), '.').'%',
-                    }),
+                    ->formatStateUsing(fn (string $state, AffiliateCommission $r) => $r->calculation()),
                 Tables\Columns\TextColumn::make('commission_amount')->label('Commission')->money('AED')->summarize($sum()),
                 Tables\Columns\TextColumn::make('markup_amount')->label('White-page mark-up')->money('AED')->summarize($sum())->toggleable(),
                 Tables\Columns\TextColumn::make('amount')->label('Total')->money('AED')->weight('bold')->summarize($sum()),
