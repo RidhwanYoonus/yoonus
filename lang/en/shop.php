@@ -68,6 +68,9 @@ return [
     ],
 
     'certificate' => [
+        'origin' => 'Diamond type',
+        'origin_natural' => 'Natural diamond',
+        'origin_lab_grown' => 'Lab-grown diamond',
         'title' => 'Diamond certificate',
         'lab' => 'Lab',
         'number' => 'Certificate no.',

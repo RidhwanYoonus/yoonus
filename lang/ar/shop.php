@@ -68,6 +68,9 @@ return [
     ],
 
     'certificate' => [
+        'origin' => 'نوع الألماس',
+        'origin_natural' => 'ألماس طبيعي',
+        'origin_lab_grown' => 'ألماس مصنّع في المختبر',
         'title' => 'شهادة الألماس',
         'lab' => 'المختبر',
         'number' => 'رقم الشهادة',

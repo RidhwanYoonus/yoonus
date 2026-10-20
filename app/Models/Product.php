@@ -22,6 +22,14 @@ class Product extends Model
 
     protected $guarded = ['id'];
 
+    public const DIAMOND_ORIGINS = ['natural' => 'Natural diamond', 'lab_grown' => 'Lab-grown diamond'];
+
+    /** "Natural diamond" / "Lab-grown diamond" in the shop's language, or null. */
+    public function diamondOriginLabel(): ?string
+    {
+        return isset(self::DIAMOND_ORIGINS[$this->diamond_origin]) ? __('shop.certificate.origin_'.$this->diamond_origin) : null;
+    }
+
     protected function casts(): array
     {
         return [
@@ -64,7 +72,7 @@ class Product extends Model
     /** True when the piece has diamond / certificate details to show. */
     public function hasCertificate(): bool
     {
-        return filled($this->certificate_number) || filled($this->certificate_file) || $this->certificate_lab_id
+        return filled($this->certificate_number) || filled($this->diamond_origin) || filled($this->certificate_file) || $this->certificate_lab_id
             || filled($this->diamond_carat) || filled($this->diamond_color) || filled($this->diamond_clarity);
     }
 

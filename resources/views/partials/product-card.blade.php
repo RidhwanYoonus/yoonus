@@ -12,6 +12,7 @@
                 @if ($badge = $product->makingBadge())
                     <span class="rounded-full px-2.5 py-1 text-[0.625rem] font-semibold shadow-sm {{ $badge['highlight'] ? 'bg-onyx text-gold-300' : 'bg-card/90 text-ink/70' }}">{{ $badge['text'] }}</span>
                 @endif
+                @if ($origin = $product->diamondOriginLabel())<span class="rounded-full px-2.5 py-1 text-[0.625rem] font-semibold shadow-sm {{ $product->diamond_origin === 'natural' ? 'bg-emerald-50 text-emerald-800' : 'bg-sky-50 text-sky-800' }}">{{ $origin }}</span>@endif
                 @if ($price->hasDiscount())<span class="rounded-full bg-gold-silver px-2.5 py-1 text-[0.625rem] font-semibold text-zinc-900">{{ __('shop.product.save_percent', ['percent' => $price->savingsPercent()]) }}</span>@endif
                 @unless ($product->inStock())<span class="rounded-full bg-onyx/80 px-2.5 py-1 text-[0.625rem] text-on-dark">{{ __('shop.product.sold_out') }}</span>@endunless
             </span>

@@ -105,10 +105,17 @@ class ProductResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('certificate_lab_id')->label('Lab')->relationship('certificateLab', 'name', fn ($query) => $query->where('is_active', true)->orderBy('sort_order'))
                             ->getOptionLabelFromRecordUsing(fn (\App\Models\CertificateLab $record) => $record->short_name ? "{$record->short_name} — {$record->name}" : $record->name)
-                            ->searchable()->preload()->createOptionForm(\App\Filament\Resources\CertificateLabResource::fields()),
+                            ->searchable()->preload()
+                            ->createOptionForm(\App\Filament\Resources\CertificateLabResource::fields())->createOptionModalHeading('Add certificate lab')
+                            ->editOptionForm(\App\Filament\Resources\CertificateLabResource::fields())->editOptionModalHeading('Edit certificate lab')
+                            ->columnSpan(2)->helperText('+ adds a new lab · the pencil edits the chosen lab (name, logo, link).'),
                         Forms\Components\TextInput::make('certificate_number')->label('Certificate no.')->maxLength(64),
                         Forms\Components\FileUpload::make('certificate_file')->label('Certificate copy (PDF / image)')->disk('public')->directory('certificates')
                             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png', 'image/webp'])->maxSize(8192)->openable()->downloadable(),
+                        Forms\Components\ToggleButtons::make('diamond_origin')->label('Diamond type')->inline()->columnSpanFull()
+                            ->options(\App\Models\Product::DIAMOND_ORIGINS)->icons(['natural' => 'heroicon-o-sparkles', 'lab_grown' => 'heroicon-o-beaker'])
+                            ->colors(['natural' => 'success', 'lab_grown' => 'info'])
+                            ->helperText('Shown on the product page and on the product card. Leave empty for pieces without diamonds.'),
                         Forms\Components\TextInput::make('diamond_carat')->label('Total carat')->numeric()->minValue(0)->step(0.001)->suffix('ct'),
                         Forms\Components\Select::make('diamond_shape')->label('Shape')->options(array_combine($shapes = ['Round', 'Princess', 'Oval', 'Emerald', 'Cushion', 'Pear', 'Marquise', 'Radiant', 'Asscher', 'Heart', 'Baguette', 'Mixed'], $shapes)),
                         Forms\Components\Select::make('diamond_color')->label('Colour')->options(array_combine($c = ['D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'D-F', 'G-H', 'I-J', 'Fancy'], $c)),
@@ -208,10 +215,13 @@ class ProductResource extends Resource
                 Tables\Columns\TextColumn::make('stock_qty')->label('Stock')->sortable()
                     ->description(fn (Product $record) => $record->hidden_after_sale ? 'Sold · hidden' : ($record->stock_qty <= 0 ? 'Sold · showing' : null))
                     ->color(fn (Product $record) => $record->isLowStock() ? 'danger' : null)->icon(fn (Product $record) => $record->isLowStock() ? 'heroicon-o-exclamation-triangle' : null),
+                Tables\Columns\TextColumn::make('diamond_origin')->label('Diamond type')->badge()->placeholder('—')->toggleable(isToggledHiddenByDefault: true)
+                    ->formatStateUsing(fn (?string $state) => \App\Models\Product::DIAMOND_ORIGINS[$state] ?? $state)->color(fn (?string $state) => $state === 'natural' ? 'success' : 'info'),
                 Tables\Columns\ToggleColumn::make('is_active')->label('Live'),
                 Tables\Columns\ToggleColumn::make('is_featured')->label('Featured')->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('diamond_origin')->label('Diamond type')->options(\App\Models\Product::DIAMOND_ORIGINS),
                 Tables\Filters\SelectFilter::make('gold_category_id')->label('Karat')->relationship('goldCategory', 'name'),
                 Tables\Filters\SelectFilter::make('category_id')->label('Category')->relationship('category', 'name'),
                 Tables\Filters\Filter::make('low_stock')->label('Low stock')->query(fn (Builder $query) => $query->whereColumn('stock_qty', '<=', 'low_stock_threshold')),

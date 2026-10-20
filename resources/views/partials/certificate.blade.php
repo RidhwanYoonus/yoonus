@@ -10,7 +10,12 @@
 @endphp
 <div class="mt-6 card overflow-hidden">
     <div class="flex items-center justify-between gap-3 border-b border-line bg-sand/60 px-5 py-3">
-        <p class="text-xs font-medium uppercase tracking-wider text-muted">{{ __('shop.certificate.title') }}</p>
+        <div class="flex flex-wrap items-center gap-2">
+            <p class="text-xs font-medium uppercase tracking-wider text-muted">{{ __('shop.certificate.title') }}</p>
+            @if ($origin = $product->diamondOriginLabel())
+                <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold {{ $product->diamond_origin === 'natural' ? 'bg-emerald-50 text-emerald-800' : 'bg-sky-50 text-sky-800' }}">{{ $origin }}</span>
+            @endif
+        </div>
         @if ($lab)
             <span class="inline-flex items-center gap-2 text-sm font-medium">
                 @if ($lab->logoUrl())<img src="{{ $lab->logoUrl() }}" alt="{{ $lab->label() }}" class="h-6 w-auto max-w-[5rem] object-contain" loading="lazy">@endif

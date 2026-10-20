@@ -38,12 +38,13 @@ class CertificateLabTest extends TestCase
     {
         $lab = CertificateLab::where('short_name', 'GIA')->sole();
         $lab->update(['logo' => 'labs/gia.png']);
-        $this->product(['certificate_lab_id' => $lab->id, 'certificate_number' => '2141438171', 'diamond_carat' => 0.505, 'diamond_color' => 'F', 'diamond_clarity' => 'VS1', 'diamond_cut' => 'Excellent']);
+        $this->product(['certificate_lab_id' => $lab->id, 'certificate_number' => '2141438171', 'diamond_carat' => 0.505, 'diamond_color' => 'F', 'diamond_clarity' => 'VS1', 'diamond_cut' => 'Excellent', 'diamond_origin' => 'lab_grown']);
 
         $this->get('/product/solitaire')->assertOk()
             ->assertSee('Diamond certificate')->assertSee('labs/gia.png')->assertSee('2141438171')
-            ->assertSee('0.505 ct')->assertSee('VS1')->assertSee('reportno=2141438171', false);
-        $this->get('/product/solitaire?lang=ar')->assertOk()->assertSee('شهادة الألماس');
+            ->assertSee('0.505 ct')->assertSee('VS1')->assertSee('Lab-grown diamond')->assertSee('reportno=2141438171', false);
+        $this->get('/product/solitaire?lang=ar')->assertOk()->assertSee('شهادة الألماس')->assertSee('ألماس مصنّع في المختبر');
+        $this->get('/')->assertOk();
     }
 
     public function test_no_certificate_box_without_details(): void
@@ -57,6 +58,20 @@ class CertificateLabTest extends TestCase
         $admin = User::factory()->create(['is_admin' => true]);
         $this->actingAs($admin)->get('/admin/certificate-labs')->assertOk()->assertSee('IGI');
         $p = $this->product();
-        $this->actingAs($admin)->get(\App\Filament\Resources\ProductResource::getUrl('edit', ['record' => $p]))->assertOk()->assertSee('Diamond certificate');
+        $this->actingAs($admin)->get(\App\Filament\Resources\ProductResource::getUrl('edit', ['record' => $p]))->assertOk()->assertSee('Diamond certificate')->assertSee('the pencil edits the chosen lab')->assertSee('Lab-grown diamond');
+    }
+
+    public function test_lab_can_be_edited_from_the_product_form(): void
+    {
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+        \Filament\Facades\Filament::setCurrentPanel(\Filament\Facades\Filament::getPanel('admin'));
+        $lab = CertificateLab::where('short_name', 'IGI')->sole();
+        $p = $this->product(['certificate_lab_id' => $lab->id]);
+
+        \Livewire\Livewire::test(\App\Filament\Resources\ProductResource\Pages\EditProduct::class, ['record' => $p->getRouteKey()])
+            ->mountFormComponentAction('certificate_lab_id', 'editOption')
+            ->setFormComponentActionData(['name' => 'IGI Worldwide', 'short_name' => 'IGI', 'verify_url' => 'https://igi.example/{number}', 'is_active' => true, 'sort_order' => 2])
+            ->callMountedFormComponentAction()->assertHasNoFormComponentActionErrors();
+        $this->assertSame('IGI Worldwide', $lab->fresh()->name);
     }
 }
