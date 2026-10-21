@@ -6,6 +6,7 @@ use App\Models\GoldCategory;
 use App\Models\GoldRateHistory;
 use App\Models\User;
 use App\Providers\Filament\AdminPanelProvider;
+use App\Support\AutoTasks;
 use App\Support\Settings;
 use Database\Seeders\ReferenceDataSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -80,5 +81,28 @@ class AutoGoldRateTest extends TestCase
         $admin->forceFill(['is_admin' => true])->save();
         Settings::set(['admin_text_size' => 'xlarge']);
         $this->actingAs($admin)->get('/admin')->assertOk()->assertSee('html{font-size:125%}', false);
+    }
+
+    public function test_status_is_recorded_for_the_admin(): void
+    {
+        $this->seed(ReferenceDataSeeder::class);
+        Settings::set(['gold_rate_auto_website' => true]);
+        Http::fake(['dubaicityofgold.com/*' => Http::sequence()->push(self::CARD)->push('<p>Rates load with JavaScript</p>')]);
+
+        $this->artisan('shop:fetch-gold-rates')->assertSuccessful();
+        $this->assertTrue(AutoTasks::goldRate()['ok']);
+        $this->assertStringContainsString('24K = AED 386.75/g', AutoTasks::goldRateText());
+
+        $this->artisan('shop:fetch-gold-rates')->assertFailed();
+        $this->assertFalse(AutoTasks::goldRate()['ok']);
+        $this->assertStringContainsString('No gold rates found', AutoTasks::goldRateText());
+    }
+
+    public function test_cron_heartbeat(): void
+    {
+        $this->assertStringContainsString('has not run yet', AutoTasks::cronText());
+        $this->artisan('schedule:run')->assertSuccessful();
+        $this->assertTrue(AutoTasks::cronRunning());
+        $this->assertStringContainsString('Cron job is running', AutoTasks::cronText());
     }
 }

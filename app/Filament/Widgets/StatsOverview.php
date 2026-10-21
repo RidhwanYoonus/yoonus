@@ -27,7 +27,8 @@ class StatsOverview extends Base
             Stat::make('Revenue · 30 days', 'AED '.number_format($month['revenue'], 2))->description('AOV AED '.number_format($month['aov'], 0)),
             Stat::make('Conversion · 30 days', $month['conversion'].'%')->description($month['abandoned_count'].' abandoned cart(s)'),
             Stat::make(($base?->name ?? 'Gold').' rate', 'AED '.($base?->rate_per_gram ?? '—').'/g')
-                ->description($base?->rate_updated_at ? 'Updated '.$base->rate_updated_at->diffForHumans() : 'Never updated')
+                ->description(($base?->rate_updated_at ? 'Updated '.$base->rate_updated_at->diffForHumans() : 'Never updated')
+                    .((($auto = \App\Support\AutoTasks::goldRate()) && ! $auto['ok']) ? ' · Auto update failed — see Settings → Pricing' : ''))
                 ->color($base?->isStale() ? 'danger' : 'success'),
         ];
     }

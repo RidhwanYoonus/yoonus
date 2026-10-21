@@ -84,6 +84,9 @@ class Settings extends Page implements HasForms
                     $text('gold_rate_source_url', 'Gold rate website (Fetch button)')->url()->helperText('Page the "Fetch rate" button reads, e.g. https://dubaicityofgold.com/'),
                     Forms\Components\Toggle::make('gold_rate_auto_website')->label('Update rates from this website automatically')->inline(false)
                         ->helperText('Every 15 minutes (needs the cron job). Jumps over 15% are skipped for you to check. The "Updated" time on the shop shows the last check.'),
+                    Forms\Components\Placeholder::make('auto_status')->label('Automatic update status')->columnSpanFull()
+                        ->content(fn () => \App\Support\AutoTasks::cronText()."\n".\App\Support\AutoTasks::goldRateText())
+                        ->extraAttributes(['class' => 'whitespace-pre-line']),
                     $text('gold_rate_api_url', 'Gold rate API URL (optional)')->url()->helperText('Leave empty to enter rates manually. Polled every 15 minutes.'),
                     $secret('gold_rate_api_key', 'Gold rate API key'),
                 ]),

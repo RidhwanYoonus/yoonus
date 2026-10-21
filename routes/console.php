@@ -1,8 +1,10 @@
 <?php
 
+use App\Support\AutoTasks;
 use App\Support\StorefrontCache;
 use Illuminate\Support\Facades\Schedule;
 
+Schedule::call(fn () => AutoTasks::heartbeat())->everyMinute()->name('cron-heartbeat');
 Schedule::command('shop:expire-unpaid')->everyMinute()->withoutOverlapping();
 Schedule::command('shop:abandoned-carts')->everyTenMinutes()->withoutOverlapping();
 Schedule::command('shop:fetch-gold-rates')->everyFifteenMinutes()->withoutOverlapping();

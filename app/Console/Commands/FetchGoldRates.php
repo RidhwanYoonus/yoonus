@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\GoldCategory;
 use App\Pricing\GoldRateService;
 use App\Pricing\WebsiteGoldRates;
+use App\Support\AutoTasks;
 use App\Support\Settings;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
@@ -22,13 +23,37 @@ class FetchGoldRates extends Command
 
     protected $description = 'Pull gold rates from the configured API or website and cascade them';
 
+    /** @var array<string> what this run did, shown in Admin → Settings → Pricing */
+    private array $log = [];
+
+    public function info($string, $verbosity = null)
+    {
+        $this->log[] = (string) $string;
+        parent::info($string, $verbosity);
+    }
+
+    public function error($string, $verbosity = null)
+    {
+        $this->log[] = (string) $string;
+        parent::error($string, $verbosity);
+    }
+
     public function handle(GoldRateService $rates): int
     {
-        if (Settings::get('gold_rate_api_url')) {
-            return $this->fromApi($rates);
-        }
-        if (Settings::get('gold_rate_auto_website')) {
-            return $this->fromWebsite($rates);
+        $source = Settings::get('gold_rate_api_url') ? 'fromApi' : (Settings::get('gold_rate_auto_website') ? 'fromWebsite' : null);
+        if ($source) {
+            $this->log = [];
+            try {
+                $result = $this->{$source}($rates);
+            } catch (\Throwable $e) {
+                $this->error($e->getMessage());
+                $result = self::FAILURE;
+            }
+            if (! $this->option('dry-run')) {
+                AutoTasks::recordGoldRate($result === self::SUCCESS, implode(' · ', $this->log) ?: 'No rates found.');
+            }
+
+            return $result;
         }
         $this->warn('No automatic gold rate source switched on; rates are entered manually.');
 
