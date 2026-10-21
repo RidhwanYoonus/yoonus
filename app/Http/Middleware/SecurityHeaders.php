@@ -31,7 +31,7 @@ class SecurityHeaders
             $h->set('Cache-Control', 'no-store, private, max-age=0');
             $h->set('Pragma', 'no-cache');
         }
-        if (app()->isProduction() || $request->isSecure()) {
+        if ($request->isSecure()) {   // browsers only honour HSTS over https
             $h->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
         }
 

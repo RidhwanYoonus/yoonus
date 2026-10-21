@@ -98,4 +98,19 @@ class StaffPermissionsUpdateTest extends TestCase
             @unlink($cache);
         }
     }
+
+    public function test_production_on_a_pc_without_ssl_keeps_http_links(): void
+    {
+        $this->app['env'] = 'production';
+        config(['app.url' => 'http://127.0.0.1:8000']);
+        \Illuminate\Support\Facades\URL::forceScheme(null);
+        (new \App\Providers\AppServiceProvider($this->app))->boot();
+        $this->assertStringStartsWith('http://', url('/build/app.css'));
+
+        config(['app.url' => 'https://shop.ae']);
+        (new \App\Providers\AppServiceProvider($this->app))->boot();
+        $this->assertStringStartsWith('https://', url('/build/app.css'));
+        \Illuminate\Support\Facades\URL::forceScheme(null);
+        $this->app['env'] = 'testing';
+    }
 }

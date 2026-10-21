@@ -57,7 +57,8 @@ class AppServiceProvider extends ServiceProvider
         \Filament\Forms\Components\FileUpload::configureUsing(fn (\Filament\Forms\Components\FileUpload $upload) => $upload
             ->imageResizeMode('contain')->imageResizeTargetWidth('2000')->imageResizeTargetHeight('2000')->imageResizeUpscale(false));
         \Filament\Tables\Columns\Column::configureUsing(fn (\Filament\Tables\Columns\Column $column) => $column->toggleable());
-        if ($this->app->isProduction()) {
+        // Live shop behind SSL: always https links. A PC without SSL (APP_URL=http://…) keeps http, or the design files would not load.
+        if ($this->app->isProduction() && str_starts_with((string) config('app.url'), 'https://')) {
             URL::forceScheme('https');
         }
         // Windows PHP (e.g. XAMPP) often has no CA list, so every HTTPS call (translation, WhatsApp,
