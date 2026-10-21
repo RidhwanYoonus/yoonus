@@ -35,7 +35,7 @@ class SpeedCheck
             $add('info', 'Sessions are kept in the database. On one server SESSION_DRIVER=file is a little faster.');
         }
         if (config('queue.default') === 'sync') {
-            $add('info', 'Emails and WhatsApp messages are sent while the customer waits (QUEUE_CONNECTION=sync). Use QUEUE_CONNECTION=database with a running "php artisan queue:work" so checkout is instant.');
+            $add('info', 'Emails and WhatsApp messages are sent while the customer waits (QUEUE_CONNECTION=sync). On the live server set QUEUE_CONNECTION=database: the every-minute cron job then sends them in the background, so checkout is instant.');
         }
 
         return $out;

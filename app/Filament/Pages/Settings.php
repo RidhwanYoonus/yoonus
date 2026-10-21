@@ -317,6 +317,15 @@ class Settings extends Page implements HasForms
                         \App\Support\SpeedCache::build();
                         Notification::make()->success()->title('Speed cache is on')->body('Pages now load faster. Press again after big changes if something looks old.')->send();
                     }),
+                \Filament\Actions\Action::make('storageLink')->label('Repair photo link')->icon('heroicon-o-photo')->color('gray')
+                    ->requiresConfirmation()->modalHeading('Repair the photo link')
+                    ->modalDescription('Creates public/storage, the link product and review photos are shown through (same as "php artisan storage:link"). Needed once on a new server.')
+                    ->action(function () {
+                        $ok = \App\Support\SpeedCache::storageLink();
+                        $ok ? Notification::make()->success()->title('Photo link is working')->send()
+                            : Notification::make()->danger()->title('The server does not allow links')->persistent()
+                                ->body('Ask your host to enable symlinks, or in cPanel → Terminal run: php artisan storage:link')->send();
+                    }),
                 \Filament\Actions\Action::make('speedClear')->label('Clear speed cache')->icon('heroicon-o-arrow-path')->color('gray')
                     ->requiresConfirmation()->modalHeading('Clear the speed cache')
                     ->modalDescription('Removes the ready-made copies (same as "php artisan optimize:clear"). Use it if a change does not show. The shop keeps working, just a little slower until you press "Speed up now" again.')

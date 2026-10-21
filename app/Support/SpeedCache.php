@@ -58,6 +58,20 @@ class SpeedCache
         return implode("\n", array_filter($out));
     }
 
+    /** php artisan storage:link; true when public/storage works afterwards. */
+    public static function storageLink(): bool
+    {
+        if (! is_dir(public_path('storage'))) {
+            try {
+                Artisan::call('storage:link');
+            } catch (\Throwable) {
+                // symlink() is switched off on some shared hosts
+            }
+        }
+
+        return is_dir(public_path('storage'));
+    }
+
     /** True when code or .env changed after the cache was made (e.g. a new update zip was unpacked). */
     public static function isStale(): bool
     {

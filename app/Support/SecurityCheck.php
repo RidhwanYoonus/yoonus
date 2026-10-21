@@ -22,6 +22,9 @@ class SecurityCheck
         if (! $live) {
             $add('info', 'APP_ENV is "'.app()->environment().'". When the shop goes online set APP_ENV=production and APP_DEBUG=false in .env.');
         }
+        if (! is_dir(public_path('storage')) && ! is_link(public_path('storage'))) {
+            $add('danger', 'Product photos cannot be shown: the public/storage link is missing (common after moving to a new server). Press Settings → Speed cache → "Repair photo link".');
+        }
         if (blank(config('app.key'))) {
             $add('danger', 'APP_KEY is missing. Run: php artisan key:generate');
         }
