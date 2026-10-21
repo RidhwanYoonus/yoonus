@@ -31,10 +31,10 @@ class Seo
     {
         $price = $p->displayPrice();
         $name = $p->localized('name');
-        $title = $p->meta_title ?: ($p->goldCategory
+        $title = $p->localized('meta_title') ?: ($p->goldCategory
             ? __('shop.seo.product_title', ['name' => $name, 'karat' => $p->goldCategory->name, 'weight' => rtrim(rtrim((string) $p->weight_grams, '0'), '.')])
             : $name);
-        $description = $p->meta_description ?: __('shop.seo.product_description', [
+        $description = $p->localized('meta_description') ?: __('shop.seo.product_description', [
             'name' => $name,
             'karat' => $p->goldCategory?->name ?? '',
             'weight' => rtrim(rtrim((string) $p->weight_grams, '0'), '.'),
@@ -47,8 +47,8 @@ class Seo
     public static function forCategory(Category $c): array
     {
         return self::page(
-            $c->meta_title ?: __('shop.seo.category_title', ['name' => $c->localized('name')]),
-            $c->meta_description ?: __('shop.seo.category_description', ['name' => $c->localized('name')]),
+            $c->localized('meta_title') ?: __('shop.seo.category_title', ['name' => $c->localized('name')]),
+            $c->localized('meta_description') ?: __('shop.seo.category_description', ['name' => $c->localized('name')]),
             canonical: route('category.show', $c),
         );
     }

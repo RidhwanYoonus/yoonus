@@ -19,6 +19,7 @@ class ProductCsv
         'low_stock_threshold', 'video_call_enabled', 'meta_title', 'meta_description',
         'diamond_type', 'certificate_lab', 'certificate_number', 'certificate_file',
         'diamond_carat', 'diamond_shape', 'diamond_color', 'diamond_clarity', 'diamond_cut',
+        'meta_title_ar', 'meta_description_ar',
     ];
 
     /** What each column takes, shown in the import window and in the sample file's notes. */
@@ -35,6 +36,7 @@ class ProductCsv
         'diamond_color' => 'D–M, D-F, G-H, I-J or Fancy',
         'diamond_clarity' => 'FL, IF, VVS1, VVS2, VS1, VS2, SI1, SI2, I1–I3',
         'diamond_cut' => 'Excellent, Ideal, Very Good, Good, Fair',
+        'meta_title / meta_description (+ _ar)' => 'SEO text; leave empty to have it written from the product details',
     ];
 
     public const SHAPES = ['Round', 'Princess', 'Oval', 'Emerald', 'Cushion', 'Pear', 'Marquise', 'Radiant', 'Asscher', 'Heart', 'Baguette', 'Mixed'];
@@ -45,13 +47,13 @@ class ProductCsv
         $rows = [
             ['RING-001', 'Classic Band Ring', 'خاتم كلاسيكي', 'Rings', '22K', '5.250', 'PERCENTAGE', '12', '0', '', '0', '3', '1', '0', 'AE-1001',
                 '22K gold band, hallmarked.', 'خاتم ذهب عيار 22 مدموغ.', '', 'GOLD_RATE', '', '1', '1', '', '',
-                '', '', '', '', '', '', '', '', ''],
+                '', '', '', '', '', '', '', '', '', '', ''],
             ['DR-1001', 'Solitaire Diamond Ring', 'خاتم ألماس سوليتير', 'Rings', '18K', '3.100', 'PER_PIECE', '450', '6500', 'Diamond', '0', '1', '1', '1', 'AE-2001',
                 'Natural diamond solitaire in 18K white gold with GIA certificate.', 'خاتم ألماس طبيعي من ذهب أبيض عيار 18 مع شهادة GIA.', '', 'GOLD_RATE', '', '1', '1', '', '',
-                'natural', 'GIA', '2141438171', '', '0.505', 'Round', 'F', 'VS1', 'Excellent'],
+                'natural', 'GIA', '2141438171', '', '0.505', 'Round', 'F', 'VS1', 'Excellent', '', ''],
             ['LG-2001', 'Lab-grown Heart Pendant', 'قلادة قلب ألماس مختبري', 'Pendants', '18K', '', 'PERCENTAGE', '0', '0', 'Diamond', '0', '2', '1', '0', '',
                 'Lab-grown diamond heart pendant, IGI certified.', 'قلادة قلب ألماس مصنّع في المختبر بشهادة IGI.', '', 'FIXED', '3200', '1', '1', '', '',
-                'lab_grown', 'IGI', 'LG612345678', '', '1.000', 'Heart', 'E', 'VVS2', 'Ideal'],
+                'lab_grown', 'IGI', 'LG612345678', '', '1.000', 'Heart', 'E', 'VVS2', 'Ideal', '', ''],
         ];
 
         return function () use ($rows) {
@@ -84,6 +86,7 @@ class ProductCsv
                         $p->low_stock_threshold, (int) $p->video_call_enabled, $p->meta_title, $p->meta_description,
                         $p->diamond_origin, $p->certificateLab?->short_name ?: $p->certificateLab?->name, $p->certificate_number, $p->certificate_file,
                         $p->diamond_carat, $p->diamond_shape, $p->diamond_color, $p->diamond_clarity, $p->diamond_cut,
+                        $p->meta_title_ar, $p->meta_description_ar,
                         $p->cached_sales_price, $p->price_calculated_at?->toDateTimeString(),
                     ]);
                 }
@@ -122,7 +125,7 @@ class ProductCsv
                     'wastage_percent' => 'nullable|numeric|min:0|max:100', 'stock_qty' => 'nullable|integer|min:0',
                     'low_stock_threshold' => 'nullable|integer|min:0', 'diamond_carat' => 'nullable|numeric|min:0',
                     'certificate_number' => 'nullable|max:64', 'diamond_color' => 'nullable|max:16', 'diamond_clarity' => 'nullable|max:16',
-                    'diamond_cut' => 'nullable|max:32', 'diamond_shape' => 'nullable|max:32', 'meta_description' => 'nullable|max:320',
+                    'diamond_cut' => 'nullable|max:32', 'diamond_shape' => 'nullable|max:32', 'meta_description' => 'nullable|max:320', 'meta_description_ar' => 'nullable|max:320',
                 ]);
                 $origin = filled($data['diamond_type'] ?? null) ? (self::ORIGINS[strtolower(trim($data['diamond_type']))] ?? false) : null;
                 if ($origin === false) {
@@ -171,6 +174,8 @@ class ProductCsv
                     'video_call_enabled' => $flag('video_call_enabled'),
                     'meta_title' => $text('meta_title'),
                     'meta_description' => $text('meta_description'),
+                    'meta_title_ar' => $text('meta_title_ar'),
+                    'meta_description_ar' => $text('meta_description_ar'),
                     'diamond_origin' => $origin,
                     'certificate_lab_id' => $lab?->id,
                     'certificate_number' => $text('certificate_number'),

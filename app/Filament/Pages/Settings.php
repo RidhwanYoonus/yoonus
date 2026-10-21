@@ -54,6 +54,10 @@ class Settings extends Page implements HasForms
                     $text('store_caption', 'Caption (English)')->helperText('Shown under the logo and on the homepage, e.g. "Order direct from the factory · Collect from our premium retail store".')->columnSpanFull(),
                     $text('store_caption_ar', 'Caption (Arabic)')->extraInputAttributes(['dir' => 'rtl'])->hintAction(\App\Filament\Support\ArabicField::translate('store_caption', 'store_caption_ar'))->columnSpanFull(),
                     Forms\Components\Toggle::make('making_badge')->label('Show making-charge badge on products')->inline(false),
+                    Forms\Components\Toggle::make('seo_auto_fill')->label('Write SEO automatically')->inline(false)
+                        ->helperText('When a product or category is saved with empty SEO boxes, they are written from its details (name, karat, weight, diamond, lab…) in English and Arabic. Text you type is never changed.'),
+                    Forms\Components\Toggle::make('shop_hide_sold')->label('Hide sold pieces in shop lists')->inline(false)
+                        ->helperText('Shop and category pages start with "Available only" ticked; customers can untick it to see sold pieces too.'),
                     Forms\Components\TextInput::make('making_badge_highlight_below')->label('Highlight as "Only X% making" at or below')->numeric()->suffix('%'),
                     $text('whatsapp_number', 'WhatsApp number')->helperText('International format, e.g. 971501234567'),
                     Forms\Components\Toggle::make('whatsapp_button')->label('Floating WhatsApp button')->inline(false),

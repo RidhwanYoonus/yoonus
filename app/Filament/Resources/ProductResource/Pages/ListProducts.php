@@ -22,6 +22,14 @@ class ListProducts extends ListRecords
     {
         return [
             $this->translateMissingArabicAction(),
+            \Filament\Actions\Action::make('fillAllSeo')->label('Fill empty SEO')->icon('heroicon-o-sparkles')->color('gray')
+                ->requiresConfirmation()->modalHeading('Fill empty SEO for the whole shop')
+                ->modalDescription('Writes the page title and description (English and Arabic) for every product and category where a box is empty, from their details. Text already there is not changed.')
+                ->action(function () {
+                    $n = \App\Support\SeoText::fillAllBlanks();
+                    \Filament\Notifications\Notification::make()->success()->title('SEO filled')
+                        ->body("Products: {$n['products']} · Categories: {$n['categories']}")->send();
+                }),
             Actions\Action::make('export')->label('Export CSV')->icon('heroicon-o-arrow-down-tray')->color('gray')
                 ->action(fn () => response()->streamDownload(ProductCsv::export(), 'products-'.now()->format('Ymd-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8'])),
             Actions\ActionGroup::make([

@@ -127,10 +127,7 @@ class ProductResource extends Resource
                         ->disk('public')->directory('products')->maxSize(8192)->maxFiles(8)
                         ->helperText('Converted to WebP automatically. First image is the main photo.'),
                 ]),
-                Forms\Components\Section::make('SEO')->collapsed()->columns(1)->schema([
-                    Forms\Components\TextInput::make('meta_title')->maxLength(255)->helperText('Leave empty to auto-generate from name, karat and weight.'),
-                    Forms\Components\Textarea::make('meta_description')->maxLength(320)->rows(2)->helperText('Leave empty to auto-generate (includes live price).'),
-                ]),
+                \App\Filament\Support\SeoFields::section(Product::class)->collapsed(fn (?Product $record) => $record && filled($record->meta_title) && filled($record->meta_description)),
             ]),
             Forms\Components\Group::make()->columnSpan(1)->schema([
                 Forms\Components\Section::make('Live price')->schema([

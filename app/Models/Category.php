@@ -26,4 +26,13 @@ class Category extends Model
     {
         return 'slug';
     }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $c) {
+            if (\App\Support\Settings::bool('seo_auto_fill', true) && filled($c->name)) {
+                rescue(fn () => \App\Support\SeoText::fillBlanks($c, save: false), null, false);
+            }
+        });
+    }
 }

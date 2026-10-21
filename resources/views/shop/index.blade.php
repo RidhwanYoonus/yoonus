@@ -14,6 +14,14 @@
         <form method="GET" class="card h-fit space-y-6 p-5 text-sm lg:sticky lg:top-36" :class="filters ? '' : 'hidden lg:block'">
             @if (request('q'))<input type="hidden" name="q" value="{{ request('q') }}">@endif
             <fieldset>
+                <input type="hidden" name="available" value="0">
+                <label class="flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-line px-3 py-2.5 transition hover:border-gold-400">
+                    <span><span class="block font-medium">{{ __('shop.filters.available') }}</span><span class="text-xs text-muted">{{ __('shop.filters.available_hint') }}</span></span>
+                    <input type="checkbox" name="available" value="1" @checked(($filters['available'] ?? '0') === '1') class="peer sr-only">
+                    <span class="relative h-6 w-11 shrink-0 rounded-full bg-line transition peer-checked:bg-gold-600 peer-focus-visible:ring-2 peer-focus-visible:ring-gold-300 after:absolute after:start-0.5 after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow after:transition peer-checked:after:translate-x-5 rtl:peer-checked:after:-translate-x-5"></span>
+                </label>
+            </fieldset>
+            <fieldset>
                 <legend class="label">{{ __('shop.filters.karat') }}</legend>
                 <div class="flex flex-wrap gap-2">
                     @foreach ($karats as $k)
@@ -48,10 +56,63 @@
                     </select>
                 </fieldset>
             @endif
+            @if ($diamondOptions['any'] || $diamondOptions['origins'])
+                <fieldset>
+                    <legend class="label">{{ __('shop.filters.diamond') }}</legend>
+                    <div class="flex flex-wrap gap-2">
+                        <x-filter-chip type="radio" name="diamond" value="" :checked="blank($filters['diamond'] ?? null)">{{ __('shop.filters.all') }}</x-filter-chip>
+                        <x-filter-chip type="radio" name="diamond" value="any" :checked="($filters['diamond'] ?? '') === 'any'">{{ __('shop.filters.with_diamond') }}</x-filter-chip>
+                        @foreach ($diamondOptions['origins'] as $o)
+                            <x-filter-chip type="radio" name="diamond" :value="$o" :checked="($filters['diamond'] ?? '') === $o">{{ __('shop.certificate.origin_'.$o) }}</x-filter-chip>
+                        @endforeach
+                        <x-filter-chip type="radio" name="diamond" value="none" :checked="($filters['diamond'] ?? '') === 'none'">{{ __('shop.filters.no_diamond') }}</x-filter-chip>
+                    </div>
+                </fieldset>
+            @endif
+            @if ($diamondOptions['colors'])
+                <fieldset>
+                    <legend class="label">{{ __('shop.filters.diamond_color') }}</legend>
+                    <div class="flex flex-wrap gap-2" dir="ltr">
+                        @foreach ($diamondOptions['colors'] as $c)<x-filter-chip name="color[]" :value="$c" :checked="in_array($c, $filters['color'] ?? [], true)">{{ $c }}</x-filter-chip>@endforeach
+                    </div>
+                </fieldset>
+            @endif
+            @if ($diamondOptions['clarities'])
+                <fieldset>
+                    <legend class="label">{{ __('shop.filters.diamond_clarity') }}</legend>
+                    <div class="flex flex-wrap gap-2" dir="ltr">
+                        @foreach ($diamondOptions['clarities'] as $c)<x-filter-chip name="clarity[]" :value="$c" :checked="in_array($c, $filters['clarity'] ?? [], true)">{{ $c }}</x-filter-chip>@endforeach
+                    </div>
+                </fieldset>
+            @endif
+            @if ($diamondOptions['shapes'])
+                <fieldset>
+                    <legend class="label">{{ __('shop.filters.diamond_shape') }}</legend>
+                    <div class="flex flex-wrap gap-2">
+                        @foreach ($diamondOptions['shapes'] as $c)<x-filter-chip name="shape[]" :value="$c" :checked="in_array($c, $filters['shape'] ?? [], true)">{{ __('shop.shapes.'.$c) }}</x-filter-chip>@endforeach
+                    </div>
+                </fieldset>
+            @endif
+            @if ($diamondOptions['has_carat'])
+                <fieldset>
+                    <legend class="label">{{ __('shop.filters.carat') }}</legend>
+                    <div class="flex gap-2"><input type="number" step="0.01" name="min_carat" min="0" value="{{ $filters['min_carat'] ?? '' }}" placeholder="{{ __('shop.filters.min') }}" class="input"><input type="number" step="0.01" name="max_carat" min="0" value="{{ $filters['max_carat'] ?? '' }}" placeholder="{{ __('shop.filters.max') }}" class="input"></div>
+                </fieldset>
+            @endif
+            @if ($hasFixed)
+                <fieldset>
+                    <legend class="label">{{ __('shop.filters.price_type') }}</legend>
+                    <select name="price_type" class="input">
+                        <option value="">{{ __('shop.filters.all') }}</option>
+                        <option value="GOLD_RATE" @selected(($filters['price_type'] ?? '') === 'GOLD_RATE')>{{ __('shop.filters.price_gold_rate') }}</option>
+                        <option value="FIXED" @selected(($filters['price_type'] ?? '') === 'FIXED')>{{ __('shop.filters.price_fixed') }}</option>
+                    </select>
+                </fieldset>
+            @endif
             <fieldset>
                 <legend class="label">{{ __('shop.filters.sort') }}</legend>
                 <select name="sort" class="input">
-                    @foreach (['newest', 'price_asc', 'price_desc', 'weight_asc', 'weight_desc', 'popular'] as $s)
+                    @foreach (['newest', 'price_asc', 'price_desc', 'weight_asc', 'weight_desc', 'popular', ...($diamondOptions['has_carat'] ? ['carat_desc'] : [])] as $s)
                         <option value="{{ $s }}" @selected(($filters['sort'] ?? 'newest') === $s)>{{ __('shop.filters.sort_'.$s) }}</option>
                     @endforeach
                 </select>

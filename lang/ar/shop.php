@@ -42,7 +42,10 @@ return [
 
     'campaign' => ['ends_in' => 'ينتهي العرض خلال', 'days' => 'يوم', 'hours' => 'ساعة', 'minutes' => 'دقيقة', 'seconds' => 'ثانية', 'shop_now' => 'تسوّق العرض'],
 
+    'shapes' => ['Round' => 'دائري', 'Princess' => 'برنسيس', 'Oval' => 'بيضاوي', 'Emerald' => 'زمردي', 'Cushion' => 'وسادة', 'Pear' => 'كمثري', 'Marquise' => 'ماركيز', 'Radiant' => 'راديانت', 'Asscher' => 'أشر', 'Heart' => 'قلب', 'Baguette' => 'باغيت', 'Mixed' => 'مختلط'],
+
     'filters' => [
+        'available' => 'المتوفر فقط', 'available_hint' => 'إخفاء القطع المباعة', 'diamond' => 'الألماس', 'with_diamond' => 'بالألماس', 'no_diamond' => 'بدون ألماس', 'diamond_color' => 'لون الألماس', 'diamond_clarity' => 'نقاء الألماس', 'diamond_shape' => 'شكل الألماس', 'carat' => 'القيراط', 'price_type' => 'السعر', 'price_gold_rate' => 'حسب سعر الذهب اليوم', 'price_fixed' => 'سعر ثابت', 'sort_carat_desc' => 'القيراط: الأكبر أولاً',
         'title' => 'التصفية', 'karat' => 'العيار', 'category' => 'الفئة', 'all' => 'الكل', 'price' => 'السعر (د.إ)', 'weight' => 'الوزن (غ)',
         'min' => 'من', 'max' => 'إلى', 'stone' => 'الحجر', 'plain_gold' => 'ذهب سادة', 'sort' => 'الترتيب', 'apply' => 'تطبيق', 'reset' => 'إعادة ضبط',
         'sort_newest' => 'الأحدث', 'sort_price_asc' => 'السعر: من الأقل إلى الأعلى', 'sort_price_desc' => 'السعر: من الأعلى إلى الأقل',
@@ -352,6 +355,35 @@ return [
     ],
 
     'seo' => [
+        'auto' => [
+            'jewellery' => 'المجوهرات',
+            'p_close_short' => 'تسوّق من :store، توصيل أو استلام من المتجر.',
+            'ct' => 'بوزن :ct قيراط',
+            'gold' => 'ذهب :karat',
+            'g' => 'غ',
+            'diamond_ct' => 'ألماس :origin :ct قيراط',
+            'natural' => 'طبيعي',
+            'lab' => 'مختبري',
+            'diamond' => '',
+            'natural_diamond' => 'ألماس طبيعي',
+            'lab_diamond' => 'ألماس مصنّع في المختبر',
+            'p_intro' => ':name من ذهب :karat:weight',
+            'p_weight' => '، بوزن :weight غ',
+            'p_diamond' => ' مع ألماس :origin :ct:grades',
+            'p_certified' => '، بشهادة :lab',
+            'p_stone' => ' مع :stone',
+            'color' => 'اللون :v',
+            'clarity' => 'النقاء :v',
+            'cut' => 'القطع :v',
+            'p_close' => 'تسوّق :category من :store: قطع مدموغة، توصيل داخل الإمارات أو استلام من المتجر.',
+            'list_sep' => '، ',
+            'gold_default_karats' => '18 و21 و22',
+            'category_title' => ':name – مجوهرات ذهب :karats في الإمارات',
+            'category_description' => 'تسوّق :name من ذهب :karats:diamonds لدى :store. أسعار مباشرة وفق سعر الذهب، قطع مدموغة، توصيل داخل الإمارات واستلام من المتجر.',
+            'category_natural' => '، مع ألماس طبيعي',
+            'category_lab_grown' => '، مع ألماس مختبري',
+            'category_both_diamonds' => '، مع ألماس طبيعي ومختبري',
+        ],
         'home_title' => 'مجوهرات الذهب والألماس في الإمارات — أسعار وفق سعر الذهب المباشر',
         'default_description' => 'تسوّق مجوهرات الذهب عيار 18 و21 و22 و24 عبر الإنترنت في الإمارات. أسعار مباشرة وفق سعر الذهب، أجرة مصنعية واضحة، ضريبة 5% ظاهرة، تابي وتمارا.',
         'product_title' => ':name — ذهب :karat، :weight غ',

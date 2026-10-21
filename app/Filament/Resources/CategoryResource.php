@@ -36,9 +36,8 @@ class CategoryResource extends Resource
             Forms\Components\TextInput::make('sort_order')->numeric()->default(0),
             Forms\Components\Textarea::make('description'),
             Forms\Components\Textarea::make('description_ar')->extraInputAttributes(['dir' => 'rtl'])->hintAction(\App\Filament\Support\ArabicField::translate('description', 'description_ar')),
-            Forms\Components\TextInput::make('meta_title')->helperText('Optional — auto-generated if empty'),
-            Forms\Components\TextInput::make('meta_description')->maxLength(320),
             Forms\Components\Toggle::make('is_active')->default(true),
+            \App\Filament\Support\SeoFields::section(\App\Models\Category::class)->columnSpanFull(),
         ]);
     }
 

@@ -124,6 +124,10 @@ class Product extends Model
             if ($p->hidden_after_sale && $p->stock_qty > 0) {
                 $p->hidden_after_sale = false;
             }
+            // Empty SEO boxes are written from the product's details (Settings → Store & tax → Write SEO automatically).
+            if (\App\Support\Settings::bool('seo_auto_fill', true) && filled($p->name)) {
+                rescue(fn () => \App\Support\SeoText::fillBlanks($p, save: false), null, false);
+            }
         });
     }
 

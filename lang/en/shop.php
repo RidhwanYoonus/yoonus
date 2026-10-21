@@ -42,7 +42,10 @@ return [
 
     'campaign' => ['ends_in' => 'Offer ends in', 'days' => 'Days', 'hours' => 'Hrs', 'minutes' => 'Min', 'seconds' => 'Sec', 'shop_now' => 'Shop the offer'],
 
+    'shapes' => ['Round' => 'Round', 'Princess' => 'Princess', 'Oval' => 'Oval', 'Emerald' => 'Emerald', 'Cushion' => 'Cushion', 'Pear' => 'Pear', 'Marquise' => 'Marquise', 'Radiant' => 'Radiant', 'Asscher' => 'Asscher', 'Heart' => 'Heart', 'Baguette' => 'Baguette', 'Mixed' => 'Mixed'],
+
     'filters' => [
+        'available' => 'Available only', 'available_hint' => 'Hide sold pieces', 'diamond' => 'Diamond', 'with_diamond' => 'With diamonds', 'no_diamond' => 'No diamonds', 'diamond_color' => 'Diamond colour', 'diamond_clarity' => 'Diamond clarity', 'diamond_shape' => 'Diamond shape', 'carat' => 'Carat (ct)', 'price_type' => 'Price', 'price_gold_rate' => 'By today’s gold rate', 'price_fixed' => 'Fixed price', 'sort_carat_desc' => 'Carat: biggest first',
         'title' => 'Filters', 'karat' => 'Karat', 'category' => 'Category', 'all' => 'All', 'price' => 'Price (AED)', 'weight' => 'Weight (g)',
         'min' => 'Min', 'max' => 'Max', 'stone' => 'Stone', 'plain_gold' => 'Plain gold', 'sort' => 'Sort by', 'apply' => 'Apply', 'reset' => 'Reset',
         'sort_newest' => 'Newest', 'sort_price_asc' => 'Price: low to high', 'sort_price_desc' => 'Price: high to low',
@@ -352,6 +355,35 @@ return [
     ],
 
     'seo' => [
+        'auto' => [
+            'jewellery' => 'jewellery',
+            'p_close_short' => 'Shop at :store, UAE delivery or pickup.',
+            'ct' => ':ct ct ',
+            'gold' => ':karat Gold',
+            'g' => 'g',
+            'diamond_ct' => ':ct ct :origin Diamond',
+            'natural' => 'Natural',
+            'lab' => 'Lab-grown',
+            'diamond' => '',
+            'natural_diamond' => 'Natural Diamond',
+            'lab_diamond' => 'Lab-grown Diamond',
+            'p_intro' => ':name in :karat gold:weight',
+            'p_weight' => ', :weight g',
+            'p_diamond' => ', with a :ct:origin diamond:grades',
+            'p_certified' => ', :lab certified',
+            'p_stone' => ' with :stone',
+            'color' => ':v colour',
+            'clarity' => ':v clarity',
+            'cut' => ':v cut',
+            'p_close' => 'Hallmarked :category from :store, UAE delivery or store pickup.',
+            'list_sep' => ', ',
+            'gold_default_karats' => '18K, 21K & 22K',
+            'category_title' => ':name – :karats Gold Jewellery UAE',
+            'category_description' => 'Shop :name in :karats gold:diamonds at :store. Live gold-rate prices, hallmarked, UAE delivery & pickup.',
+            'category_natural' => ', with natural diamonds',
+            'category_lab_grown' => ', with lab-grown diamonds',
+            'category_both_diamonds' => ', with natural and lab-grown diamonds',
+        ],
         'home_title' => 'Gold & Diamond Jewellery in the UAE — Live Gold Rate Prices',
         'default_description' => 'Shop 18K, 21K, 22K and 24K gold jewellery online in the UAE. Live gold rate pricing, transparent making charges, 5% VAT shown, Tabby & Tamara.',
         'product_title' => ':name — :karat Gold, :weight g',
