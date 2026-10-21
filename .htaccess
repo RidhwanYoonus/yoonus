@@ -8,7 +8,9 @@ Options -Indexes
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteRule ^(app|bootstrap|config|database|deploy|lang|resources|routes|scripts|storage|tests|vendor|node_modules)(/|$) - [F,L]
+    RewriteRule ^(app|bootstrap|config|database|deploy|lang|resources|routes|scripts|tests|vendor|node_modules)(/|$) - [F,L]
+    # storage/… addresses are the shop's photos (public/storage); only the private parts are blocked.
+    RewriteRule ^storage/(app|framework|logs)(/|$) - [F,L]
     RewriteRule ^(composer|package|phpunit|artisan|vite) - [F,L]
     RewriteCond %{REQUEST_URI} !/public/
     RewriteRule ^(.*)$ public/$1 [L]
