@@ -48,6 +48,17 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Shop in a sub-folder (e.g. example.com/newweb): Livewire's own script must be loaded from that folder too.
+        if (! $this->app->runningInConsole()) {
+            $this->app->booted(function () {
+                $base = rtrim((string) request()->getBaseUrl(), '/');
+                $route = rescue(fn () => app(\Livewire\Mechanisms\FrontendAssets\FrontendAssets::class)->javaScriptRoute?->uri, null, false);
+                if ($base !== '' && $route && ! config('livewire.asset_url')) {
+                    config(['livewire.asset_url' => $base.'/'.ltrim($route, '/')]);
+                }
+            });
+        }
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Foundation\Http\Events\RequestHandled::class, [\App\Support\SubfolderLivewire::class, 'handle']);
         // A new update or .env change makes the speed cache out of date: rebuild it once, automatically.
         if (! $this->app->runningInConsole()) {
             rescue(fn () => \App\Support\SpeedCache::refreshIfStale(), null, false);
