@@ -55,7 +55,7 @@ class ProductResource extends Resource
     {
 
         return $form->columns(3)->schema([
-            Forms\Components\Group::make()->columnSpan(2)->schema([
+            Forms\Components\Group::make()->columnSpan(['lg' => 2])->schema([
                 Forms\Components\Section::make('Details')->columns(2)->schema([
                     Forms\Components\TextInput::make('name')->label('Name (English)')->required()->maxLength(255)
                         ->live(onBlur: true)->afterStateUpdated(fn (Forms\Set $set, ?string $state, string $operation) => $operation === 'create' ? $set('slug', Str::slug((string) $state)) : null),
@@ -84,7 +84,7 @@ class ProductResource extends Resource
                     Forms\Components\TextInput::make('weight_grams')->label(fn (Forms\Get $get) => $get('pricing_type') === 'FIXED' ? 'Weight (g, optional)' : 'Weight (g)')
                         ->required(fn (Forms\Get $get) => $get('pricing_type') !== 'FIXED')->numeric()->minValue(0)->step(0.001)->default(0)->live(debounce: 400),
                     Forms\Components\TextInput::make('wastage_percent')->visible(fn (Forms\Get $get) => $get('pricing_type') !== 'FIXED')->label('Wastage %')->numeric()->default(0)->minValue(0)->maxValue(100)->live(debounce: 400),
-                    Forms\Components\ToggleButtons::make('manufacturer_charge_type')->label('Making charge type')->inline()->required()->default('PERCENTAGE')->live()->columnSpan(2)
+                    Forms\Components\ToggleButtons::make('manufacturer_charge_type')->label('Making charge type')->inline()->required()->default('PERCENTAGE')->live()->columnSpan(['lg' => 2])
                         ->visible(fn (Forms\Get $get) => $get('pricing_type') !== 'FIXED')
                         ->options(['PERCENTAGE' => '% of gold value', 'PER_PIECE' => 'Fixed making AED per piece'])
                         ->icons(['PERCENTAGE' => 'heroicon-o-receipt-percent', 'PER_PIECE' => 'heroicon-o-banknotes'])
@@ -108,7 +108,7 @@ class ProductResource extends Resource
                             ->searchable()->preload()
                             ->createOptionForm(\App\Filament\Resources\CertificateLabResource::fields())->createOptionModalHeading('Add certificate lab')
                             ->editOptionForm(\App\Filament\Resources\CertificateLabResource::fields())->editOptionModalHeading('Edit certificate lab')
-                            ->columnSpan(2)->helperText('+ adds a new lab · the pencil edits the chosen lab (name, logo, link).'),
+                            ->columnSpan(['lg' => 2])->helperText('+ adds a new lab · the pencil edits the chosen lab (name, logo, link).'),
                         Forms\Components\TextInput::make('certificate_number')->label('Certificate no.')->maxLength(64),
                         Forms\Components\FileUpload::make('certificate_file')->label('Certificate copy (PDF / image)')->disk('public')->directory('certificates')
                             ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png', 'image/webp'])->maxSize(8192)->openable()->downloadable(),
@@ -125,7 +125,15 @@ class ProductResource extends Resource
                 Forms\Components\Section::make('Images')->schema([
                     Forms\Components\FileUpload::make('images')->multiple()->reorderable()->image()->imageEditor()
                         ->disk('public')->directory('products')->maxSize(8192)->maxFiles(8)
-                        ->helperText('Converted to WebP automatically. First image is the main photo.'),
+                        // Phone photos are large: shrink them in the browser before uploading.
+                        ->imageResizeMode('contain')->imageResizeTargetWidth('2000')->imageResizeTargetHeight('2000')->imageResizeUpscale(false)
+                        ->helperText('Converted to WebP automatically. First image is the main photo. On a phone, "Browse" also offers the camera and gallery.'),
+                    Forms\Components\FileUpload::make('camera_photos')->label('Take photos with the camera')->multiple()->image()
+                        ->disk('public')->directory('products')->maxSize(8192)->maxFiles(8)
+                        ->imageResizeMode('contain')->imageResizeTargetWidth('2000')->imageResizeTargetHeight('2000')->imageResizeUpscale(false)
+                        ->extraInputAttributes(['capture' => 'environment'])   // opens the back camera straight away on phones
+                        ->placeholder('📷 Tap to open the camera')
+                        ->helperText('On a phone this opens the back camera. Photos taken here are added after the images above when you save.'),
                 ]),
                 \App\Filament\Support\SeoFields::section(Product::class)->collapsed(fn (?Product $record) => $record && filled($record->meta_title) && filled($record->meta_description)),
             ]),
@@ -201,10 +209,10 @@ class ProductResource extends Resource
                 Tables\Columns\ImageColumn::make('images')->label('')->disk('public')->limit(1)->square()
                     ->defaultImageUrl(fn (Product $record) => route('placeholder', $record->slug)),
                 Tables\Columns\TextColumn::make('name')->searchable(['name', 'name_ar', 'sku'])->description(fn (Product $record) => $record->sku)->limit(40),
-                Tables\Columns\TextColumn::make('goldCategory.name')->label('Karat')->badge()->sortable()->placeholder('—'),
-                Tables\Columns\TextColumn::make('pricing_type')->label('Pricing')->badge()
+                Tables\Columns\TextColumn::make('goldCategory.name')->visibleFrom('md')->label('Karat')->badge()->sortable()->placeholder('—'),
+                Tables\Columns\TextColumn::make('pricing_type')->visibleFrom('md')->label('Pricing')->badge()
                     ->formatStateUsing(fn (string $state) => $state === 'FIXED' ? 'Fixed per piece' : 'Gold rate')->color(fn (string $state) => $state === 'FIXED' ? 'info' : 'warning'),
-                Tables\Columns\TextColumn::make('weight_grams')->label('Weight')->suffix(' g')->sortable()->toggleable(),
+                Tables\Columns\TextColumn::make('weight_grams')->visibleFrom('md')->label('Weight')->suffix(' g')->sortable()->toggleable(),
                 Tables\Columns\TextColumn::make('making')->label('Making')->toggleable(isToggledHiddenByDefault: true)
                     ->state(fn (Product $record) => $record->isFixedPrice() ? '—' : ($record->manufacturer_charge_type === 'PER_PIECE' ? 'AED '.$record->manufacturer_charge_value.' / piece' : $record->manufacturer_charge_value.'%')),
                 Tables\Columns\TextColumn::make('cached_subtotal')->label('Price (excl. VAT)')->money('AED')->sortable()->weight('bold'),

@@ -12,7 +12,9 @@ class CreateProduct extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        $data['images'] = array_map(fn ($p) => Images::convertStored($p), $data['images'] ?? []);
+        $images = [...array_values($data['images'] ?? []), ...array_values($data['camera_photos'] ?? [])];
+        unset($data['camera_photos']);
+        $data['images'] = array_map(fn ($p) => Images::convertStored($p), array_slice($images, 0, 12));
 
         return $data;
     }

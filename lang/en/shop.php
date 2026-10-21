@@ -411,6 +411,7 @@ return [
     ],
 
     'id' => [
+        'take_photo' => 'Take photo', 'choose_file' => 'Choose file',
         'title' => 'Identity verification',
         'intro' => 'For your security, high-value jewellery is only handed over to the buyer. Please add a valid ID — our staff will check it on delivery.',
         'type' => 'ID type', 'number' => 'ID number', 'expiry' => 'Expiry date',

@@ -44,7 +44,23 @@ class AdminPanelProvider extends PanelProvider
                 .affiliate-order-row:hover{background:rgba(184,149,74,.16)!important}
                 .affiliate-order-row>td:first-child{box-shadow:inset 4px 0 0 #b8954a}
                 .affiliate-order-section{border:1px solid rgba(184,149,74,.55)!important;background:rgba(184,149,74,.06)}
+                @media (max-width:639px){
+                    .fi-main{padding-left:.75rem!important;padding-right:.75rem!important}
+                    .fi-section-content{padding:1rem!important}
+                    .fi-header-heading{font-size:1.5rem!important;line-height:2rem!important}
+                    .fi-ac{flex-wrap:wrap}
+                    .fi-ta-header-toolbar{flex-wrap:wrap;gap:.5rem}
+                    .fi-ta-text{white-space:normal}
+                }
             </style>')
+            // Phones: the side menu starts closed on every page instead of covering it.
+            ->renderHook(PanelsRenderHook::BODY_END, fn () => '<script>
+                (function () {
+                    const close = () => { if (window.innerWidth < 1024 && window.Alpine && Alpine.store("sidebar")) Alpine.store("sidebar").close(); };
+                    document.addEventListener("alpine:initialized", close);
+                    document.addEventListener("livewire:navigated", close);
+                })();
+            </script>')
             ->renderHook(PanelsRenderHook::BODY_START, fn () => view('filament.database-update-banner')->render().view('filament.stale-rate-banner')->render())
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')

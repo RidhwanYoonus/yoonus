@@ -68,7 +68,7 @@ class OrderResource extends Resource
             ->recordClasses(fn (Order $record) => $record->affiliate_id ? 'affiliate-order-row' : null)
             ->columns([
                 Tables\Columns\TextColumn::make('number')->searchable()->weight('bold')->copyable(),
-                Tables\Columns\TextColumn::make('affiliate.code')->label('Affiliate')->badge()->color('warning')->icon('heroicon-o-user-plus')->placeholder('—')
+                Tables\Columns\TextColumn::make('affiliate.code')->visibleFrom('md')->label('Affiliate')->badge()->color('warning')->icon('heroicon-o-user-plus')->placeholder('—')
                     ->description(fn (Order $record) => $record->affiliate
                         ? $record->affiliateSource().' · '.$record->affiliate->user?->name : null)
                     ->toggleable(),
@@ -76,9 +76,9 @@ class OrderResource extends Resource
                 Tables\Columns\TextColumn::make('customer_name')->searchable(['customer_name', 'email', 'phone'])->description(fn (Order $record) => $record->phone),
                 Tables\Columns\TextColumn::make('status')->badge()->color(fn (string $state) => self::statusColor($state))
                     ->formatStateUsing(fn (Order $record) => $record->statusLabel()),
-                Tables\Columns\TextColumn::make('payment_method')->label('Payment')->badge()->color('gray')
+                Tables\Columns\TextColumn::make('payment_method')->visibleFrom('md')->label('Payment')->badge()->color('gray')
                     ->description(fn (Order $record) => __('shop.pay_status.'.$record->payment_status)),
-                Tables\Columns\TextColumn::make('fulfilment')->badge()->color('gray')
+                Tables\Columns\TextColumn::make('fulfilment')->visibleFrom('md')->badge()->color('gray')
                     ->formatStateUsing(fn (string $state) => $state === 'pickup' ? 'Store pickup' : 'Delivery'),
                 Tables\Columns\TextColumn::make('grand_total')->money('AED')->sortable()->weight('bold'),
                 Tables\Columns\TextColumn::make('invoice_number')->toggleable()->placeholder('—'),
@@ -171,7 +171,7 @@ class OrderResource extends Resource
     public static function infolist(Infolist $infolist): Infolist
     {
         return $infolist->columns(3)->schema([
-            Infolists\Components\Section::make('Order')->columnSpan(2)->columns(3)->schema([
+            Infolists\Components\Section::make('Order')->columnSpan(['lg' => 2])->columns(3)->schema([
                 Infolists\Components\TextEntry::make('number')->weight('bold'),
                 Infolists\Components\TextEntry::make('status')->badge()->color(fn (string $state) => self::statusColor($state))
                     ->formatStateUsing(fn (Order $record) => $record->statusLabel()),
@@ -216,7 +216,7 @@ class OrderResource extends Resource
                     })
                     ->badge()->color(fn (Order $record) => match ($record->handover_verified_via) { 'otp' => 'success', 'override' => 'warning', default => 'gray' }),
             ]),
-            Infolists\Components\Section::make('Totals (frozen at checkout)')->columnSpan(2)->columns(4)->schema([
+            Infolists\Components\Section::make('Totals (frozen at checkout)')->columnSpan(['lg' => 2])->columns(4)->schema([
                 Infolists\Components\TextEntry::make('items_subtotal')->money('AED'),
                 Infolists\Components\TextEntry::make('discount_total')->money('AED'),
                 Infolists\Components\TextEntry::make('taxable_amount')->money('AED'),

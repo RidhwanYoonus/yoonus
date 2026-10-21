@@ -38,7 +38,7 @@ class AffiliateResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->columns(3)->schema([
-            Forms\Components\Section::make('Login account')->columnSpan(2)->columns(2)
+            Forms\Components\Section::make('Login account')->columnSpan(['lg' => 2])->columns(2)
                 ->description('The affiliate signs in on the shop (Sign in) with this email and password and sees their dashboard.')
                 ->schema([
                     Forms\Components\TextInput::make('user_name')->label('Full name')->required()->maxLength(120),
