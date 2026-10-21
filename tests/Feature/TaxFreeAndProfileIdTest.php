@@ -132,4 +132,28 @@ class TaxFreeAndProfileIdTest extends TestCase
         Livewire::test(EditProduct::class, ['record' => $this->product->getRouteKey()])
             ->call('save')->assertRedirect(\App\Filament\Resources\ProductResource::getUrl('index'));
     }
+
+    public function test_products_remember_who_created_and_edited_them_and_filter_by_it(): void
+    {
+        $sara = User::factory()->create(['name' => 'Sara', 'is_staff' => true, 'permissions' => ['products' => ['view', 'create', 'edit']]]);
+        $admin = User::factory()->create(['name' => 'Owner', 'is_admin' => true]);
+        $this->actingAs($sara);
+        $ring = Product::create(['name' => 'Sara Ring', 'sku' => 'SR-1', 'slug' => 'sara-ring', 'gold_category_id' => $this->product->gold_category_id,
+            'weight_grams' => 2, 'manufacturer_charge_type' => 'PERCENTAGE', 'manufacturer_charge_value' => 10, 'stock_qty' => 1]);
+        $this->assertSame([$sara->id, $sara->id], [$ring->created_by, $ring->updated_by]);
+
+        $this->actingAs($admin);
+        $ring->update(['stock_qty' => 2]);
+        $this->assertSame([$sara->id, $admin->id], [$ring->fresh()->created_by, $ring->fresh()->updated_by]);
+
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        Livewire::test(ListProducts::class)
+            ->set('tableFilters.created_by.values', [$sara->id])->assertCanSeeTableRecords([$ring])->assertCanNotSeeTableRecords([$this->product])
+            ->set('tableFilters.created_by.values', [])->set('tableFilters.updated_by.values', [$admin->id])->assertCanSeeTableRecords([$ring]);
+
+        // Customers buying (stock going down) do not count as editing.
+        $this->actingAs(User::factory()->create());
+        $ring->update(['stock_qty' => 1]);
+        $this->assertSame($admin->id, $ring->fresh()->updated_by);
+    }
 }

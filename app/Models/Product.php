@@ -74,6 +74,24 @@ class Product extends Model
         return $this->belongsTo(GoldCategory::class);
     }
 
+    public function creator(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function editor(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    /** True once "Update database now" added the created_by / updated_by columns. */
+    public static function tracksAuthors(): bool
+    {
+        static $has;
+
+        return $has ??= rescue(fn () => \Illuminate\Support\Facades\Schema::hasColumn('products', 'updated_by'), false, false);
+    }
+
     public function certificateLab(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
         return $this->belongsTo(CertificateLab::class);
@@ -123,6 +141,16 @@ class Product extends Model
         static::saving(function (self $p) {
             if ($p->hidden_after_sale && $p->stock_qty > 0) {
                 $p->hidden_after_sale = false;
+            }
+            // Who added / last changed it (admin and staff only; imports and the system leave it as is).
+            $by = auth()->user();
+            if ($by && ($by->is_admin || $by->is_staff) && self::tracksAuthors()) {
+                if (! $p->exists) {
+                    $p->created_by = $by->id;
+                }
+                if ($p->isDirty() || ! $p->exists) {
+                    $p->updated_by = $by->id;
+                }
             }
             // Empty SEO boxes are written from the product's details (Settings → Store & tax → Write SEO automatically).
             if (\App\Support\Settings::bool('seo_auto_fill', true) && filled($p->name)) {

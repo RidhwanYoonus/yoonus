@@ -18,7 +18,8 @@ class DatabaseUpdateBannerTest extends TestCase
         $admin = User::factory()->create(['is_admin' => true]);
         $this->assertSame([], PendingMigrations::list());
 
-        Artisan::call('migrate:rollback', ['--step' => 5, '--force' => true]); // the newest migrations
+        Artisan::call('migrate:rollback', ['--step' => 6, '--force' => true]); // the newest migrations
+        $this->assertFalse(Schema::hasColumn('products', 'created_by'));
         $this->assertFalse(Schema::hasColumn('orders', 'tax_free_requested'));
         $this->assertFalse(Schema::hasColumn('products', 'meta_title_ar'));
         $this->assertFalse(Schema::hasTable('activity_log'));
@@ -29,6 +30,7 @@ class DatabaseUpdateBannerTest extends TestCase
         $this->actingAs($admin)->get('/admin')->assertOk()->assertSee('Update database now');
 
         $this->actingAs($admin)->post('/admin/update-database')->assertRedirect();
+        $this->assertTrue(Schema::hasColumn('products', 'updated_by'));
         $this->assertTrue(Schema::hasColumn('users', 'id_country'));
         $this->assertTrue(Schema::hasColumn('categories', 'meta_description_ar'));
         $this->assertTrue(Schema::hasTable('activity_log'));

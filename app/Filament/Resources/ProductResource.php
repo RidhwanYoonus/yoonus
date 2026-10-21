@@ -203,6 +203,7 @@ class ProductResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query) => Product::tracksAuthors() ? $query->with(['creator:id,name', 'editor:id,name']) : $query)
             ->defaultSort('updated_at', 'desc')
             ->recordUrl(fn (Product $record) => self::getUrl('edit', ['record' => $record]))
             ->actionsPosition(Tables\Enums\ActionsPosition::BeforeColumns)
@@ -220,8 +221,12 @@ class ProductResource extends Resource
                 Tables\Columns\TextColumn::make('making')->label('Making')->toggleable(isToggledHiddenByDefault: true)
                     ->state(fn (Product $record) => $record->isFixedPrice() ? '—' : ($record->manufacturer_charge_type === 'PER_PIECE' ? 'AED '.$record->manufacturer_charge_value.' / piece' : $record->manufacturer_charge_value.'%')),
                 Tables\Columns\TextColumn::make('cached_subtotal')->label('Price (excl. VAT)')->money('AED')->sortable()->weight('bold'),
-                Tables\Columns\TextColumn::make('created_at')->label('Created')->dateTime('d M Y')->sortable()->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('updated_at')->label('Edited')->since()->sortable()->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('created_at')->label('Created')->dateTime('d M Y')->sortable()->toggleable(isToggledHiddenByDefault: true)
+                    ->description(fn (Product $record) => $record->creator?->name),
+                Tables\Columns\TextColumn::make('updated_at')->label('Edited')->since()->sortable()->toggleable(isToggledHiddenByDefault: true)
+                    ->description(fn (Product $record) => $record->editor?->name),
+                Tables\Columns\TextColumn::make('creator.name')->label('Created by')->placeholder('—')->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('editor.name')->label('Last edited by')->placeholder('—')->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('price_calculated_at')->label('Recalculated')->since()->sortable()->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('stock_qty')->label('Stock')->sortable()
                     ->description(fn (Product $record) => $record->hidden_after_sale ? 'Sold · hidden' : ($record->stock_qty <= 0 ? 'Sold · showing' : null))
@@ -245,6 +250,10 @@ class ProductResource extends Resource
                 Tables\Filters\SelectFilter::make('pricing_type')->label('Pricing')->options(['GOLD_RATE' => 'Gold rate', 'FIXED' => 'Fixed price per piece']),
                 Tables\Filters\SelectFilter::make('diamond_origin')->label('Diamond type')->options(\App\Models\Product::DIAMOND_ORIGINS),
                 Tables\Filters\TernaryFilter::make('is_featured')->label('Featured on homepage'),
+                Tables\Filters\SelectFilter::make('created_by')->label('Created by')->multiple()->options(fn () => self::staffOptions())
+                    ->visible(fn () => Product::tracksAuthors()),
+                Tables\Filters\SelectFilter::make('updated_by')->label('Last edited by')->multiple()->options(fn () => self::staffOptions())
+                    ->visible(fn () => Product::tracksAuthors()),
                 Tables\Filters\Filter::make('created')->label('Created')
                     ->form([Forms\Components\DatePicker::make('created_from')->label('Created from'), Forms\Components\DatePicker::make('created_until')->label('Created until')])
                     ->query(fn (Builder $query, array $data) => $query
@@ -315,5 +324,11 @@ class ProductResource extends Resource
             'create' => Pages\CreateProduct::route('/create'),
             'edit' => Pages\EditProduct::route('/{record}/edit'),
         ];
+    }
+
+    /** Admin and staff logins, for the "Created by" / "Last edited by" filters. */
+    private static function staffOptions(): array
+    {
+        return \App\Models\User::where(fn ($q) => $q->where('is_admin', true)->orWhere('is_staff', true))->orderBy('name')->pluck('name', 'id')->all();
     }
 }
