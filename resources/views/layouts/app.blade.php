@@ -47,6 +47,8 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @include('partials.pixels')
+    {{-- Faster page changes: the browser fetches a shop page when the shopper hovers / starts tapping its link. --}}
+    <script type="speculationrules">{"prefetch":[{"source":"document","where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":["/cart/*","/checkout*","/logout","/admin*","/affiliate*","/orders/*","/payments/*","/w/*","/l/*","/*\\?*aff=*"]}},{"not":{"selector_matches":"[download],[target=_blank],[rel~=nofollow]"}}]},"eagerness":"moderate"}]}</script>
 </head>
 @php($focus = $focus ?? false)
 <body class="min-h-screen flex flex-col {{ $focus ? 'pb-24' : 'pb-16' }} lg:pb-0">

@@ -16,7 +16,7 @@ class StoreVisitResource extends Resource
 {
     use HasStaffArea;
 
-    protected static string $staffArea = 'orders';
+    protected static string $staffArea = 'store_visits';
 
     protected static ?string $model = StoreVisit::class;
 
@@ -70,7 +70,7 @@ class StoreVisitResource extends Resource
             ->filters([Tables\Filters\SelectFilter::make('status')->options(StoreVisit::STATUSES)])
             ->actions([
                 Tables\Actions\Action::make('sale')->label('Credit affiliate')->icon('heroicon-o-building-storefront')->color('warning')
-                    ->visible(fn (StoreVisit $r) => $r->affiliate && \App\Support\StaffAccess::current('affiliates', 'edit'))
+                    ->visible(fn (StoreVisit $r) => $r->affiliate && \App\Support\StaffAccess::current('affiliate_commissions', 'edit'))
                     ->modalDescription('The customer bought in the shop: give the affiliate their commission.')
                     ->form(AffiliateResource::storeSaleForm())
                     ->action(function (StoreVisit $record, array $data) {

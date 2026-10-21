@@ -30,7 +30,7 @@ class ListProducts extends ListRecords
                     \Filament\Notifications\Notification::make()->success()->title('SEO filled')
                         ->body("Products: {$n['products']} · Categories: {$n['categories']}")->send();
                 }),
-            Actions\Action::make('export')->label('Export CSV')->icon('heroicon-o-arrow-down-tray')->color('gray')
+            Actions\Action::make('export')->visible(fn () => \App\Support\StaffAccess::current('export'))->label('Export CSV')->icon('heroicon-o-arrow-down-tray')->color('gray')
                 ->action(fn () => response()->streamDownload(ProductCsv::export(), 'products-'.now()->format('Ymd-His').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8'])),
             Actions\ActionGroup::make([
                 Actions\Action::make('sample')->label('Download sample CSV')->icon('heroicon-o-document-text')

@@ -18,7 +18,7 @@ class AffiliatePayoutResource extends Resource
 {
     use HasStaffArea;
 
-    protected static string $staffArea = 'affiliates';
+    protected static string $staffArea = 'affiliate_payouts';
 
     protected static ?string $model = AffiliatePayout::class;
 

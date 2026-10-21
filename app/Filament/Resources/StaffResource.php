@@ -88,6 +88,8 @@ class StaffResource extends Resource
                 ->visible(fn (Forms\Get $get) => $get('access') === 'staff')
                 ->headerActions([])
                 ->schema([
+                    Forms\Components\Placeholder::make('admin_only')->label('Always admin only')
+                        ->content(implode(' · ', StaffAccess::ADMIN_ONLY)),
                     Forms\Components\Select::make('preset')->label('Start from a job role (optional)')->dehydrated(false)->live()
                         ->options(collect(StaffAccess::PRESETS)->map(fn ($p) => $p[0]))
                         ->afterStateUpdated(function (?string $state, Forms\Set $set) {

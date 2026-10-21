@@ -18,7 +18,7 @@ class AffiliateCommissionResource extends Resource
 {
     use HasStaffArea;
 
-    protected static string $staffArea = 'affiliates';
+    protected static string $staffArea = 'affiliate_commissions';
 
     protected static ?string $model = AffiliateCommission::class;
 

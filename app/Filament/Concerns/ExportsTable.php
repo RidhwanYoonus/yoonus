@@ -22,7 +22,8 @@ trait ExportsTable
                     ->action(fn () => $this->openTablePrint()),
                 Action::make('exportTable')->label('Export (Excel / CSV)')->icon('heroicon-o-arrow-down-tray')
                     ->action(fn () => $this->downloadTableCsv()),
-            ])->label('Print / Export')->icon('heroicon-o-document-arrow-down')->button()->color('gray'),
+            ])->label('Print / Export')->icon('heroicon-o-document-arrow-down')->button()->color('gray')
+                ->visible(fn () => \App\Support\StaffAccess::current('export')),
         ]);
     }
 
@@ -89,6 +90,7 @@ trait ExportsTable
 
     public function downloadTableCsv()
     {
+        abort_unless(\App\Support\StaffAccess::current('export'), 403);
         [$headings, $rows] = $this->tableExportData();
         $name = Str::slug($this->tableExportTitle()).'-'.now()->format('Y-m-d-His').'.csv';
 
@@ -105,6 +107,7 @@ trait ExportsTable
 
     public function openTablePrint(): void
     {
+        abort_unless(\App\Support\StaffAccess::current('export'), 403);
         [$headings, $rows] = $this->tableExportData(5000);
         $token = Str::random(40);
         Cache::put('print:'.$token, [

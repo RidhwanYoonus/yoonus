@@ -34,7 +34,7 @@ class EditAffiliate extends EditRecord
                     .'<p class="mt-3 text-sm">Invite new affiliates (team):<br><code>'.e($this->record->joinLink()).'</code></p>'
                     .((float) $this->record->coupon_discount_percent > 0 ? '<p class="mt-3 text-sm">Coupon code: <code>'.e($this->record->code).'</code> ('.(float) $this->record->coupon_discount_percent.'% off)</p>' : ''))),
             \Filament\Actions\Action::make('storeSale')->label('In-store sale')->icon('heroicon-o-building-storefront')->color('warning')
-                ->visible(fn () => \App\Support\StaffAccess::current('affiliates', 'edit'))
+                ->visible(fn () => \App\Support\StaffAccess::current('affiliate_commissions', 'edit'))
                 ->form(\App\Filament\Resources\AffiliateResource::storeSaleForm())
                 ->action(fn (array $data) => \App\Filament\Resources\AffiliateResource::runStoreSale($this->record, $data)),
             \App\Filament\Resources\AffiliateResource::toggleActive(Actions\Action::class, fn () => $this->refreshFormData(['is_active'])),

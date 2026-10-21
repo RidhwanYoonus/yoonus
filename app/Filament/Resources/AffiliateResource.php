@@ -160,7 +160,7 @@ class AffiliateResource extends Resource
     public static function storeSaleAction(): Tables\Actions\Action
     {
         return Tables\Actions\Action::make('storeSale')->label('In-store sale')->icon('heroicon-o-building-storefront')->color('warning')
-            ->visible(fn () => \App\Support\StaffAccess::current('affiliates', 'edit'))
+            ->visible(fn () => \App\Support\StaffAccess::current('affiliate_commissions', 'edit'))
             ->modalDescription('The customer bought in the shop. Commission is worked out with this affiliate\'s rates and is ready to collect at once.')
             ->form(self::storeSaleForm())
             ->action(fn (Affiliate $record, array $data) => self::runStoreSale($record, $data));
@@ -282,7 +282,7 @@ class AffiliateResource extends Resource
     public static function collectAction(): Tables\Actions\Action
     {
         return Tables\Actions\Action::make('collect')->label('Record collection')->icon('heroicon-o-banknotes')->color('success')
-            ->visible(fn () => \App\Support\StaffAccess::current('affiliates', 'edit'))
+            ->visible(fn () => \App\Support\StaffAccess::current('affiliate_payouts', 'create'))
             ->modalDescription(fn (Affiliate $record) => 'Ready to collect: '.Money::format($record->totals()['balance']).'. Give the cash at the store, then save. It is taken off the balance.')
             ->form([
                 Forms\Components\TextInput::make('amount')->label('Amount handed over')->numeric()->prefix('AED')->required()->minValue(0.01)

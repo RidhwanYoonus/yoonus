@@ -39,7 +39,8 @@ class Reports extends Page
             \Filament\Actions\ActionGroup::make([
                 \Filament\Actions\Action::make('print')->label('Print')->icon('heroicon-o-printer')->action(fn () => $this->printReport()),
                 \Filament\Actions\Action::make('export')->label('Export (Excel / CSV)')->icon('heroicon-o-arrow-down-tray')->action(fn () => $this->exportReport()),
-            ])->label('Print / Export')->icon('heroicon-o-document-arrow-down')->button()->color('gray'),
+            ])->label('Print / Export')->icon('heroicon-o-document-arrow-down')->button()->color('gray')
+                ->visible(fn () => \App\Support\StaffAccess::current('export')),
         ];
     }
 

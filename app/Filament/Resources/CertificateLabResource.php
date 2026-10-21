@@ -16,7 +16,7 @@ class CertificateLabResource extends Resource
 {
     use HasStaffArea;
 
-    protected static string $staffArea = 'products';
+    protected static string $staffArea = 'certificate_labs';
 
     protected static ?string $model = CertificateLab::class;
 

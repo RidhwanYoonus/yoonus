@@ -17,7 +17,10 @@ class ProductController extends Controller
     {
         abort_unless($product->isListed(), 404);
         $product->load('goldCategory', 'category');
-        Product::whereKey($product->id)->increment('view_count');
+        // Links the browser fetches ahead of a click (hover) are not real views.
+        if (! str_contains(strtolower((string) $request->header('Sec-Purpose', $request->header('Purpose'))), 'prefetch')) {
+            Product::whereKey($product->id)->increment('view_count');
+        }
 
         $related = Product::with('goldCategory')->active()->whereKeyNot($product->id)
             ->where(fn ($q) => $q->where('category_id', $product->category_id)->when($product->gold_category_id, fn ($q) => $q->orWhere('gold_category_id', $product->gold_category_id)))

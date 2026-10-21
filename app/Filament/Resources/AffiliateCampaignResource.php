@@ -17,7 +17,7 @@ class AffiliateCampaignResource extends Resource
 {
     use HasStaffArea;
 
-    protected static string $staffArea = 'affiliates';
+    protected static string $staffArea = 'affiliate_campaigns';
 
     protected static ?string $model = AffiliateCampaign::class;
 

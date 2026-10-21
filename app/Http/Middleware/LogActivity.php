@@ -75,7 +75,7 @@ class LogActivity
         if (in_array($name, self::SKIP_ROUTES, true) || $request->hasHeader('X-Livewire') || str_starts_with($path, '/livewire')
             || str_starts_with($path, '/filament') || str_starts_with($path, '/build') || $path === '/up'
             || preg_match('/bot|crawl|spider|slurp|preview|monitor|curl|wget|python|headlesschrome\/[0-9.]+ \(compatible/i', $ua)
-            || in_array(strtolower((string) $request->header('Sec-Purpose', $request->header('Purpose'))), ['prefetch', 'prefetch;prerender'], true)) {
+            || str_contains(strtolower((string) $request->header('Sec-Purpose', $request->header('Purpose'))), 'prefetch')) {
             return null;
         }
 

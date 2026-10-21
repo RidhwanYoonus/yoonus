@@ -22,7 +22,7 @@ class AffiliateApplicationResource extends Resource
 {
     use HasStaffArea;
 
-    protected static string $staffArea = 'affiliates';
+    protected static string $staffArea = 'affiliate_applications';
 
     protected static ?string $model = AffiliateApplication::class;
 
@@ -70,7 +70,7 @@ class AffiliateApplicationResource extends Resource
             ->filters([Tables\Filters\SelectFilter::make('status')->options(AffiliateApplication::STATUSES)])
             ->actions([
                 Tables\Actions\Action::make('approve')->label('Approve')->icon('heroicon-o-check')->color('success')
-                    ->visible(fn (AffiliateApplication $r) => $r->status === 'new' && \App\Support\StaffAccess::current('affiliates', 'create'))
+                    ->visible(fn (AffiliateApplication $r) => $r->status === 'new' && \App\Support\StaffAccess::current('affiliate_applications', 'edit'))
                     ->requiresConfirmation()
                     ->modalDescription('Creates the affiliate with the default rates (Settings → Affiliates) and emails their sign-in details. You can change their rates afterwards.')
                     ->action(fn (AffiliateApplication $record) => self::approve($record)),
