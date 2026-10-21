@@ -68,12 +68,53 @@ class AffiliateController extends Controller
                 }),
             'leaderboard' => $this->leaderboard(),
             'picks' => \App\Models\Product::with('goldCategory')->active()->where('stock_qty', '>', 0)->orderByDesc('is_featured')->latest()->take(6)->get(),
+            'picksTotal' => \App\Models\Product::active()->where('stock_qty', '>', 0)->count(),
+            'rateBackgrounds' => self::rateBackgrounds(),
             'rates' => \App\Models\GoldCategory::where('is_active', true)->orderByDesc('karat')->get(),
             'locks' => $affiliate->can_lock_price ? \App\Models\AffiliatePriceLock::with('product')->where('affiliate_id', $affiliate->id)->latest()->limit(10)->get() : collect(),
             'lockProducts' => $affiliate->can_lock_price ? \App\Models\Product::active()->where('stock_qty', '>', 0)->orderBy('name')->get(['id', 'name', 'sku']) : collect(),
             'team' => $affiliate->recruits()->with('user')->get(),
             'visits' => \App\Models\StoreVisit::where('affiliate_id', $affiliate->id)->latest()->limit(10)->get(),
         ]);
+    }
+
+    /** Every piece in stock, with search and filters, ready to share. */
+    public function share(Request $request)
+    {
+        $affiliate = $this->affiliate($request);
+        $f = $request->validate([
+            'q' => 'nullable|string|max:100', 'category' => 'nullable|integer', 'karat' => 'nullable|integer',
+            'diamond' => 'nullable|in:any,natural,lab_grown', 'sort' => 'nullable|in:newest,price_asc,price_desc,popular',
+        ]);
+        $query = \App\Models\Product::with('goldCategory')->active()->where('stock_qty', '>', 0)
+            ->when($f['q'] ?? null, fn ($q, $s) => $q->where(fn ($q) => $q->where('name', 'like', "%{$s}%")->orWhere('name_ar', 'like', "%{$s}%")->orWhere('sku', $s)))
+            ->when($f['category'] ?? null, fn ($q, $v) => $q->where('category_id', $v))
+            ->when($f['karat'] ?? null, fn ($q, $v) => $q->where('gold_category_id', $v))
+            ->when($f['diamond'] ?? null, fn ($q, $v) => $v === 'any' ? $q->whereNotNull('diamond_origin') : $q->where('diamond_origin', $v));
+        match ($f['sort'] ?? 'newest') {
+            'price_asc' => $query->orderBy('cached_subtotal'),
+            'price_desc' => $query->orderByDesc('cached_subtotal'),
+            'popular' => $query->orderByDesc('view_count'),
+            default => $query->orderByDesc('is_featured')->latest(),
+        };
+
+        return view('shop.affiliate-share', [
+            'seo' => Seo::page(__('shop.affiliate.share_all_title')),
+            'affiliate' => $affiliate,
+            'products' => $query->paginate(24)->withQueryString(),
+            'categories' => \App\Models\Category::where('is_active', true)->orderBy('sort_order')->get(),
+            'karats' => \App\Models\GoldCategory::where('is_active', true)->orderByDesc('karat')->get(),
+            'filters' => $f,
+        ]);
+    }
+
+    /** Background pictures for the gold-rate image (Settings → Affiliates). */
+    public static function rateBackgrounds(): array
+    {
+        $value = \App\Support\Settings::get('affiliate_rate_backgrounds', []);
+        $value = is_string($value) ? (json_decode($value, true) ?: []) : (array) $value;
+
+        return array_values(array_map(fn ($p) => \Illuminate\Support\Facades\Storage::disk('public')->url($p), array_filter($value, 'is_string')));
     }
 
     /** Top 10 this month by sales (names only — amounts stay private). */

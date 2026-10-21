@@ -81,6 +81,7 @@ return [
         'policy_report_hours' => 48,
         'admin_idle_minutes' => 30,
         'shop_hide_sold' => false,
+        'affiliate_rate_backgrounds' => [],      // photos behind the affiliates' gold-rate picture
         'seo_auto_fill' => true,                // empty SEO boxes are written from the product / category details              // shop lists start with "Available only" ticked
         'activity_log_enabled' => true,          // Customers → Activity log / Live visitors
         'activity_log_days' => 90,               // 0 = keep for ever

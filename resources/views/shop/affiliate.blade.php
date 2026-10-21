@@ -9,7 +9,6 @@
     @unless ($affiliate->is_active)
         <div class="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert">{{ __('shop.affiliate.paused') }}</div>
     @endunless
-    @unless ($affiliate->is_active)<p class="mt-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800">{{ __('shop.affiliate.inactive') }}</p>@endunless
 
     <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div class="card p-5"><p class="label">{{ __('shop.affiliate.pending') }}</p><p class="price mt-1 text-2xl font-semibold">{{ $fmt($totals['pending']) }}</p><p class="text-xs text-muted">{{ __('shop.affiliate.pending_note') }}</p></div>
@@ -69,34 +68,33 @@
     @endif
 
     {{-- Ready-made posts --}}
-    <section class="mt-10">
-        <h2 class="font-display text-2xl">{{ __('shop.affiliate.picks') }}</h2>
-        <p class="mt-1 text-sm text-muted">{{ __('shop.affiliate.picks_note') }}</p>
-        @php($shareBase = fn ($p) => route('product.show', $p).'?aff='.$affiliate->code.($affiliate->white_page_enabled ? '&w=1' : ''))
+    <section class="mt-10" x-data="affShare({{ $affiliate->white_page_enabled ? 'true' : 'false' }})">
+        @include('partials.affiliate-share-chooser')
+        <div class="flex flex-wrap items-end justify-between gap-3">
+            <div>
+                <h2 class="font-display text-2xl">{{ __('shop.affiliate.picks') }}</h2>
+                <p class="mt-1 text-sm text-muted">{{ __('shop.affiliate.picks_note') }}</p>
+            </div>
+            <a href="{{ route('affiliate.share') }}" class="btn-dark px-5">{{ __('shop.affiliate.see_all', ['count' => $picksTotal]) }}</a>
+        </div>
         <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @foreach ($picks as $p)
-                @php($caption = __('shop.affiliate.caption', ['name' => $p->localized('name'), 'karat' => $p->goldCategory?->name ?? '', 'url' => $shareBase($p)]))
-                <div class="card flex gap-3 p-3">
-                    <img src="{{ $p->primaryImage() }}" alt="" class="h-20 w-20 shrink-0 rounded-xl object-cover bg-sand" loading="lazy">
-                    <div class="min-w-0 flex-1">
-                        <p class="truncate text-sm font-medium">{{ $p->localized('name') }}</p>
-                        <div class="mt-2 flex flex-wrap gap-2">
-                            <a class="btn-whatsapp h-8 px-3 text-xs" target="_blank" rel="noopener" href="https://wa.me/?text={{ rawurlencode($caption) }}">WhatsApp</a>
-                            <button type="button" class="btn-outline h-8 px-3 text-xs" @click="copy(@js($caption), 'p{{ $p->id }}')" x-text="copied === 'p{{ $p->id }}' ? '✓' : @js(__('shop.affiliate.copy_post'))"></button>
-                            <a class="btn-outline h-8 px-3 text-xs" href="{{ $p->primaryImage() }}" download target="_blank">{{ __('shop.affiliate.photo') }}</a>
-                        </div>
-                    </div>
-                </div>
+                @include('partials.affiliate-post-card', ['p' => $p])
             @endforeach
         </div>
-        @php($rateText = __('shop.affiliate.rate_post', ['rates' => $rates->map(fn ($r) => $r->name.': AED '.$r->rate_per_gram.'/g')->implode(' · '), 'url' => $affiliate->white_page_enabled ? $affiliate->whitePageLink() : $affiliate->referralLink()]))
+        @php($rateLine = $rates->map(fn ($r) => $r->name.': AED '.$r->rate_per_gram.'/g')->implode(' · '))
+        @php($rateTexts = ['r' => __('shop.affiliate.rate_post', ['rates' => $rateLine, 'url' => $affiliate->referralLink()]), 'w' => __('shop.affiliate.rate_post', ['rates' => $rateLine, 'url' => $affiliate->whitePageLink()])])
         <div class="card mt-4 flex flex-wrap items-center justify-between gap-3 p-5">
-            <div class="min-w-0"><p class="label">{{ __('shop.affiliate.rate_share') }}</p><p class="text-sm text-muted">{{ $rateText }}</p></div>
+            <div class="min-w-0"><p class="label">{{ __('shop.affiliate.rate_share') }}</p><p class="text-sm text-muted">{{ $rateTexts['r'] }}</p></div>
             <div class="flex gap-2">
-                <a class="btn-whatsapp px-4" target="_blank" rel="noopener" href="https://wa.me/?text={{ rawurlencode($rateText) }}">WhatsApp</a>
-                <button type="button" class="btn-outline px-4" @click="copy(@js($rateText), 'rate')" x-text="copied === 'rate' ? '✓' : @js(__('shop.affiliate.copy'))"></button>
+                <button type="button" class="btn-whatsapp px-4" @click="share('wa', @js($rateTexts))">WhatsApp</button>
+                <button type="button" class="btn-outline px-4" @click="share('copy', @js($rateTexts), 'rate')" x-text="done === 'rate' ? '✓' : @js(__('shop.affiliate.copy'))"></button>
             </div>
         </div>
+        @include('partials.rate-card', ['backgrounds' => $rateBackgrounds])
+        @if ($affiliate->white_page_enabled)
+            <p class="mt-3 text-xs text-muted">{{ __('shop.affiliate.share_choice_note') }} <button type="button" class="underline" @click="forget()" x-text="done === 'forget' ? '✓' : @js(__('shop.affiliate.share_ask_again'))"></button></p>
+        @endif
     </section>
 
     @if ($affiliate->can_lock_price)

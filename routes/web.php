@@ -117,6 +117,7 @@ Route::get('/affiliate/join', [\App\Http\Controllers\AffiliateController::class,
 Route::post('/affiliate/join', [\App\Http\Controllers\AffiliateController::class, 'apply'])->middleware('throttle:3,10')->name('affiliate.apply.store');
 Route::middleware('auth')->group(function () {
     Route::get('/affiliate', [\App\Http\Controllers\AffiliateController::class, 'dashboard'])->name('affiliate.dashboard');
+    Route::get('/affiliate/share', [\App\Http\Controllers\AffiliateController::class, 'share'])->name('affiliate.share');
     Route::post('/affiliate/page', [\App\Http\Controllers\AffiliateController::class, 'update'])->middleware('throttle:10,1')->name('affiliate.update');
     Route::post('/affiliate/lock', [\App\Http\Controllers\AffiliateController::class, 'lock'])->middleware('throttle:20,60')->name('affiliate.lock.create');
 });

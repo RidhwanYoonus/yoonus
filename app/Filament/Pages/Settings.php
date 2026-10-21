@@ -213,6 +213,10 @@ class Settings extends Page implements HasForms
                     Forms\Components\TextInput::make('affiliate_recruiter_percent')->visible(fn (Forms\Get $get) => $get('affiliate_team_enabled'))->label('Team leader share of their recruits\' commission')->numeric()->minValue(0)->maxValue(50)->suffix('%')
                         ->helperText('Paid by the shop on top — the recruit\'s own commission is not reduced. 0 = off.'),
                     Forms\Components\TextInput::make('affiliate_price_lock_hours')->label('Price-lock links last')->numeric()->minValue(1)->maxValue(168)->suffix('hours'),
+                    Forms\Components\FileUpload::make('affiliate_rate_backgrounds')->label('Backgrounds for the gold-rate picture')->columnSpanFull()
+                        ->image()->multiple()->reorderable()->maxFiles(8)->disk('public')->directory('rate-backgrounds')->maxSize(6144)
+                        ->imageResizeMode('cover')->imageResizeTargetWidth('1080')->imageResizeTargetHeight('1350')
+                        ->helperText('Optional. Your own photos (shop front, jewellery, gold bars…) for affiliates\' gold-rate picture. The rates are written on top with a dark shade. Built-in designs are always offered too.'),
                     Forms\Components\Repeater::make('affiliate_tiers')->label('Levels by monthly sales (excl. VAT)')->columnSpanFull()->columns(3)->reorderable(false)
                         ->helperText('Each month an affiliate reaches a level, their commission gets the extra %. Example: Gold from AED 50,000 → +20% (10% making becomes 12%).')
                         ->schema([
