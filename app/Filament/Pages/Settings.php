@@ -87,7 +87,7 @@ class Settings extends Page implements HasForms
                     Forms\Components\Placeholder::make('auto_status')->label('Automatic update status')->columnSpanFull()
                         ->content(fn () => \App\Support\AutoTasks::cronText()."\n".\App\Support\AutoTasks::goldRateText())
                         ->extraAttributes(['class' => 'whitespace-pre-line']),
-                    $text('gold_rate_api_url', 'Gold rate API URL (optional)')->url()->helperText('Leave empty to enter rates manually. Polled every 15 minutes.'),
+                    $text('gold_rate_api_url', 'Gold rate API URL (optional)')->url()->helperText('Only for a paid gold-rate data service (JSON) — not a normal website. Leave empty when you use the website switch above; that switch is used first.'),
                     $secret('gold_rate_api_key', 'Gold rate API key'),
                 ]),
                 Forms\Components\Tabs\Tab::make('Payments')->icon('heroicon-o-credit-card')->columns(3)->schema([

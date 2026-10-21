@@ -105,4 +105,16 @@ class AutoGoldRateTest extends TestCase
         $this->assertTrue(AutoTasks::cronRunning());
         $this->assertStringContainsString('Cron job is running', AutoTasks::cronText());
     }
+
+    public function test_website_switch_wins_over_an_api_box_holding_the_website_address(): void
+    {
+        $this->seed(ReferenceDataSeeder::class);
+        Settings::set(['gold_rate_auto_website' => true, 'gold_rate_api_url' => 'https://dubaicityofgold.com/', 'gold_rate_api_key' => 'x']);
+        Http::fake(['dubaicityofgold.com/*' => Http::response(self::CARD)]);
+
+        $this->artisan('shop:fetch-gold-rates')->assertSuccessful();
+
+        $this->assertSame('386.75', GoldCategory::where('name', '24K')->value('rate_per_gram'));
+        Http::assertNotSent(fn ($request) => $request->hasHeader('Authorization'));
+    }
 }

@@ -40,7 +40,8 @@ class FetchGoldRates extends Command
 
     public function handle(GoldRateService $rates): int
     {
-        $source = Settings::get('gold_rate_api_url') ? 'fromApi' : (Settings::get('gold_rate_auto_website') ? 'fromWebsite' : null);
+        // The website switch wins: a website address typed into the API box would otherwise be read as JSON.
+        $source = Settings::get('gold_rate_auto_website') ? 'fromWebsite' : (Settings::get('gold_rate_api_url') ? 'fromApi' : null);
         if ($source) {
             $this->log = [];
             try {
