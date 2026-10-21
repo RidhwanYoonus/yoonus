@@ -81,6 +81,8 @@ return [
         'policy_report_hours' => 48,
         'admin_idle_minutes' => 30,
         'shop_hide_sold' => false,
+        'tax_free_enabled' => true,             // checkout asks tourists if they want a tax-free invoice
+        'tax_free_min' => 250,
         'affiliate_rate_backgrounds' => [],      // photos behind the affiliates' gold-rate picture
         'seo_auto_fill' => true,                // empty SEO boxes are written from the product / category details              // shop lists start with "Available only" ticked
         'activity_log_enabled' => true,          // Customers → Activity log / Live visitors

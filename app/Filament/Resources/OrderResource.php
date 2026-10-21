@@ -67,7 +67,8 @@ class OrderResource extends Resource
             // Affiliate orders stand out (colour defined in the panel's render hook).
             ->recordClasses(fn (Order $record) => $record->affiliate_id ? 'affiliate-order-row' : null)
             ->columns([
-                Tables\Columns\TextColumn::make('number')->searchable()->weight('bold')->copyable(),
+                Tables\Columns\TextColumn::make('number')->searchable()->weight('bold')->copyable()
+                    ->description(fn (Order $record) => $record->tax_free_requested ? '🛂 Tourist tax-free' : null),
                 Tables\Columns\TextColumn::make('affiliate.code')->visibleFrom('md')->label('Affiliate')->badge()->color('warning')->icon('heroicon-o-user-plus')->placeholder('—')
                     ->description(fn (Order $record) => $record->affiliate
                         ? $record->affiliateSource().' · '.$record->affiliate->user?->name : null)
@@ -89,6 +90,7 @@ class OrderResource extends Resource
                     'unpaid' => 'Unpaid (waiting for payment)', 'expired' => 'Unpaid — time ran out (cancelled)', 'cod' => 'Cash on delivery (not collected yet)',
                     'verifying' => 'Payment to confirm', 'paid' => 'Paid', 'refunded' => 'Refunded',
                 ]),
+                Tables\Filters\Filter::make('tax_free')->label('Tourist tax-free only')->query(fn (Builder $query) => $query->where('tax_free_requested', true)),
                 Tables\Filters\TernaryFilter::make('affiliate_id')->label('Affiliate orders')->nullable()
                     ->trueLabel('Only affiliate orders')->falseLabel('Without affiliate'),
                 Tables\Filters\SelectFilter::make('affiliate')->label('Affiliate')->relationship('affiliate', 'code')->searchable()->preload(),
@@ -147,6 +149,8 @@ class OrderResource extends Resource
                     (bool) $record->handover_otp_sent_at => 'Sent '.$record->handover_otp_sent_at->diffForHumans().' to the customer\'s email and WhatsApp.',
                     default => 'No code sent yet — use "Send handover code" first.',
                 }),
+            Forms\Components\Checkbox::make('tax_free_tag')->label('Tourist tax-free: I issued the tax-free tag for this passport')
+                ->visible(fn (Forms\Get $get) => $show($get) && $record->tax_free_requested)->accepted(fn (Forms\Get $get) => $show($get) && $record->tax_free_requested),
             Forms\Components\Checkbox::make('id_checked')->label('I checked the customer\'s ID matches: '.IdDocument::masked($record->id_type, $record->id_last4).' ('.$record->customer_name.')')
                 ->visible(fn (Forms\Get $get) => $show($get) && $record->hasIdDocument())->accepted(fn (Forms\Get $get) => $show($get) && $record->hasIdDocument()),
             Forms\Components\Toggle::make('override')->label('Customer can\'t receive the code — override')->live()
@@ -197,6 +201,10 @@ class OrderResource extends Resource
                     ->formatStateUsing(fn ($state) => is_array($state) ? implode(', ', array_filter([$state['line1'] ?? null, $state['line2'] ?? null, $state['city'] ?? null, $state['zone'] ?? null])) : $state),
             ]),
             Infolists\Components\Section::make('Identity & handover')->columnSpan(1)->schema([
+                Infolists\Components\TextEntry::make('tax_free_requested')->label('Tourist tax-free')->badge()->color('warning')
+                    ->visible(fn (Order $record) => (bool) $record->tax_free_requested)
+                    ->formatStateUsing(fn () => 'Requested — issue the tax-free tag at handover')
+                    ->helperText(fn (Order $record) => 'Passport only'.($record->id_country ? ' · Nationality: '.\App\Support\TaxFree::countryName($record->id_country) : '').'. Check the passport matches before handing over.'),
                 Infolists\Components\TextEntry::make('id_type')->label('ID')->placeholder('Not provided')
                     ->formatStateUsing(fn (Order $record) => __('shop.id.types.'.$record->id_type, [], 'en')),
                 Infolists\Components\TextEntry::make('id_number')->label('ID number')->copyable()->fontFamily('mono')->visible(fn (Order $record) => $record->hasIdDocument()),

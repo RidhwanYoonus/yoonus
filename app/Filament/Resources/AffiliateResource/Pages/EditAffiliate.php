@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\DB;
 
 class EditAffiliate extends EditRecord
 {
+    use \App\Filament\Concerns\ReturnsAfterSave;
+
     protected static string $resource = AffiliateResource::class;
 
     public function getSubheading(): ?string

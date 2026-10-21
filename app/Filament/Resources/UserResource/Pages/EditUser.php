@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class EditUser extends EditRecord
 {
+    use \App\Filament\Concerns\ReturnsAfterSave;
+
     protected static string $resource = UserResource::class;
 
     /** is_admin is not mass-assignable from the storefront; only admins set it here. */

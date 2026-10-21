@@ -103,6 +103,8 @@ class OrderService
                 'id_expiry' => $data['id']['expiry'] ?? null,
                 'id_front_path' => $data['id']['front'] ?? null,
                 'id_back_path' => $data['id']['back'] ?? null,
+                // Written only once "Update database now" has added the columns.
+                ...(self::hasColumn('tax_free_requested') ? ['id_country' => $data['id']['country'] ?? null, 'tax_free_requested' => (bool) ($data['tax_free'] ?? false)] : []),
                 // Online payments must be completed quickly: the gold price is only held this long.
                 'payment_expires_at' => $data['payment_method'] !== 'cod' && $quote->amountDue > 0 ? now()->addMinutes(self::paymentWindow()) : null,
             ]);
@@ -463,5 +465,12 @@ class OrderService
     public function history(Order $order, ?string $from, string $to, ?User $by, ?string $note): void
     {
         OrderStatusHistory::create(['order_id' => $order->id, 'from_status' => $from, 'to_status' => $to, 'changed_by' => $by?->id, 'note' => $note]);
+    }
+
+    private static function hasColumn(string $column): bool
+    {
+        static $known = [];
+
+        return $known[$column] ??= rescue(fn () => \Illuminate\Support\Facades\Schema::hasColumn('orders', $column), false, false);
     }
 }

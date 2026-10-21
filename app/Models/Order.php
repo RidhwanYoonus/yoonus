@@ -51,6 +51,7 @@ class Order extends Model
             'conversion_sent' => 'boolean',
             'id_number' => 'encrypted',
             'id_expiry' => 'date',
+            'tax_free_requested' => 'boolean',
             'handover_otp_sent_at' => 'datetime',
             'handover_verified_at' => 'datetime',
         ];

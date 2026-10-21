@@ -97,6 +97,7 @@ class CheckoutController extends Controller
             'loyalty_points' => 'nullable|integer|min:0',
             'notes' => 'nullable|string|max:500',
             'save_address' => 'nullable|boolean',
+            'tax_free' => 'nullable|boolean',
         ] + $this->idRules($request), [
             'id_front.uploaded' => __('shop.id.upload_failed', ['max' => ini_get('upload_max_filesize')]),
             'id_back.uploaded' => __('shop.id.upload_failed', ['max' => ini_get('upload_max_filesize')]),
@@ -124,6 +125,9 @@ class CheckoutController extends Controller
         if (! array_key_exists($data['payment_method'], $this->gateways->available($quote))) {
             return back()->withInput()->withErrors(['payment_method' => __('shop.checkout.method_unavailable')]);
         }
+        if (self::taxFree($request) && Money::toAed($quote->grandTotal) < \App\Support\TaxFree::minimum()) {
+            return back()->withInput()->withErrors(['tax_free' => __('shop.tax_free.too_small', ['min' => 'AED '.number_format(\App\Support\TaxFree::minimum())])]);
+        }
 
         $address = $data['fulfilment'] === 'delivery' ? [
             'name' => $data['name'], 'phone' => $data['phone'], 'line1' => $data['line1'], 'line2' => $data['line2'] ?? null,
@@ -133,7 +137,7 @@ class CheckoutController extends Controller
         $id = $this->idDocument($request, $quote->fulfilment);
         try {
             $affiliate = app(\App\Affiliates\AffiliateContext::class);
-            $order = app(OrderService::class)->place($quote, $data + ['address' => $address, 'id' => $id,
+            $order = app(OrderService::class)->place($quote, $data + ['address' => $address, 'id' => $id, 'tax_free' => self::taxFree($request),
                 'affiliate' => $affiliate->preview ? null : $affiliate->affiliate, 'affiliate_white' => $affiliate->whitePage], $request->user());
         } catch (OutOfStockException $e) {
             if ($id && ! $id['saved']) {
@@ -151,6 +155,7 @@ class CheckoutController extends Controller
             $request->user()->forceFill([
                 'id_type' => $id['type'], 'id_number' => $id['number'], 'id_last4' => $id['last4'], 'id_expiry' => $id['expiry'],
                 'id_front_path' => $id['front'], 'id_back_path' => $id['back'], 'id_saved_at' => now(),
+                ...(\Illuminate\Support\Facades\Schema::hasColumn('users', 'id_country') ? ['id_country' => $id['country'] ?? null] : []),
             ])->save();
         }
 
@@ -269,13 +274,16 @@ class CheckoutController extends Controller
     private function idRules(Request $request): array
     {
         $fulfilment = $request->input('fulfilment') === 'pickup' || ! self::deliveryEnabled() ? 'pickup' : 'delivery';
-        if (! IdDocument::requiredFor($fulfilment) || $this->usesSavedId($request)) {
+        $taxFree = self::taxFree($request);
+        if ((! IdDocument::requiredFor($fulfilment) && ! $taxFree) || $this->usesSavedId($request)) {
             return [];
         }
         $file = ['file', 'mimes:jpg,jpeg,png,webp,heic,pdf', 'max:15360'];
 
         return [
-            'id_type' => ['required', Rule::in(IdDocument::TYPES)],
+            // Tourist tax-free: only a passport is accepted, with its nationality (not UAE).
+            'id_type' => ['required', $taxFree ? Rule::in(['passport']) : Rule::in(IdDocument::TYPES)],
+            'id_country' => [$taxFree ? 'required' : 'nullable', Rule::in(array_keys(\App\Support\TaxFree::countries()))],
             'id_number' => ['required', 'string', 'max:32', IdDocument::numberRule($request->input('id_type'))],
             'id_expiry' => ['required', 'date', 'after:today'],
             // Settings → Delivery & pickup → ID photos: optional (default), required, or not asked.
@@ -293,26 +301,36 @@ class CheckoutController extends Controller
 
     private function usesSavedId(Request $request): bool
     {
-        return $request->boolean('use_saved_id') && (bool) $request->user()?->hasValidSavedId();
+        $u = $request->user();
+
+        return $request->boolean('use_saved_id') && (bool) $u?->hasValidSavedId()
+            && (! self::taxFree($request) || ($u->id_type === 'passport' && filled($u->id_country)));
+    }
+
+    /** The shopper asked for a tourist tax-free invoice (and the shop offers it). */
+    public static function taxFree(Request $request): bool
+    {
+        return \App\Support\TaxFree::enabled() && $request->boolean('tax_free');
     }
 
     /** Stores the uploaded ID privately (or reuses the saved one) and returns the order snapshot. */
     private function idDocument(Request $request, string $fulfilment): ?array
     {
-        if (! IdDocument::requiredFor($fulfilment)) {
+        if (! IdDocument::requiredFor($fulfilment) && ! self::taxFree($request)) {
             return null;
         }
         if ($this->usesSavedId($request)) {
             $u = $request->user();
 
             return ['type' => $u->id_type, 'number' => $u->id_number, 'last4' => $u->id_last4, 'expiry' => $u->id_expiry,
-                'front' => $u->id_front_path, 'back' => $u->id_back_path, 'saved' => true];
+                'front' => $u->id_front_path, 'back' => $u->id_back_path, 'country' => $u->id_country, 'saved' => true];
         }
         $number = IdDocument::normalise($request->input('id_type'), $request->input('id_number'));
 
         return ['type' => $request->input('id_type'), 'number' => $number, 'last4' => IdDocument::last4($number), 'expiry' => $request->input('id_expiry'),
             'front' => self::idPhotos() !== 'hidden' && $request->hasFile('id_front') ? IdDocument::store($request->file('id_front')) : null,
-            'back' => self::idPhotos() !== 'hidden' && $request->hasFile('id_back') ? IdDocument::store($request->file('id_back')) : null, 'saved' => false];
+            'back' => self::idPhotos() !== 'hidden' && $request->hasFile('id_back') ? IdDocument::store($request->file('id_back')) : null,
+            'country' => $request->input('id_country') ?: null, 'saved' => false];
     }
 
     /** Home delivery can be paused from Settings → Payments; pickup then becomes the only option. */

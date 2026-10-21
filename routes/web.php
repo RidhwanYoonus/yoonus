@@ -67,6 +67,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/account', [AccountController::class, 'show'])->name('account');
     Route::post('/account/addresses', [AccountController::class, 'storeAddress'])->name('account.addresses.store');
     Route::delete('/account/addresses/{address}', [AccountController::class, 'deleteAddress'])->name('account.addresses.delete');
+    Route::post('/account/id', [AccountController::class, 'storeId'])->middleware('throttle:10,10')->name('account.id.store');
     Route::delete('/account/id', [AccountController::class, 'forgetId'])->name('account.id.forget');
 });
 

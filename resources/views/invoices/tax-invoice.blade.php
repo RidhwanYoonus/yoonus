@@ -37,6 +37,9 @@
         <td style="width:40%; text-align:right">
             <h1>TAX INVOICE</h1>
             <div>{{ $ar('فاتورة ضريبية') }}</div>
+            @if ($order->tax_free_requested)
+                <div style="margin-top:4px; padding:3px 8px; border:1px solid #b8954a; display:inline-block; font-weight:bold">TAX FREE FOR TOURISTS · {{ $ar('معفاة من الضريبة للسياح') }}</div>
+            @endif
             <div style="margin-top:6px">Invoice No: <strong>{{ $order->invoice_number }}</strong></div>
             <div>Invoice Date: {{ ($order->invoiced_at ?? now())->format('d M Y') }}</div>
             <div>Date of Supply: {{ ($order->paid_at ?? $order->created_at)->format('d M Y') }}</div>
@@ -54,6 +57,8 @@
                 @if ($address){{ $address['line1'] ?? '' }} {{ $address['line2'] ?? '' }}<br>{{ $address['city'] ?? '' }}, {{ $address['zone'] ?? '' }}, UAE<br>@endif
                 {{ $order->email }} · {{ $order->phone }}
                 @if ($order->buyer_trn)<br><strong>Buyer TRN: {{ $order->buyer_trn }}</strong>@endif
+                @if ($order->tax_free_requested)<br><strong>Tourist · Passport {{ $order->id_number ?: '••••'.$order->id_last4 }}@if ($order->id_country) · {{ \App\Support\TaxFree::countryName($order->id_country) }}@endif</strong>
+                    <br><span class="muted">VAT refund for tourists requested — tax-free tag issued at handover.</span>@endif
             </div>
         </td>
         <td style="width:50%; padding-left:6px">

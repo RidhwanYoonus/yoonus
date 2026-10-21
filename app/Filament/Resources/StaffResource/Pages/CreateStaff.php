@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class CreateStaff extends CreateRecord
 {
+    use \App\Filament\Concerns\ReturnsAfterSave;
+
     protected static string $resource = StaffResource::class;
 
     protected function handleRecordCreation(array $data): Model
@@ -17,10 +19,5 @@ class CreateStaff extends CreateRecord
         $user->forceFill(StaffResource::toColumns($data) + ['email_verified_at' => now()])->save();
 
         return $user;
-    }
-
-    protected function getRedirectUrl(): string
-    {
-        return StaffResource::getUrl();
     }
 }

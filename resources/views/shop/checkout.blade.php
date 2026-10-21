@@ -20,7 +20,7 @@
         'buyer_trn' => old('buyer_trn', $user?->buyer_trn), 'fulfilment' => $deliveryEnabled ? old('fulfilment', 'delivery') : 'pickup',
         'zone_id' => (int) old('zone_id', $quote->zone?->id ?? $zones->first()?->id), 'line1' => old('line1', $addresses->first()?->line1), 'line2' => old('line2', $addresses->first()?->line2), 'city' => old('city', $addresses->first()?->city),
         'pickup_branch_id' => old('pickup_branch_id', $branches->first()?->id), 'coupon' => old('coupon', ''), 'gift_card' => old('gift_card', ''),
-        'loyalty_points' => (int) old('loyalty_points', 0), 'payment_method' => old('payment_method', isset($methods['card']) ? 'card' : array_key_first($methods)), 'notes' => old('notes', ''),
+        'loyalty_points' => (int) old('loyalty_points', 0), 'tax_free' => old('tax_free') === '1', 'payment_method' => old('payment_method', isset($methods['card']) ? 'card' : array_key_first($methods)), 'notes' => old('notes', ''),
     ];
 @endphp
 
@@ -104,17 +104,48 @@
                 </section>
             @endif
 
-            @if ($idMode !== 'off')
+            @php($taxFreeOn = \App\Support\TaxFree::enabled())
+            @if ($taxFreeOn)
+                <section class="card p-4 sm:p-6">
+                    <input type="hidden" name="tax_free" :value="form.tax_free ? 1 : 0">
+                    <div class="flex items-start gap-3">
+                        <svg class="mt-1 h-6 w-6 shrink-0 text-gold-700" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21a9 9 0 100-18 9 9 0 000 18z"/><path d="M3.6 9h16.8M3.6 15h16.8M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg>
+                        <div><h2 class="font-display text-2xl">{{ __('shop.tax_free.title') }}</h2><p class="mt-1 text-sm text-muted">{{ __('shop.tax_free.question') }}</p></div>
+                    </div>
+                    <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                        <label class="card flex cursor-pointer items-center gap-3 p-4" :class="!form.tax_free && 'border-gold-500 ring-1 ring-gold-500'"><input type="radio" name="tax_free_choice" :checked="!form.tax_free" @change="form.tax_free = false" class="accent-gold-600"> {{ __('shop.tax_free.no') }}</label>
+                        <label class="card flex cursor-pointer items-center gap-3 p-4" :class="form.tax_free && 'border-gold-500 ring-1 ring-gold-500'"><input type="radio" name="tax_free_choice" :checked="form.tax_free" @change="form.tax_free = true" class="accent-gold-600">
+                            <span><span class="font-medium">{{ __('shop.tax_free.yes') }}</span><span class="block text-xs text-muted">{{ __('shop.tax_free.yes_note') }}</span></span></label>
+                    </div>
+                    <div x-show="form.tax_free" x-cloak class="mt-4 rounded-xl border border-gold-400 bg-gold-300/15 p-4 text-sm">
+                        <p class="font-medium">{{ __('shop.tax_free.how_title') }}</p>
+                        <ul class="mt-2 list-disc space-y-1 ps-5 text-muted">
+                            <li>{{ __('shop.tax_free.how_passport') }}</li>
+                            <li>{{ __('shop.tax_free.how_vat') }}</li>
+                            <li>{{ __('shop.tax_free.how_tag') }}</li>
+                            <li>{{ __('shop.tax_free.how_min', ['min' => 'AED '.number_format(\App\Support\TaxFree::minimum())]) }}</li>
+                        </ul>
+                    </div>
+                    @error('tax_free')<p class="mt-2 text-sm text-red-700">{{ $message }}</p>@enderror
+                </section>
+            @endif
+
+            @if ($idMode !== 'off' || $taxFreeOn)
                 @php($savedId = auth()->user()?->hasValidSavedId() ? auth()->user() : null)
-                <section class="card p-4 sm:p-6" x-data="{ mode: @js($idMode), useSaved: @js((bool) $savedId && old('use_saved_id', '1') === '1'), get needed() { return this.mode === 'all' || (this.mode === 'delivery' && this.form.fulfilment === 'delivery') } }" x-show="needed" x-cloak>
+                @php($savedPassport = $savedId && $savedId->id_type === 'passport' && filled($savedId->id_country ?? null))
+                <section class="card p-4 sm:p-6" x-data="{ mode: @js($idMode), savedPassport: @js($savedPassport), hasSaved: @js((bool) $savedId), pickSaved: @js((bool) $savedId && old('use_saved_id', '1') === '1'),
+                        get canUseSaved() { return this.hasSaved && (! this.form.tax_free || this.savedPassport) },
+                        get useSaved() { return this.pickSaved && this.canUseSaved }, set useSaved(v) { this.pickSaved = v },
+                        get needed() { return this.form.tax_free || this.mode === 'all' || (this.mode === 'delivery' && this.form.fulfilment === 'delivery') } }" x-show="needed" x-cloak>
                     <div class="flex items-start gap-3">
                         <svg class="mt-1 h-6 w-6 shrink-0 text-gold-700" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 12l2 2 4-4m5.6-4.02A11.96 11.96 0 0112 2.94a11.96 11.96 0 01-8.6 3.04A12 12 0 003 9c0 5.6 3.82 10.3 9 11.62 5.18-1.33 9-6.03 9-11.62 0-1.04-.13-2.05-.38-3.02z"/></svg>
                         <div><h2 class="font-display text-2xl">{{ __('shop.id.title') }}</h2><p class="mt-1 text-sm text-muted">{{ __('shop.id.intro') }}</p></div>
                     </div>
                     <input type="hidden" name="use_saved_id" :value="useSaved ? 1 : 0">
 
+                    <p x-show="form.tax_free" x-cloak class="mt-3 rounded-lg bg-sand px-3 py-2 text-sm">🛂 {{ __('shop.tax_free.passport_only') }}</p>
                     @if ($savedId)
-                        <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                        <div class="mt-4 grid gap-3 sm:grid-cols-2" x-show="canUseSaved">
                             <label class="card flex cursor-pointer items-center gap-3 p-4" :class="useSaved && 'border-gold-500 ring-1 ring-gold-500'"><input type="radio" :checked="useSaved" @change="useSaved = true" class="accent-gold-600">
                                 <span><span class="font-medium">{{ __('shop.id.use_saved') }}</span><span class="block text-xs text-muted">{{ \App\Support\IdDocument::masked($savedId->id_type, $savedId->id_last4) }}@if ($savedId->id_expiry) · {{ __('shop.id.expires', ['date' => $savedId->id_expiry->format('d/m/Y')]) }}@endif</span></span></label>
                             <label class="card flex cursor-pointer items-center gap-3 p-4" :class="!useSaved && 'border-gold-500 ring-1 ring-gold-500'"><input type="radio" :checked="!useSaved" @change="useSaved = false" class="accent-gold-600"> {{ __('shop.id.use_new') }}</label>
@@ -123,17 +154,23 @@
 
                     <div x-show="!useSaved" class="mt-4 grid gap-4 sm:grid-cols-2">
                         <div><label class="label" for="id_type">{{ __('shop.id.type') }}</label>
-                            <select id="id_type" name="id_type" class="input" :required="needed && !useSaved" :disabled="!needed || useSaved">
-                                @foreach (\App\Support\IdDocument::TYPES as $t)<option value="{{ $t }}" @selected(old('id_type', 'emirates_id') === $t)>{{ __('shop.id.types.'.$t) }}</option>@endforeach
+                            <select id="id_type" name="id_type" class="input" :required="needed && !useSaved" :disabled="!needed || useSaved" x-effect="if (form.tax_free) $el.value = 'passport'">
+                                @foreach (\App\Support\IdDocument::TYPES as $t)<option value="{{ $t }}" @selected(old('id_type', 'emirates_id') === $t) @if ($t !== 'passport') :disabled="form.tax_free" @endif>{{ __('shop.id.types.'.$t) }}</option>@endforeach
                             </select>
                         </div>
+                        <div x-show="form.tax_free" x-cloak><label class="label" for="id_country">{{ __('shop.tax_free.nationality') }}</label>
+                            <select id="id_country" name="id_country" class="input" :required="form.tax_free && !useSaved" :disabled="!form.tax_free || useSaved">
+                                <option value="">{{ __('shop.tax_free.choose_country') }}</option>
+                                @foreach (\App\Support\TaxFree::countries() as $code => $country)<option value="{{ $code }}" @selected(old('id_country') === $code)>{{ $country }}</option>@endforeach
+                            </select>
+                            @error('id_country')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror</div>
                         <div><label class="label" for="id_number">{{ __('shop.id.number') }}</label>
                             <input id="id_number" name="id_number" value="{{ old('id_number') }}" class="input" dir="ltr" placeholder="784-1990-1234567-1" autocomplete="off" :required="needed && !useSaved" :disabled="!needed || useSaved">
                             @error('id_number')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror</div>
                         <div><label class="label" for="id_expiry">{{ __('shop.id.expiry') }}</label>
                             <input id="id_expiry" type="date" name="id_expiry" value="{{ old('id_expiry') }}" min="{{ now()->addDay()->toDateString() }}" class="input" :required="needed && !useSaved" :disabled="!needed || useSaved">
                             @error('id_expiry')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror</div>
-                        <div class="hidden sm:block"></div>
+                        <div class="hidden sm:block" x-show="!form.tax_free"></div>
                         @php($idPhotos = \App\Http\Controllers\CheckoutController::idPhotos())
                         @if ($idPhotos !== 'hidden')
                             @include('partials.id-photo-input', ['name' => 'id_front', 'label' => __($idPhotos === 'required' ? 'shop.id.front_required' : 'shop.id.front'), 'required' => $idPhotos === 'required'])

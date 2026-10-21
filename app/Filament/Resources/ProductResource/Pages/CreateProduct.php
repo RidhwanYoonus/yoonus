@@ -8,6 +8,8 @@ use Filament\Resources\Pages\CreateRecord;
 
 class CreateProduct extends CreateRecord
 {
+    use \App\Filament\Concerns\ReturnsAfterSave;
+
     protected static string $resource = ProductResource::class;
 
     protected function mutateFormDataBeforeCreate(array $data): array

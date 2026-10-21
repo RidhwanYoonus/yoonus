@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class EditStaff extends EditRecord
 {
+    use \App\Filament\Concerns\ReturnsAfterSave;
+
     protected static string $resource = StaffResource::class;
 
     protected function mutateFormDataBeforeFill(array $data): array

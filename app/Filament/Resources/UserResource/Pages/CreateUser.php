@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class CreateUser extends CreateRecord
 {
+    use \App\Filament\Concerns\ReturnsAfterSave;
+
     protected static string $resource = UserResource::class;
 
     protected function handleRecordCreation(array $data): Model

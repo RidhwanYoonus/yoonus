@@ -144,6 +144,10 @@ class Settings extends Page implements HasForms
                     Forms\Components\Select::make('id_verification')->label('Proof of ID at checkout')->required()
                         ->options(['delivery' => 'Required for home delivery', 'all' => 'Required for every order (delivery and pickup)', 'off' => 'Not required'])
                         ->helperText('Customers enter their ID type, number and expiry as the last step before payment. They can save it for next time.'),
+                    Forms\Components\Toggle::make('tax_free_enabled')->label('Offer tourist tax-free invoices')->inline(false)->live()
+                        ->helperText('Checkout asks "Do you need a tax-free invoice?". Tourists who say yes must give a passport; you issue the tax-free tag (e.g. Planet) when the piece is handed over.'),
+                    Forms\Components\TextInput::make('tax_free_min')->label('Minimum purchase for tax-free')->numeric()->minValue(0)->prefix('AED')
+                        ->visible(fn (Forms\Get $get) => (bool) $get('tax_free_enabled'))->helperText('UAE rule: AED 250 including VAT.'),
                     Forms\Components\Select::make('id_photos')->label('Photos of the ID (front and back)')->required()
                         ->options(['optional' => 'Optional — customer may upload', 'required' => 'Required — front and back must be uploaded', 'hidden' => 'Not asked'])
                         ->helperText('Photos are stored privately; only admins can open them from the order.'),

@@ -9,6 +9,8 @@ use Filament\Resources\Pages\EditRecord;
 
 class EditProduct extends EditRecord
 {
+    use \App\Filament\Concerns\ReturnsAfterSave;
+
     protected static string $resource = ProductResource::class;
 
     protected function getHeaderActions(): array

@@ -149,7 +149,8 @@ class ProductResource extends Resource
                             ? 'Sold and handed over — hidden from the shop. Enter new stock to show it again.'
                             : 'At 0 the shop shows "Sold" and stops orders; after that order is delivered the piece is hidden.'),
                     Forms\Components\TextInput::make('low_stock_threshold')->numeric()->default(2)->minValue(0),
-                    Forms\Components\Toggle::make('is_active')->label('Visible in shop')->default(true),
+                    Forms\Components\Toggle::make('is_active')->label('Visible in shop')->default(false)
+                        ->helperText('New products start hidden: check photos and price, then switch on (here or in the products list).'),
                     Forms\Components\Toggle::make('is_featured')->label('Featured on homepage'),
                     Forms\Components\Toggle::make('video_call_enabled')->label('Live video call button')->default(true)
                         ->helperText(fn () => \App\Support\Settings::bool('video_call_enabled') ? 'Customers can request a live video call about this piece.' : 'Video calls are switched off for the whole shop in Settings → Video calls.'),
@@ -209,6 +210,9 @@ class ProductResource extends Resource
                 Tables\Columns\ImageColumn::make('images')->label('')->disk('public')->limit(1)->square()
                     ->defaultImageUrl(fn (Product $record) => route('placeholder', $record->slug)),
                 Tables\Columns\TextColumn::make('name')->searchable(['name', 'name_ar', 'sku'])->description(fn (Product $record) => $record->sku)->limit(40),
+                Tables\Columns\ToggleColumn::make('is_active')->label('In shop')->onColor('success')->offColor('gray')
+                    ->tooltip(fn (Product $record) => $record->is_active ? 'Shown in the shop — switch off to hide' : 'Hidden — switch on to show in the shop')
+                    ->disabled(fn () => ! \App\Support\StaffAccess::current('products', 'edit')),
                 Tables\Columns\TextColumn::make('goldCategory.name')->visibleFrom('md')->label('Karat')->badge()->sortable()->placeholder('—'),
                 Tables\Columns\TextColumn::make('pricing_type')->visibleFrom('md')->label('Pricing')->badge()
                     ->formatStateUsing(fn (string $state) => $state === 'FIXED' ? 'Fixed per piece' : 'Gold rate')->color(fn (string $state) => $state === 'FIXED' ? 'info' : 'warning'),
@@ -216,29 +220,82 @@ class ProductResource extends Resource
                 Tables\Columns\TextColumn::make('making')->label('Making')->toggleable(isToggledHiddenByDefault: true)
                     ->state(fn (Product $record) => $record->isFixedPrice() ? '—' : ($record->manufacturer_charge_type === 'PER_PIECE' ? 'AED '.$record->manufacturer_charge_value.' / piece' : $record->manufacturer_charge_value.'%')),
                 Tables\Columns\TextColumn::make('cached_subtotal')->label('Price (excl. VAT)')->money('AED')->sortable()->weight('bold'),
+                Tables\Columns\TextColumn::make('created_at')->label('Created')->dateTime('d M Y')->sortable()->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('updated_at')->label('Edited')->since()->sortable()->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('price_calculated_at')->label('Recalculated')->since()->sortable()->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('stock_qty')->label('Stock')->sortable()
                     ->description(fn (Product $record) => $record->hidden_after_sale ? 'Sold · hidden' : ($record->stock_qty <= 0 ? 'Sold · showing' : null))
                     ->color(fn (Product $record) => $record->isLowStock() ? 'danger' : null)->icon(fn (Product $record) => $record->isLowStock() ? 'heroicon-o-exclamation-triangle' : null),
                 Tables\Columns\TextColumn::make('diamond_origin')->label('Diamond type')->badge()->placeholder('—')->toggleable(isToggledHiddenByDefault: true)
                     ->formatStateUsing(fn (?string $state) => \App\Models\Product::DIAMOND_ORIGINS[$state] ?? $state)->color(fn (?string $state) => $state === 'natural' ? 'success' : 'info'),
-                Tables\Columns\ToggleColumn::make('is_active')->label('Live'),
                 Tables\Columns\ToggleColumn::make('is_featured')->label('Featured')->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('diamond_origin')->label('Diamond type')->options(\App\Models\Product::DIAMOND_ORIGINS),
-                Tables\Filters\SelectFilter::make('gold_category_id')->label('Karat')->relationship('goldCategory', 'name'),
-                Tables\Filters\SelectFilter::make('category_id')->label('Category')->relationship('category', 'name'),
-                Tables\Filters\Filter::make('low_stock')->label('Low stock')->query(fn (Builder $query) => $query->whereColumn('stock_qty', '<=', 'low_stock_threshold')),
+                Tables\Filters\TernaryFilter::make('is_active')->label('In shop')->trueLabel('Shown in shop')->falseLabel('Hidden'),
+                Tables\Filters\SelectFilter::make('stock')->label('Stock')
+                    ->options(['in' => 'In stock', 'low' => 'Low stock', 'sold' => 'Sold out (0)'])
+                    ->query(fn (Builder $query, array $data) => match ($data['value'] ?? null) {
+                        'in' => $query->where('stock_qty', '>', 0),
+                        'low' => $query->where('stock_qty', '>', 0)->whereColumn('stock_qty', '<=', 'low_stock_threshold'),
+                        'sold' => $query->where('stock_qty', '<=', 0),
+                        default => $query,
+                    }),
+                Tables\Filters\SelectFilter::make('category_id')->label('Category')->relationship('category', 'name')->multiple()->preload(),
+                Tables\Filters\SelectFilter::make('gold_category_id')->label('Karat')->relationship('goldCategory', 'name')->multiple()->preload(),
                 Tables\Filters\SelectFilter::make('pricing_type')->label('Pricing')->options(['GOLD_RATE' => 'Gold rate', 'FIXED' => 'Fixed price per piece']),
-                Tables\Filters\TernaryFilter::make('is_active')->label('Live'),
-            ])
+                Tables\Filters\SelectFilter::make('diamond_origin')->label('Diamond type')->options(\App\Models\Product::DIAMOND_ORIGINS),
+                Tables\Filters\TernaryFilter::make('is_featured')->label('Featured on homepage'),
+                Tables\Filters\Filter::make('created')->label('Created')
+                    ->form([Forms\Components\DatePicker::make('created_from')->label('Created from'), Forms\Components\DatePicker::make('created_until')->label('Created until')])
+                    ->query(fn (Builder $query, array $data) => $query
+                        ->when($data['created_from'] ?? null, fn ($q, $v) => $q->whereDate('created_at', '>=', $v))
+                        ->when($data['created_until'] ?? null, fn ($q, $v) => $q->whereDate('created_at', '<=', $v)))
+                    ->indicateUsing(fn (array $data) => array_values(array_filter([
+                        ($data['created_from'] ?? null) ? 'Created from '.\Illuminate\Support\Carbon::parse($data['created_from'])->format('d M Y') : null,
+                        ($data['created_until'] ?? null) ? 'Created until '.\Illuminate\Support\Carbon::parse($data['created_until'])->format('d M Y') : null,
+                    ]))),
+                Tables\Filters\Filter::make('edited')->label('Edited')
+                    ->form([Forms\Components\DatePicker::make('edited_from')->label('Edited from'), Forms\Components\DatePicker::make('edited_until')->label('Edited until')])
+                    ->query(fn (Builder $query, array $data) => $query
+                        ->when($data['edited_from'] ?? null, fn ($q, $v) => $q->whereDate('updated_at', '>=', $v))
+                        ->when($data['edited_until'] ?? null, fn ($q, $v) => $q->whereDate('updated_at', '<=', $v)))
+                    ->indicateUsing(fn (array $data) => array_values(array_filter([
+                        ($data['edited_from'] ?? null) ? 'Edited from '.\Illuminate\Support\Carbon::parse($data['edited_from'])->format('d M Y') : null,
+                        ($data['edited_until'] ?? null) ? 'Edited until '.\Illuminate\Support\Carbon::parse($data['edited_until'])->format('d M Y') : null,
+                    ]))),
+                Tables\Filters\Filter::make('price')->label('Price (excl. VAT)')
+                    ->form([Forms\Components\TextInput::make('price_min')->label('Price from')->numeric()->prefix('AED'), Forms\Components\TextInput::make('price_max')->label('Price up to')->numeric()->prefix('AED')])
+                    ->query(fn (Builder $query, array $data) => $query
+                        ->when(filled($data['price_min'] ?? null), fn ($q) => $q->where('cached_subtotal', '>=', $data['price_min']))
+                        ->when(filled($data['price_max'] ?? null), fn ($q) => $q->where('cached_subtotal', '<=', $data['price_max'])))
+                    ->indicateUsing(fn (array $data) => array_values(array_filter([
+                        filled($data['price_min'] ?? null) ? 'Price ≥ AED '.$data['price_min'] : null, filled($data['price_max'] ?? null) ? 'Price ≤ AED '.$data['price_max'] : null,
+                    ]))),
+                Tables\Filters\Filter::make('weight')->label('Weight')
+                    ->form([Forms\Components\TextInput::make('weight_min')->label('Weight from')->numeric()->suffix('g'), Forms\Components\TextInput::make('weight_max')->label('Weight up to')->numeric()->suffix('g')])
+                    ->query(fn (Builder $query, array $data) => $query
+                        ->when(filled($data['weight_min'] ?? null), fn ($q) => $q->where('weight_grams', '>=', $data['weight_min']))
+                        ->when(filled($data['weight_max'] ?? null), fn ($q) => $q->where('weight_grams', '<=', $data['weight_max'])))
+                    ->indicateUsing(fn (array $data) => array_values(array_filter([
+                        filled($data['weight_min'] ?? null) ? 'Weight ≥ '.$data['weight_min'].' g' : null, filled($data['weight_max'] ?? null) ? 'Weight ≤ '.$data['weight_max'].' g' : null,
+                    ]))),
+                Tables\Filters\Filter::make('no_photo')->label('Without photos')->query(fn (Builder $query) => $query->where(fn ($q) => $q->whereNull('images')->orWhere('images', '[]')->orWhere('images', ''))),
+                Tables\Filters\Filter::make('no_seo')->label('SEO missing')->query(fn (Builder $query) => $query->where(fn ($q) => $q->whereNull('meta_title')->orWhere('meta_title', '')->orWhereNull('meta_description')->orWhere('meta_description', ''))),
+                Tables\Filters\Filter::make('no_arabic')->label('Arabic name missing')->query(fn (Builder $query) => $query->where(fn ($q) => $q->whereNull('name_ar')->orWhere('name_ar', ''))),
+            ], layout: Tables\Enums\FiltersLayout::AboveContentCollapsible)
+            ->filtersFormColumns(['sm' => 2, 'lg' => 4])
             ->actions([
                 Tables\Actions\EditAction::make()->button()->size('sm'),
                 Tables\Actions\Action::make('view')->tooltip('View in shop')->icon('heroicon-o-eye')->url(fn (Product $record) => route('product.show', $record))->openUrlInNewTab()->iconButton(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkAction::make('show')->label('Show in shop')->icon('heroicon-o-eye')->color('success')
+                        ->visible(fn () => \App\Support\StaffAccess::current('products', 'edit'))->deselectRecordsAfterCompletion()
+                        ->action(fn ($records) => $records->each(fn (Product $p) => $p->update(['is_active' => true]))),
+                    Tables\Actions\BulkAction::make('hide')->label('Hide from shop')->icon('heroicon-o-eye-slash')->color('gray')
+                        ->visible(fn () => \App\Support\StaffAccess::current('products', 'edit'))->deselectRecordsAfterCompletion()
+                        ->action(fn ($records) => $records->each(fn (Product $p) => $p->update(['is_active' => false]))),
                     Tables\Actions\BulkAction::make('recalculate')->visible(fn () => \App\Support\StaffAccess::current('products', 'edit'))->icon('heroicon-o-arrow-path')
                         ->action(fn ($records) => $records->each(fn ($p) => app(PricingService::class)->refreshCachedPrice($p, null, 'manual'))),
                     Tables\Actions\DeleteBulkAction::make(),

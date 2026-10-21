@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\DB;
 
 class CreateAffiliate extends CreateRecord
 {
+    use \App\Filament\Concerns\ReturnsAfterSave;
+
     protected static string $resource = AffiliateResource::class;
 
     protected function handleRecordCreation(array $data): Model
@@ -29,10 +31,5 @@ class CreateAffiliate extends CreateRecord
                 'code' => strtoupper(($data['code'] ?? '') ?: AffiliateService::newCode($data['user_name'])),
             ] + collect($data)->except(['user_name', 'user_email', 'user_phone', 'user_password', 'code'])->all());
         });
-    }
-
-    protected function getRedirectUrl(): string
-    {
-        return AffiliateResource::getUrl('edit', ['record' => $this->record]);
     }
 }
