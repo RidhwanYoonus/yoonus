@@ -20,10 +20,10 @@ class ArabicTranslateTest extends TestCase
     public function test_free_translator_is_used_without_keys_and_keeps_lines(): void
     {
         Http::fake(['api.mymemory.translated.net/*' => fn (Request $r) => Http::response([
-            'responseStatus' => 200, 'responseData' => ['translatedText' => ['Gold ring' => 'خاتم ذهب', 'Hallmarked.' => 'مدموغ.'][$r['q']] ?? '؟'],
+            'responseStatus' => 200, 'responseData' => ['translatedText' => ['Gold ring' => 'خاتم ذهب', 'Polished finish.' => 'لمسة لامعة.'][$r['q']] ?? '؟'],
         ])]);
         $this->assertSame('mymemory', Translator::provider());
-        $this->assertSame("خاتم ذهب\nمدموغ.", Translator::toArabic("Gold ring\nHallmarked."));
+        $this->assertSame("خاتم ذهب\nلمسة لامعة.", Translator::toArabic("Gold ring\nPolished finish."));
         Http::assertSent(fn (Request $r) => $r['langpair'] === 'en|ar');
     }
 
@@ -86,7 +86,7 @@ class ArabicTranslateTest extends TestCase
     {
         $this->seed(ReferenceDataSeeder::class);
         $karat = \App\Models\GoldCategory::where('name', '22K')->value('id');
-        $blank = \App\Models\Product::create(['name' => 'Gold Ring', 'description' => 'Hallmarked', 'sku' => 'T-1', 'slug' => 't-1', 'gold_category_id' => $karat, 'weight_grams' => 2, 'stock_qty' => 1]);
+        $blank = \App\Models\Product::create(['name' => 'Gold Ring', 'description' => 'Polished finish', 'sku' => 'T-1', 'slug' => 't-1', 'gold_category_id' => $karat, 'weight_grams' => 2, 'stock_qty' => 1]);
         $done = \App\Models\Product::create(['name' => 'Bangle', 'name_ar' => 'سوار يدوي', 'sku' => 'T-2', 'slug' => 't-2', 'gold_category_id' => $karat, 'weight_grams' => 2, 'stock_qty' => 1]);
         Settings::set(['translation_provider' => 'google', 'google_translate_key' => 'k']);
         Http::fake(['translation.googleapis.com/*' => fn (Request $r) => Http::response(['data' => ['translations' => [['translatedText' => 'AR:'.$r['q']]]]])]);
@@ -95,7 +95,7 @@ class ArabicTranslateTest extends TestCase
         Livewire::test(\App\Filament\Resources\ProductResource\Pages\ListProducts::class)->callAction('translateMissingArabic');
 
         $this->assertSame('AR:Gold Ring', $blank->fresh()->name_ar);
-        $this->assertSame('AR:Hallmarked', $blank->fresh()->description_ar);
+        $this->assertSame('AR:Polished finish', $blank->fresh()->description_ar);
         $this->assertSame('سوار يدوي', $done->fresh()->name_ar);   // untouched
     }
 
@@ -162,5 +162,13 @@ class ArabicTranslateTest extends TestCase
         $this->assertSame('اتصال', $cat->fresh()->name_ar);
         Livewire::test(\App\Filament\Resources\CategoryResource\Pages\ManageCategories::class)->callAction('translateMissingArabic', ['overwrite' => true]);
         $this->assertSame('خواتم', $cat->fresh()->name_ar);
+    }
+
+    public function test_shop_wording_has_fixed_arabic(): void
+    {
+        foreach (['Exclusive Product' => 'منتج حصري', 'Exclusive Item' => 'قطعة حصرية', 'Special Product' => 'منتج مميز', 'Item' => 'قطعة',
+            'Royal Designs' => 'تصاميم ملكية', ' pieces ' => 'قطع', 'Kada' => 'كادا', 'Lab-grown diamond' => 'ألماس مصنّع في المختبر'] as $en => $ar) {
+            $this->assertSame($ar, \App\Support\Translator::toArabic($en), $en);
+        }
     }
 }
