@@ -85,6 +85,17 @@ class StaffPermissionsUpdateTest extends TestCase
         Filament::setCurrentPanel(Filament::getPanel('admin'));
         Livewire::test(\App\Filament\Pages\Settings::class)->assertActionVisible('speedUp')->assertActionVisible('speedClear');
 
+        // Building inside a request must leave the running app in place (it used to break the page with error 500).
+        $app = app();
+        try {
+            \App\Support\SpeedCache::build();
+            $this->assertSame($app, \Illuminate\Container\Container::getInstance());
+            $this->assertFileExists(app()->getCachedRoutesPath());
+        } finally {
+            \App\Support\SpeedCache::clear();
+        }
+        $this->assertFileDoesNotExist(app()->getCachedRoutesPath());
+
         // Building for real writes bootstrap/cache; check the stale test on a fake cache file instead.
         $cache = app()->getCachedConfigPath();
         file_put_contents($cache, '<?php return [];');

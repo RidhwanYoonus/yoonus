@@ -5,7 +5,7 @@ namespace App\Support;
 use Illuminate\Support\Facades\Artisan;
 
 /**
- * "php artisan optimize" from the admin: settings, routes, views and the admin panel are cached so pages build faster.
+ * Speed cache from the admin (like "php artisan optimize"): settings, routes, views and the admin panel are cached so pages build faster.
  * When an update (new files) or a .env change is newer than the cache, it is rebuilt automatically on the next visit,
  * so a cached copy can never hide new pages or settings.
  */
@@ -16,19 +16,46 @@ class SpeedCache
         return app()->configurationIsCached() && app()->routesAreCached();
     }
 
+    /**
+     * Same as "php artisan optimize", minus the page (view) step: re-compiling pages while a page is being shown
+     * breaks that page, and pages compile themselves on first use anyway.
+     */
+    private const BUILD = ['config:cache', 'route:cache', 'event:cache', 'filament:cache-components', 'icons:cache'];
+
+    private const CLEAR = ['config:clear', 'route:clear', 'event:clear', 'filament:clear-cached-components', 'icons:clear'];
+
     public static function build(): string
     {
-        Artisan::call('optimize:clear');
-        Artisan::call('optimize');
+        self::run(self::CLEAR);
 
-        return trim(Artisan::output());
+        return self::run(self::BUILD);
     }
 
     public static function clear(): string
     {
-        Artisan::call('optimize:clear');
+        return self::run(self::CLEAR);
+    }
 
-        return trim(Artisan::output());
+    private static function run(array $commands): string
+    {
+        $app = app();
+        $out = [];
+        try {
+            foreach ($commands as $command) {
+                if (array_key_exists($command, Artisan::all())) {
+                    Artisan::call($command);
+                    $out[] = trim(Artisan::output());
+                }
+            }
+        } finally {
+            // config:cache and route:cache boot a second copy of the app to read fresh settings, and that copy
+            // makes itself "the" app. Put the running one back, or the page being shown breaks (error 500).
+            \Illuminate\Container\Container::setInstance($app);
+            \Illuminate\Support\Facades\Facade::setFacadeApplication($app);
+            \Illuminate\Support\Facades\Facade::clearResolvedInstances();
+        }
+
+        return implode("\n", array_filter($out));
     }
 
     /** True when code or .env changed after the cache was made (e.g. a new update zip was unpacked). */
