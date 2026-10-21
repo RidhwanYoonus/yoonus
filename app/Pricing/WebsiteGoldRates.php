@@ -56,19 +56,25 @@ class WebsiteGoldRates
         }
         $attempts['bundled certificate list'] = ['verify' => resource_path('certs/cacert.pem')];
 
+        // First the same plain request the shop's old cPanel gold script made (it works from the hosting
+        // server); some firewalls refuse a "full browser" request that lacks a real browser's other headers.
+        $headerSets = [
+            'simple' => ['User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'],
+            'browser' => [
+                'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36',
+                'Accept' => 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',
+                'Accept-Language' => 'en-AE,en;q=0.9',
+            ],
+        ];
+
         $errors = [];
-        foreach ($attempts as $label => $options) {
-            try {
-                return Http::timeout(20)
-                    ->withOptions($options)
-                    ->withHeaders([
-                        'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36',
-                        'Accept' => 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',
-                        'Accept-Language' => 'en-AE,en;q=0.9',
-                    ])
-                    ->get($url)->throw()->body();
-            } catch (Throwable $e) {
-                $errors[] = "{$label}: ".$e->getMessage();
+        foreach ($headerSets as $kind => $headers) {
+            foreach ($attempts as $label => $options) {
+                try {
+                    return Http::timeout(30)->withOptions($options)->withHeaders($headers)->get($url)->throw()->body();
+                } catch (Throwable $e) {
+                    $errors[] = "{$kind}, {$label}: ".$e->getMessage();
+                }
             }
         }
 

@@ -126,4 +126,17 @@ class WebsiteGoldRatesTest extends TestCase
         $this->assertSame(['24K' => '502.00', '22K' => '464.75', '21K' => '440.00', '18K' => '380.00'], GoldCategory::pluck('rate_per_gram', 'name')->all());
         $this->assertSame($before + 2, GoldRateHistory::count());   // only the two changed karats are logged
     }
+
+    public function test_first_tries_the_plain_request_of_the_old_cpanel_script(): void
+    {
+        Http::fake(['*' => Http::response('<p>24K GOLD AED 386.75</p>')]);
+        (new WebsiteGoldRates)->fetch('https://dubaicityofgold.com/');
+        Http::assertSent(fn ($request) => $request->header('User-Agent') === ['Mozilla/5.0 (Windows NT 10.0; Win64; x64)'] && ! $request->hasHeader('Accept-Language'));
+    }
+
+    public function test_falls_back_to_a_browser_request_when_refused(): void
+    {
+        Http::fake(['*' => Http::sequence()->push('Forbidden', 403)->push('Forbidden', 403)->push('<p>24K GOLD AED 386.75</p>')]);
+        $this->assertSame('386.75', (new WebsiteGoldRates)->fetch('https://dubaicityofgold.com/')['24K']);
+    }
 }
