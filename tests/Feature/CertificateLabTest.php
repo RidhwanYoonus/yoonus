@@ -32,6 +32,7 @@ class CertificateLabTest extends TestCase
         $gia = CertificateLab::where('short_name', 'GIA')->sole();
         $this->assertSame('https://www.gia.edu/report-check?reportno=2141438171', $gia->verifyUrl('2141438171'));
         $this->assertNull(CertificateLab::where('short_name', 'HRD')->sole()->verifyUrl('123'));
+        $this->assertSame('https://idtworldwide.com', CertificateLab::where('short_name', 'IDT')->sole()->website);
     }
 
     public function test_product_page_shows_the_certificate_with_the_lab_logo(): void
