@@ -161,5 +161,7 @@ return [
         'gold_rate_source_url' => 'https://dubaicityofgold.com/',   // "Fetch rate" button in Gold rate manager
         'gold_rate_api_url' => null,        // optional automatic rate feed
         'gold_rate_api_key' => null,
+        'gold_rate_auto_website' => false,  // cron reads the rate website every 15 minutes
+        'admin_text_size' => 'auto',        // admin panel text: auto (grows on big monitors), normal, large, xlarge
     ],
 ];

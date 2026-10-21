@@ -39,6 +39,7 @@ class AdminPanelProvider extends PanelProvider
             ->navigationItems([
                 NavigationItem::make('View shop')->url('/', shouldOpenInNewTab: true)->icon('heroicon-o-arrow-top-right-on-square')->sort(99),
             ])
+            ->renderHook(PanelsRenderHook::STYLES_AFTER, fn () => self::textSizeStyle())
             ->renderHook(PanelsRenderHook::STYLES_AFTER, fn () => '<style>
                 .affiliate-order-row{background:rgba(184,149,74,.10)}
                 .affiliate-order-row:hover{background:rgba(184,149,74,.16)!important}
@@ -78,5 +79,16 @@ class AdminPanelProvider extends PanelProvider
                 DispatchServingFilamentEvent::class,
             ])
             ->authMiddleware([Authenticate::class, \App\Http\Middleware\AdminSecurity::class], isPersistent: true);
+    }
+
+    /** Filament sizes everything in rem, so the root font size scales the whole panel. */
+    public static function textSizeStyle(): string
+    {
+        return match (rescue(fn () => Settings::get('admin_text_size', 'auto'), 'auto', false)) {
+            'normal' => '',
+            'large' => '<style>html{font-size:112.5%}</style>',
+            'xlarge' => '<style>html{font-size:125%}</style>',
+            default => '<style>@media (min-width:1440px){html{font-size:106.25%}}@media (min-width:1680px){html{font-size:112.5%}}@media (min-width:2200px){html{font-size:125%}}</style>',
+        };
     }
 }

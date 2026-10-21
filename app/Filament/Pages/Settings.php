@@ -71,12 +71,19 @@ class Settings extends Page implements HasForms
                             ->helperText('One per line: English = Arabic. Used before the translator, so names and shop words are always right. Common jewellery words (rings, necklaces, bangles, earrings, pendants, sets, gold, diamond…) are already built in.'),
                     ]),
                 ]),
+                Forms\Components\Tabs\Tab::make('Admin display')->icon('heroicon-o-computer-desktop')->columns(2)->schema([
+                    Forms\Components\Select::make('admin_text_size')->label('Admin text size')->native(false)->selectablePlaceholder(false)
+                        ->options(['auto' => 'Automatic (bigger on large monitors)', 'normal' => 'Normal', 'large' => 'Large', 'xlarge' => 'Extra large'])
+                        ->helperText('Changes the whole admin panel for every staff member. Each person can also use Ctrl + / Ctrl − in the browser (Ctrl 0 resets).'),
+                ]),
                 Forms\Components\Tabs\Tab::make('Pricing')->icon('heroicon-o-calculator')->columns(2)->schema([
                     Forms\Components\TextInput::make('default_vat_percent')->label('Default VAT %')->numeric()->required()->suffix('%'),
                     Forms\Components\Select::make('rounding_mode')->options(collect(RoundingMode::cases())->mapWithKeys(fn ($m) => [$m->value => $m->label()]))->required(),
                     Forms\Components\TextInput::make('rate_stale_hours')->label('Warn when gold rate is older than')->numeric()->suffix('hours')->required(),
                     Forms\Components\Toggle::make('block_checkout_when_stale')->label('Block checkout while the rate is stale')->inline(false),
                     $text('gold_rate_source_url', 'Gold rate website (Fetch button)')->url()->helperText('Page the "Fetch rate" button reads, e.g. https://dubaicityofgold.com/'),
+                    Forms\Components\Toggle::make('gold_rate_auto_website')->label('Update rates from this website automatically')->inline(false)
+                        ->helperText('Every 15 minutes (needs the cron job). Jumps over 15% are skipped for you to check. The "Updated" time on the shop shows the last check.'),
                     $text('gold_rate_api_url', 'Gold rate API URL (optional)')->url()->helperText('Leave empty to enter rates manually. Polled every 15 minutes.'),
                     $secret('gold_rate_api_key', 'Gold rate API key'),
                 ]),
