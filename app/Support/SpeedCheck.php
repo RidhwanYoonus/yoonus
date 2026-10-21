@@ -26,9 +26,7 @@ class SpeedCheck
             $add('warning', 'APP_DEBUG is on. Set APP_DEBUG=false (and APP_ENV=production) in .env for the live shop: faster, and safer.');
         }
         if (! app()->configurationIsCached() || ! app()->routesAreCached()) {
-            $add('warning', 'Settings and routes are not cached. After each update run: php artisan optimize  (and php artisan filament:optimize). Run php artisan optimize:clear before editing .env.');
-        } elseif (! is_dir(base_path('bootstrap/cache/filament'))) {
-            $add('info', 'The admin panel is not cached. Run: php artisan filament:optimize');
+            $add('warning', 'The speed cache is off. Press Settings → "Speed cache: off" → "Speed up now" (or run php artisan optimize). It is rebuilt automatically after updates and .env changes.');
         }
         if (config('cache.default') === 'database') {
             $add('warning', 'Cache is kept in the database (CACHE_STORE=database). Set CACHE_STORE=file in .env (or redis on a server) so cached prices and pages are read from disk.');

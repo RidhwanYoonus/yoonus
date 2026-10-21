@@ -16,6 +16,9 @@ return [
     'payment_methods' => ['cod', 'card', 'tabby', 'tamara'],
 
     // Fallbacks for every admin-editable setting (Admin → Settings overrides these).
+    // JSON path of the 24K rate in a custom gold-rate API reply (Admin → Settings holds the URL).
+    'gold_rate_api_path' => env('GOLD_RATE_API_PATH', 'rates.24K'),
+
     'defaults' => [
         'store_name' => env('SHOP_NAME', 'Your Jewellery Shop'),
         'store_name_ar' => env('SHOP_NAME_AR', 'متجر المجوهرات'),

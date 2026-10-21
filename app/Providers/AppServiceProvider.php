@@ -48,6 +48,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // A new update or .env change makes the speed cache out of date: rebuild it once, automatically.
+        if (! $this->app->runningInConsole()) {
+            rescue(fn () => \App\Support\SpeedCache::refreshIfStale(), null, false);
+        }
         // Every admin list gets the column menu, so staff choose which columns to show, print and export.
         // Every admin photo upload is shrunk in the browser before it is sent (fields can set their own size).
         \Filament\Forms\Components\FileUpload::configureUsing(fn (\Filament\Forms\Components\FileUpload $upload) => $upload

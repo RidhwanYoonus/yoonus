@@ -59,7 +59,7 @@ class StaffPermissionsUpdateTest extends TestCase
     public function test_dashboard_speed_check_for_admins(): void
     {
         $problems = collect(\App\Support\SpeedCheck::problems())->pluck('text')->implode(' ');
-        $this->assertStringContainsString('php artisan optimize', $problems);   // tests never cache config
+        $this->assertStringContainsString('Speed up now', $problems);   // tests never cache config
         $this->actingAs(User::factory()->create(['is_admin' => true]))->get('/admin')->assertOk()->assertSee('Speed check');
         $this->actingAs($this->staff(['orders' => ['view']]))->get('/admin')->assertOk()->assertDontSee('Speed check');
     }
@@ -76,5 +76,26 @@ class StaffPermissionsUpdateTest extends TestCase
         $this->withHeader('Sec-Purpose', '')->get('/product/band');
         $this->assertSame(1, (int) $p->fresh()->view_count);
         $this->get('/')->assertSee('speculationrules', false);
+    }
+
+    public function test_speed_cache_buttons_and_auto_refresh(): void
+    {
+        $this->assertFalse(\App\Support\SpeedCache::isStale(), 'no cache yet: nothing to refresh');
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+        Filament::setCurrentPanel(Filament::getPanel('admin'));
+        Livewire::test(\App\Filament\Pages\Settings::class)->assertActionVisible('speedUp')->assertActionVisible('speedClear');
+
+        // Building for real writes bootstrap/cache; check the stale test on a fake cache file instead.
+        $cache = app()->getCachedConfigPath();
+        file_put_contents($cache, '<?php return [];');
+        try {
+            touch($cache, time() - 3600);
+            touch(base_path('routes/web.php'));
+            $this->assertTrue(\App\Support\SpeedCache::isStale(), 'an update newer than the cache is noticed');
+            touch($cache, time() + 60);
+            $this->assertFalse(\App\Support\SpeedCache::isStale());
+        } finally {
+            @unlink($cache);
+        }
     }
 }

@@ -309,6 +309,24 @@ class Settings extends Page implements HasForms
     protected function getHeaderActions(): array
     {
         return [
+            \Filament\Actions\ActionGroup::make([
+                \Filament\Actions\Action::make('speedUp')->label('Speed up now (cache)')->icon('heroicon-o-bolt')
+                    ->requiresConfirmation()->modalHeading('Speed up the shop')
+                    ->modalDescription('Saves ready-made copies of settings, routes, pages and the admin panel (same as "php artisan optimize"). Safe to press any time. After an update or a .env change the copies are rebuilt automatically.')
+                    ->action(function () {
+                        \App\Support\SpeedCache::build();
+                        Notification::make()->success()->title('Speed cache is on')->body('Pages now load faster. Press again after big changes if something looks old.')->send();
+                    }),
+                \Filament\Actions\Action::make('speedClear')->label('Clear speed cache')->icon('heroicon-o-arrow-path')->color('gray')
+                    ->requiresConfirmation()->modalHeading('Clear the speed cache')
+                    ->modalDescription('Removes the ready-made copies (same as "php artisan optimize:clear"). Use it if a change does not show. The shop keeps working, just a little slower until you press "Speed up now" again.')
+                    ->action(function () {
+                        \App\Support\SpeedCache::clear();
+                        Notification::make()->success()->title('Speed cache cleared')->send();
+                    }),
+            ])->label(fn () => \App\Support\SpeedCache::isOn() ? 'Speed cache: on' : 'Speed cache: off')->icon('heroicon-o-bolt')->button()
+                ->color(fn () => \App\Support\SpeedCache::isOn() ? 'success' : 'warning')
+                ->visible(fn () => (bool) auth()->user()?->is_admin),
             \Filament\Actions\Action::make('deleteData')->label('Delete data')->icon('heroicon-o-trash')->color('danger')
                 ->visible(fn () => (bool) auth()->user()?->is_admin)
                 ->modalHeading('Delete shop data')->modalWidth('2xl')->modalIcon('heroicon-o-exclamation-triangle')->modalIconColor('danger')

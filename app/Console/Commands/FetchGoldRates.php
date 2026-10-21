@@ -28,7 +28,7 @@ class FetchGoldRates extends Command
             return self::SUCCESS;
         }
         $json = Http::withToken((string) Settings::get('gold_rate_api_key'))->acceptJson()->get($url)->throw()->json();
-        $rate = (float) Arr::get($json, env('GOLD_RATE_API_PATH', 'rates.24K'));
+        $rate = (float) Arr::get($json, config('shop.gold_rate_api_path', 'rates.24K'));
         $base = GoldCategory::orderByDesc('karat')->first();
         if ($rate <= 0 || ! $base) {
             $this->error('Rate missing in API response.');
