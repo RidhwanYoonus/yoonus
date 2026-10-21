@@ -17,6 +17,12 @@ return static function (array $server): array {
     if (str_starts_with($path, $base.'/public/') || $path === $base.'/public') {
         return $server;   // someone typed /public/… themselves: leave it
     }
+    if ($base !== '') {
+        // Laravel's cached route list drops the folder from the home page address (error 405): never use it here.
+        foreach (glob(__DIR__.'/cache/routes-v*.php') ?: [] as $cached) {
+            @unlink($cached);
+        }
+    }
     if ($base === '' || $path === $base || str_starts_with($path, $base.'/')) {
         $server['SCRIPT_NAME'] = $base.'/index.php';
         $server['PHP_SELF'] = $base.'/index.php';

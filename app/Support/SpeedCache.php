@@ -13,7 +13,18 @@ class SpeedCache
 {
     public static function isOn(): bool
     {
-        return app()->configurationIsCached() && app()->routesAreCached();
+        return app()->configurationIsCached() && (app()->routesAreCached() || self::inSubfolder());
+    }
+
+    /**
+     * Shop in a sub-folder (APP_URL like https://example.com/newweb): Laravel's cached route list drops the folder
+     * from the home page address (error 405), so routes stay uncached there; everything else is still cached.
+     */
+    public static function inSubfolder(): bool
+    {
+        $base = app()->runningInConsole() ? (string) parse_url((string) config('app.url'), PHP_URL_PATH) : (string) request()->getBaseUrl();
+
+        return trim($base, '/') !== '';
     }
 
     /**
@@ -28,7 +39,7 @@ class SpeedCache
     {
         self::run(self::CLEAR);
 
-        return self::run(self::BUILD);
+        return self::run(self::inSubfolder() ? array_values(array_diff(self::BUILD, ['route:cache'])) : self::BUILD);
     }
 
     public static function clear(): string

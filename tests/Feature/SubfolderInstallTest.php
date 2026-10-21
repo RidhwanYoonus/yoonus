@@ -60,4 +60,19 @@ class SubfolderInstallTest extends TestCase
         \App\Support\SubfolderLivewire::handle(new \Illuminate\Foundation\Http\Events\RequestHandled(Request::create('/admin/login'), $response));
         $this->assertSame($html, $response->getContent());
     }
+
+    public function test_route_cache_is_never_used_in_a_sub_folder(): void
+    {
+        $cached = base_path('bootstrap/cache/routes-v7.php');
+        file_put_contents($cached, '<?php // fake');
+        $this->fix(['SCRIPT_NAME' => '/public/index.php', 'REQUEST_URI' => '/shop']);   // main-domain style: kept
+        $this->assertFileExists($cached);
+        $this->fix(['SCRIPT_NAME' => '/newweb/public/index.php', 'REQUEST_URI' => '/newweb/']);   // sub-folder: removed
+        $this->assertFileDoesNotExist($cached);
+
+        config(['app.url' => 'https://almasroorjewellery.com/newweb']);
+        $this->assertTrue(\App\Support\SpeedCache::inSubfolder());
+        config(['app.url' => 'https://almasroorjewellery.com']);
+        $this->assertFalse(\App\Support\SpeedCache::inSubfolder());
+    }
 }

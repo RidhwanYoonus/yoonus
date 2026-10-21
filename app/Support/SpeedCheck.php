@@ -25,7 +25,7 @@ class SpeedCheck
         if (config('app.debug')) {
             $add('warning', 'APP_DEBUG is on. Set APP_DEBUG=false (and APP_ENV=production) in .env for the live shop: faster, and safer.');
         }
-        if (! app()->configurationIsCached() || ! app()->routesAreCached()) {
+        if (! \App\Support\SpeedCache::isOn()) {
             $add('warning', 'The speed cache is off. Press Settings → "Speed cache: off" → "Speed up now" (or run php artisan optimize). It is rebuilt automatically after updates and .env changes.');
         }
         if (config('cache.default') === 'database') {
