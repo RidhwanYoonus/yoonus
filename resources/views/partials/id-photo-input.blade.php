@@ -11,7 +11,7 @@
             let f = e.target.files[0];
             if (! f) { this.preview = null; this.name = ''; return; }
             this.name = f.name;
-            if (f.type.startsWith('image/') && f.size > 1500000) {
+            if (f.type.startsWith('image/') && f.size > 700000) {
                 try {
                     const img = await createImageBitmap(f);
                     const scale = Math.min(1, 2000 / Math.max(img.width, img.height));

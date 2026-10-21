@@ -49,6 +49,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Every admin list gets the column menu, so staff choose which columns to show, print and export.
+        // Every admin photo upload is shrunk in the browser before it is sent (fields can set their own size).
+        \Filament\Forms\Components\FileUpload::configureUsing(fn (\Filament\Forms\Components\FileUpload $upload) => $upload
+            ->imageResizeMode('contain')->imageResizeTargetWidth('2000')->imageResizeTargetHeight('2000')->imageResizeUpscale(false));
         \Filament\Tables\Columns\Column::configureUsing(fn (\Filament\Tables\Columns\Column $column) => $column->toggleable());
         if ($this->app->isProduction()) {
             URL::forceScheme('https');

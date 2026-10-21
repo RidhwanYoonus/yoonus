@@ -58,7 +58,8 @@ class IdDocument
 
     public static function store(UploadedFile $file): string
     {
-        return $file->storeAs('ids/'.now()->format('Y/m'), Str::random(40).'.'.strtolower($file->guessExtension() ?: 'jpg'), self::DISK);
+        // Photos are turned upright and shrunk (a phone picture of 8 MB becomes ~300 KB); PDFs are kept as they are.
+        return Images::storeJpeg($file, 'ids/'.now()->format('Y/m'), self::DISK);
     }
 
     public static function delete(?string ...$paths): void

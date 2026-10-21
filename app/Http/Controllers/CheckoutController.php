@@ -272,7 +272,7 @@ class CheckoutController extends Controller
         if (! IdDocument::requiredFor($fulfilment) || $this->usesSavedId($request)) {
             return [];
         }
-        $file = ['file', 'mimes:jpg,jpeg,png,webp,heic,pdf', 'max:8192'];
+        $file = ['file', 'mimes:jpg,jpeg,png,webp,heic,pdf', 'max:15360'];
 
         return [
             'id_type' => ['required', Rule::in(IdDocument::TYPES)],
