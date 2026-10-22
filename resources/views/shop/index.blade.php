@@ -52,7 +52,7 @@
                 <fieldset>
                     <legend class="label">{{ __('shop.filters.stone') }}</legend>
                     <select name="stone" class="input"><option value="">{{ __('shop.filters.all') }}</option><option value="none" @selected(($filters['stone'] ?? '') === 'none')>{{ __('shop.filters.plain_gold') }}</option>
-                        @foreach ($stones as $s)<option value="{{ $s }}" @selected(($filters['stone'] ?? '') === $s)>{{ $s }}</option>@endforeach
+                        @foreach ($stones as $s => $stoneLabel)<option value="{{ $s }}" @selected(($filters['stone'] ?? '') === $s)>{{ $stoneLabel }}</option>@endforeach
                     </select>
                 </fieldset>
             @endif

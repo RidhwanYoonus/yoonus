@@ -21,7 +21,7 @@ class StaffAccess
         'gold_rates' => ['Gold rates (update / fetch rates)', 'Gold rates'],
         'products' => ['Products (incl. import CSV, show / hide in shop)', 'Catalogue'],
         'categories' => ['Categories', 'Catalogue'],
-        'certificate_labs' => ['Certificate labs', 'Catalogue'],
+        'certificate_labs' => ['Certificate labs & stone types', 'Catalogue'],
         'campaigns' => ['Campaigns', 'Offers'],
         'coupons' => ['Coupons', 'Offers'],
         'gift_cards' => ['Gift cards', 'Offers'],

@@ -16,7 +16,7 @@
                         __('shop.product.weight') => fn ($p) => (float) $p->weight_grams > 0 ? $p->weight_grams.' g' : '—',
                         __('shop.breakdown.gold_short') => fn ($p) => $p->isFixedPrice() ? __('shop.product.fixed_price') : Money::format($p->price()->goldValue),
                         __('shop.breakdown.making') => fn ($p) => $p->isFixedPrice() ? '—' : Money::format($p->price()->makingFee),
-                        __('shop.breakdown.stone') => fn ($p) => $p->stone_type ? $p->stone_type.' · '.Money::format($p->price()->stoneValue) : '—',
+                        __('shop.breakdown.stone') => fn ($p) => $p->stone_type ? $p->stoneLabel(', ').' · '.Money::format($p->price()->stoneValue) : '—',
                         __('shop.filters.category') => fn ($p) => $p->category?->localized('name') ?? '—',
                     ])
                     @foreach ($rows as $label => $fn)

@@ -68,7 +68,7 @@
                         <tr><td class="px-5 py-2.5">{{ __('shop.breakdown.gold', ['weight' => $product->weight_grams, 'rate' => Money::toAed($price->rateFils)]) }}</td><td class="px-5 py-2.5 text-end">{{ $fmt($price->goldValue) }}</td></tr>
                         <tr><td class="px-5 py-2.5">{{ __('shop.breakdown.making') }} @if($product->manufacturer_charge_type === 'PERCENTAGE' && ! app(\App\Pricing\PricingService::class)->markup()->isActive())<span class="text-muted">({{ rtrim(rtrim((string) $product->manufacturer_charge_value, '0'), '.') }}%)</span>@endif</td><td class="px-5 py-2.5 text-end">{{ $fmt($price->makingFee) }}</td></tr>
                         @endunless
-                        @if ($price->stoneValue)<tr><td class="px-5 py-2.5">{{ __('shop.breakdown.stone') }} @if($product->stone_type)<span class="text-muted">({{ $product->stone_type }})</span>@endif</td><td class="px-5 py-2.5 text-end">{{ $fmt($price->stoneValue) }}</td></tr>@endif
+                        @if ($price->stoneValue)<tr><td class="px-5 py-2.5">{{ __('shop.breakdown.stone') }} @if($product->stone_type)<span class="text-muted">({{ $product->stoneLabel(', ') }})</span>@endif</td><td class="px-5 py-2.5 text-end">{{ $fmt($price->stoneValue) }}</td></tr>@endif
                         @if ($price->wastage)<tr><td class="px-5 py-2.5">{{ __('shop.breakdown.wastage') }} <span class="text-muted">({{ rtrim(rtrim((string) $product->wastage_percent, '0'), '.') }}%)</span></td><td class="px-5 py-2.5 text-end">{{ $fmt($price->wastage) }}</td></tr>@endif
                         @if ($price->rounding)<tr><td class="px-5 py-2.5">{{ __('shop.breakdown.rounding') }}</td><td class="px-5 py-2.5 text-end">{{ $fmt($price->rounding) }}</td></tr>@endif
                         @if ($price->hasDiscount())<tr class="text-gold-700"><td class="px-5 py-2.5">{{ __('shop.breakdown.discount') }}</td><td class="px-5 py-2.5 text-end">− {{ $fmt($price->discount) }}</td></tr>@endif
@@ -77,6 +77,10 @@
                 </table>
                 <p class="border-t border-line px-5 py-2.5 text-xs text-muted">{{ __('shop.breakdown.vat_at_checkout', ['vat' => rtrim(rtrim($price->vatPercent(), '0'), '.')]) }}</p>
             </div>
+
+            @if ($product->stoneLabel())
+                <p class="mt-4 text-sm"><span class="text-muted">{{ __('shop.product.stones') }}:</span> <span class="font-medium">{{ $product->stoneLabel() }}</span></p>
+            @endif
 
             @if ($product->hasCertificate())
                 @include('partials.certificate', ['product' => $product])

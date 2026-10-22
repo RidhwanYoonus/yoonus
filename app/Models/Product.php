@@ -130,6 +130,39 @@ class Product extends Model
     }
 
     /** Shown in the shop: switched on, and not a sold piece whose order has already been handed over. */
+    /** @return array<string> stones of this piece, e.g. ['Diamond', 'Emerald'] */
+    public function stones(): array
+    {
+        return self::splitStones($this->stone_type);
+    }
+
+    /** Stones in the visitor's language, e.g. "Diamond · Emerald". */
+    public function stoneLabel(string $glue = ' · '): ?string
+    {
+        return $this->stones() ? implode($glue, array_map(fn ($s) => StoneType::label($s), $this->stones())) : null;
+    }
+
+    public static function splitStones(?string $value): array
+    {
+        return array_values(array_unique(array_filter(array_map('trim', explode(',', (string) $value)))));
+    }
+
+    public static function joinStones(array|string|null $stones): ?string
+    {
+        $list = is_array($stones) ? array_values(array_unique(array_filter(array_map('trim', $stones)))) : self::splitStones($stones);
+
+        return $list ? implode(', ', $list) : null;
+    }
+
+    /** Pieces holding this stone (also when it is one of several). */
+    public function scopeWithStone(Builder $q, string $stone): Builder
+    {
+        return $q->where(fn ($q) => $q->where('stone_type', $stone)
+            ->orWhere('stone_type', 'like', $stone.', %')
+            ->orWhere('stone_type', 'like', '%, '.$stone)
+            ->orWhere('stone_type', 'like', '%, '.$stone.', %'));
+    }
+
     public function scopeActive(Builder $q): Builder
     {
         return $q->where('is_active', true)->where('hidden_after_sale', false);

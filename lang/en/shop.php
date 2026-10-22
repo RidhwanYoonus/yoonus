@@ -55,6 +55,7 @@ return [
     ],
 
     'product' => [
+        'stones' => 'Stones',
         'g' => 'g', 'gold' => 'Gold', 'price' => 'Price', 'weight' => 'Weight', 'purity' => 'Purity', 'hallmark' => 'Hallmark',
         'incl_vat' => 'Includes :vat% VAT',
         'plus_vat' => '+ :vat% VAT at checkout',

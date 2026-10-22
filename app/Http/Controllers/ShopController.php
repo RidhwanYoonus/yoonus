@@ -54,7 +54,7 @@ class ShopController extends Controller
         $query = Product::with('goldCategory', 'category')->active()
             ->when($categoryId, fn ($q) => $q->where('category_id', $categoryId))
             ->when($filters['karat'] ?? null, fn ($q, $k) => $q->whereIn('gold_category_id', $k))
-            ->when($filters['stone'] ?? null, fn ($q, $s) => $s === 'none' ? $q->whereNull('stone_type') : $q->where('stone_type', $s))
+            ->when($filters['stone'] ?? null, fn ($q, $s) => $s === 'none' ? $q->where(fn ($q) => $q->whereNull('stone_type')->orWhere('stone_type', '')) : $q->withStone($s))
             ->when($filters['min_price'] ?? null, fn ($q, $v) => $q->where('cached_subtotal', '>=', $v))
             ->when($filters['max_price'] ?? null, fn ($q, $v) => $q->where('cached_subtotal', '<=', $v))
             ->when($filters['min_weight'] ?? null, fn ($q, $v) => $q->where('weight_grams', '>=', $v))
@@ -78,7 +78,10 @@ class ShopController extends Controller
             'category' => $category,
             'categories' => Category::where('is_active', true)->orderBy('sort_order')->get(),
             'karats' => GoldCategory::where('is_active', true)->orderByDesc('karat')->get(),
-            'stones' => Product::active()->whereNotNull('stone_type')->distinct()->pluck('stone_type'),
+            // Each stone once, even when pieces hold several ("Diamond, Emerald"); value = saved name, text = visitor's language.
+            'stones' => Product::active()->whereNotNull('stone_type')->distinct()->pluck('stone_type')
+                ->flatMap(fn ($v) => Product::splitStones($v))->unique()->sort()->values()
+                ->mapWithKeys(fn ($s) => [$s => \App\Models\StoneType::label($s)]),
             'diamondOptions' => $this->diamondOptions($categoryId),
             'hasFixed' => Product::active()->where('pricing_type', 'FIXED')->exists(),
             'filters' => $filters,

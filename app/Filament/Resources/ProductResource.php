@@ -97,7 +97,14 @@ class ProductResource extends Resource
                         ->suffix(fn (Forms\Get $get) => $get('manufacturer_charge_type') === 'PER_PIECE' ? null : '%'),
                     Forms\Components\TextInput::make('stone_value')->label('Stone value')->numeric()->prefix('AED')->default(0)->minValue(0)->live(debounce: 400)
                         ->visible(fn (Forms\Get $get) => $get('pricing_type') !== 'FIXED'),
-                    Forms\Components\TextInput::make('stone_type')->placeholder('Diamond, Emerald…')->maxLength(64),
+                    Forms\Components\Select::make('stone_type')->label('Stones')->multiple()->searchable()->preload()
+                        ->options(fn (?Product $record) => \App\Models\StoneType::options() + array_combine($own = $record?->stones() ?? [], $own))
+                        ->formatStateUsing(fn ($state) => is_array($state) ? $state : \App\Models\Product::splitStones($state))
+                        ->dehydrateStateUsing(fn ($state) => \App\Models\Product::joinStones($state))
+                        ->createOptionForm(\App\Filament\Resources\StoneTypeResource::fields())->createOptionModalHeading('Add stone type')
+                        ->createOptionUsing(fn (array $data) => \App\Models\StoneType::create($data)->name)
+                        ->placeholder('Plain gold — pick one or more')
+                        ->helperText('Pick every stone in the piece (e.g. Diamond + Emerald). + adds a new stone · the list is in Catalogue → Stone types.'),
                 ]),
                 Forms\Components\Section::make('Diamond certificate')->columns(3)->collapsible()
                     ->collapsed(fn (?Product $record) => ! $record?->hasCertificate())
@@ -233,6 +240,7 @@ class ProductResource extends Resource
                     ->color(fn (Product $record) => $record->isLowStock() ? 'danger' : null)->icon(fn (Product $record) => $record->isLowStock() ? 'heroicon-o-exclamation-triangle' : null),
                 Tables\Columns\TextColumn::make('diamond_origin')->label('Diamond type')->badge()->placeholder('—')->toggleable(isToggledHiddenByDefault: true)
                     ->formatStateUsing(fn (?string $state) => \App\Models\Product::DIAMOND_ORIGINS[$state] ?? $state)->color(fn (?string $state) => $state === 'natural' ? 'success' : 'info'),
+                Tables\Columns\TextColumn::make('stone_type')->label('Stones')->placeholder('—')->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\ToggleColumn::make('is_featured')->label('Featured')->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
@@ -247,6 +255,12 @@ class ProductResource extends Resource
                     }),
                 Tables\Filters\SelectFilter::make('category_id')->label('Category')->relationship('category', 'name')->multiple()->preload(),
                 Tables\Filters\SelectFilter::make('gold_category_id')->label('Karat')->relationship('goldCategory', 'name')->multiple()->preload(),
+                Tables\Filters\SelectFilter::make('stone')->label('Stone')->options(fn () => ['none' => 'Plain gold (no stone)'] + \App\Models\StoneType::options())
+                    ->query(fn (Builder $query, array $data) => match ($data['value'] ?? null) {
+                        null, '' => $query,
+                        'none' => $query->where(fn ($q) => $q->whereNull('stone_type')->orWhere('stone_type', '')),
+                        default => $query->withStone($data['value']),
+                    }),
                 Tables\Filters\SelectFilter::make('pricing_type')->label('Pricing')->options(['GOLD_RATE' => 'Gold rate', 'FIXED' => 'Fixed price per piece']),
                 Tables\Filters\SelectFilter::make('diamond_origin')->label('Diamond type')->options(\App\Models\Product::DIAMOND_ORIGINS),
                 Tables\Filters\TernaryFilter::make('is_featured')->label('Featured on homepage'),
