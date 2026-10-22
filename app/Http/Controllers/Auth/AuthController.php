@@ -61,6 +61,16 @@ class AuthController extends Controller
             'marketing_opt_in' => $request->boolean('marketing_opt_in'),
         ]);
         $referrals->register($user, $data['referral_code'] ?? null);
+        // An affiliate's code (not a customer's): remember the affiliate for their white-page prices.
+        if (filled($data['referral_code'] ?? null) && \Illuminate\Support\Facades\Schema::hasColumn('users', 'signup_affiliate_id')
+            && ($affiliate = \App\Models\Affiliate::where('code', strtoupper(trim($data['referral_code'])))->where('is_active', true)->first())) {
+            $user->forceFill(['signup_affiliate_id' => $affiliate->id, 'affiliate_markup_on' => true])->save();
+        }
+        // Mobile already confirmed with the code in the sign-up form.
+        $verifiedHere = $user->phone && \App\Shop\PhoneVerification::isVerified($request, $user->phone);
+        if ($verifiedHere) {
+            app(\App\Shop\PhoneVerification::class)->markUser($user, \App\Shop\PhoneVerification::normalise($user->phone));
+        }
         if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'is_tourist') && $request->has('is_tourist')) {
             $user->forceFill(['is_tourist' => $request->boolean('is_tourist')])->save();
         }
@@ -71,7 +81,7 @@ class AuthController extends Controller
         $this->signIn($request, $user);
 
         // Signed up with a mobile number: confirm it right away (checkout needs a verified number).
-        if ($user->phone && \App\Shop\PhoneVerification::enabled()) {
+        if ($user->phone && ! $verifiedHere && \App\Shop\PhoneVerification::enabled()) {
             return redirect()->route('phone.verify')->with('status', __('shop.auth.welcome'));
         }
 

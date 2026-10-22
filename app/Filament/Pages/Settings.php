@@ -209,6 +209,8 @@ class Settings extends Page implements HasForms
                     ]))->values()->all(),
                 ]),
                 Forms\Components\Tabs\Tab::make('Affiliates')->icon('heroicon-o-user-plus')->columns(2)->schema([
+                    Forms\Components\Toggle::make('affiliate_signup_markup')->label('Sign-up with an affiliate code keeps the affiliate\'s prices')->inline(false)->columnSpanFull()
+                        ->helperText('When a customer signs up with the code of an affiliate who has a white page, that customer always sees the affiliate\'s marked-up prices while signed in, and orders count for that affiliate. Switch it off for one customer in Customers → edit → Affiliate prices.'),
                     Forms\Components\TextInput::make('affiliate_cookie_days')->label('Customer stays linked to the affiliate for')->numeric()->minValue(1)->maxValue(365)->suffix('days')
                         ->helperText('After clicking an affiliate link, orders within this time earn that affiliate commission. The last link clicked wins.'),
                     Forms\Components\Placeholder::make('affiliate_help')->hiddenLabel()->content('Defaults for new affiliates — each affiliate can have their own rates under Affiliates.'),

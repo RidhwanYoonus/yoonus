@@ -437,6 +437,8 @@ return [
     ],
 
     'signup' => [
+        'verify_optional' => 'Optional: verify it now with a WhatsApp code — or later. A verified number is needed to order.',
+        'code_hint' => 'A friend’s or an affiliate partner’s code.',
         'title' => 'Speed up your first order (optional)',
         'intro' => 'You can skip this now. When you place an order we need it, so adding it here makes checkout one tap.',
         'tourist_question' => 'Are you visiting the UAE as a tourist? (for tax-free invoices)',

@@ -8,10 +8,17 @@
         @csrf
         <div><label class="label" for="name">{{ __('shop.checkout.name') }}</label><input id="name" name="name" value="{{ old('name') }}" required class="input" autocomplete="name"></div>
         <div><label class="label" for="email">{{ __('shop.checkout.email') }}</label><input id="email" type="email" name="email" value="{{ old('email') }}" required class="input" autocomplete="email"></div>
-        <div><label class="label" for="phone">{{ __('shop.checkout.phone') }}</label><input id="phone" name="phone" value="{{ old('phone') }}" class="input" dir="ltr" autocomplete="tel"><p class="mt-1 text-xs text-muted">{{ __('shop.verify.after_signup') }}</p></div>
+        <div x-data="{ suPhone: @js(old('phone', '')) }"><label class="label" for="phone">{{ __('shop.checkout.phone') }}</label><input id="phone" name="phone" x-model="suPhone" class="input" dir="ltr" autocomplete="tel">
+            @if (\App\Shop\PhoneVerification::enabled())
+                <p class="mt-1 text-xs text-muted">{{ __('shop.signup.verify_optional') }}</p>
+                <div class="mt-2">@include('partials.phone-verify', ['phoneModel' => 'suPhone', 'verifiedPhones' => session('verified_phones', [])])</div>
+            @else
+                <p class="mt-1 text-xs text-muted">{{ __('shop.verify.after_signup') }}</p>
+            @endif
+        </div>
         <div><label class="label" for="password">{{ __('shop.auth.password') }}</label><input id="password" type="password" name="password" required class="input" autocomplete="new-password"></div>
         <div><label class="label" for="password_confirmation">{{ __('shop.auth.password_confirm') }}</label><input id="password_confirmation" type="password" name="password_confirmation" required class="input" autocomplete="new-password"></div>
-        <div><label class="label" for="referral_code">{{ __('shop.referral.code') }}</label><input id="referral_code" name="referral_code" value="{{ old('referral_code', $ref) }}" class="input uppercase" dir="ltr"></div>
+        <div><label class="label" for="referral_code">{{ __('shop.referral.code') }}</label><p class="-mt-1 mb-1 text-xs text-muted">{{ __('shop.signup.code_hint') }}</p><input id="referral_code" name="referral_code" value="{{ old('referral_code', $ref) }}" class="input uppercase" dir="ltr"></div>
         <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="marketing_opt_in" value="1" class="accent-gold-600"> {{ __('shop.auth.marketing') }}</label>
 
         {{-- Optional: tourist (tax-free) + ID now, so checkout is one tap later. --}}

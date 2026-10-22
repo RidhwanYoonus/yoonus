@@ -31,6 +31,7 @@ class User extends Authenticatable implements FilamentUser
             'id_number' => 'encrypted',
             'id_expiry' => 'date',
             'is_tourist' => 'boolean',
+            'affiliate_markup_on' => 'boolean',
             'id_saved_at' => 'datetime',
             'is_admin' => 'boolean',
             'is_staff' => 'boolean',
@@ -78,6 +79,23 @@ class User extends Authenticatable implements FilamentUser
     public function loyaltyEntries(): HasMany
     {
         return $this->hasMany(LoyaltyEntry::class)->latest('id');
+    }
+
+    /** Affiliate whose code the customer used when signing up (white-page prices, if switched on in Settings). */
+    public function signupAffiliate(): BelongsTo
+    {
+        return $this->belongsTo(Affiliate::class, 'signup_affiliate_id');
+    }
+
+    /** The affiliate whose mark-up this signed-in customer always sees, or null. */
+    public function markupAffiliate(): ?Affiliate
+    {
+        if (! $this->signup_affiliate_id || ! ($this->affiliate_markup_on ?? true) || ! \App\Support\Settings::bool('affiliate_signup_markup', false)) {
+            return null;
+        }
+        $affiliate = $this->signupAffiliate;
+
+        return $affiliate && $affiliate->is_active && $affiliate->white_page_enabled && $affiliate->user_id !== $this->id ? $affiliate : null;
     }
 
     public function referredBy(): BelongsTo

@@ -162,6 +162,7 @@ return [
         'gold_rate_api_url' => null,        // optional automatic rate feed
         'gold_rate_api_key' => null,
         'gold_rate_auto_website' => false,  // cron reads the rate website every 15 minutes
-        'admin_text_size' => 'auto',        // admin panel text: auto (grows on big monitors), normal, large, xlarge
+        'admin_text_size' => 'auto',
+        'affiliate_signup_markup' => false,  // sign-up with an affiliate's code: always show that affiliate's white-page prices        // admin panel text: auto (grows on big monitors), normal, large, xlarge
     ],
 ];

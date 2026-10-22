@@ -39,6 +39,11 @@ class TrackAffiliate
                     $context->preview = $own;
                 }
             }
+            // Signed up with an affiliate's code (Settings → Affiliates): that affiliate's prices, always.
+            if (! $context->preview && ($linked = $request->user()?->markupAffiliate())) {
+                $context->affiliate = $linked;
+                $context->whitePage = true;
+            }
         } catch (Throwable) {
             // Before the database update has run.
         }

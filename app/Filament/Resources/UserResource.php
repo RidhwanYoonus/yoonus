@@ -46,6 +46,17 @@ class UserResource extends Resource
             Forms\Components\TextInput::make('referral_code')->disabled(),
             Forms\Components\TextInput::make('password')->password()->revealable()->dehydrated(fn ($state) => filled($state))->required(fn (string $operation) => $operation === 'create'),
             Forms\Components\Toggle::make('marketing_opt_in'),
+            Forms\Components\Section::make('Affiliate prices')->columns(2)->collapsible()
+                ->visible(fn (?User $record) => (bool) $record?->signup_affiliate_id)
+                ->description('This customer signed up with an affiliate\'s code and sees that affiliate\'s white-page prices (mark-up) while signed in. If the customer complains, switch it off here or use "Remove affiliate link" at the top.')
+                ->schema([
+                    Forms\Components\Placeholder::make('signup_affiliate')->label('Affiliate')
+                        ->content(fn (?User $record) => $record?->signupAffiliate ? $record->signupAffiliate->code.' — '.($record->signupAffiliate->user?->name ?? '') : '—'),
+                    Forms\Components\Placeholder::make('markup_now')->label('Prices now')
+                        ->content(fn (?User $record) => ! \App\Support\Settings::bool('affiliate_signup_markup', false) ? 'Normal shop prices (switched off in Settings → Affiliates)'
+                            : ($record?->markupAffiliate() ? 'With the affiliate\'s mark-up' : 'Normal shop prices')),
+                    Forms\Components\Toggle::make('affiliate_markup_on')->label('Show this customer the affiliate\'s mark-up')->inline(false),
+                ]),
         ]);
     }
 
@@ -59,7 +70,9 @@ class UserResource extends Resource
             Tables\Columns\TextColumn::make('orders_sum_grand_total')->sum('orders', 'grand_total')->label('Lifetime spend')->money('AED')->sortable(),
             Tables\Columns\TextColumn::make('loyalty_entries_sum_points')->sum('loyaltyEntries', 'points')->label('Points'),
             Tables\Columns\TextColumn::make('created_at')->date()->label('Joined'),
+            Tables\Columns\TextColumn::make('signupAffiliate.code')->label('Signed up via affiliate')->badge()->placeholder('—')->toggleable(isToggledHiddenByDefault: true),
         ])->filters([
+            Tables\Filters\TernaryFilter::make('signup_affiliate_id')->label('Signed up with an affiliate code')->nullable(),
         ])->actions([
             Tables\Actions\Action::make('activity')->label('Activity')->icon('heroicon-o-finger-print')->color('gray')
                 ->visible(fn () => \App\Support\StaffAccess::current('activity'))
