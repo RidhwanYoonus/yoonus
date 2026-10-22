@@ -436,6 +436,16 @@ return [
         'whatsapp_alt' => 'Prefer a WhatsApp video call?', 'whatsapp_text' => 'Hello, I would like a live video call about :name (:sku).',
     ],
 
+    'signup' => [
+        'title' => 'Speed up your first order (optional)',
+        'intro' => 'You can skip this now. When you place an order we need it, so adding it here makes checkout one tap.',
+        'tourist_question' => 'Are you visiting the UAE as a tourist? (for tax-free invoices)',
+        'tourist_no' => 'No, I live in the UAE',
+        'tourist_yes' => 'Yes, I’m a tourist',
+        'add_id' => 'Add my ID now',
+        'later_required' => 'Optional here — but required to place an order (a passport for tax-free).',
+    ],
+
     'tax_free' => [
         'title' => 'Tax-free shopping for tourists',
         'question' => 'Do you need a tax-free invoice? This is only for visitors who do not live in the UAE.',

@@ -46,7 +46,11 @@ class AuthController extends Controller
             'password' => ['required', 'confirmed', Password::min(8)->letters()->mixedCase()->numbers()->when(app()->isProduction(), fn ($rule) => $rule->uncompromised())],
             'referral_code' => 'nullable|string|max:16',
             'marketing_opt_in' => 'nullable|boolean',
+            'is_tourist' => 'nullable|boolean',
         ]);
+        // Optional "speed up checkout" step: only checked when the customer filled in an ID number.
+        $withId = filled($request->input('id_number'));
+        $idData = $withId ? $request->validate(\App\Http\Controllers\AccountController::idRules($request, null)) : [];
 
         $user = User::create([
             'name' => $data['name'],
@@ -57,6 +61,12 @@ class AuthController extends Controller
             'marketing_opt_in' => $request->boolean('marketing_opt_in'),
         ]);
         $referrals->register($user, $data['referral_code'] ?? null);
+        if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'is_tourist') && $request->has('is_tourist')) {
+            $user->forceFill(['is_tourist' => $request->boolean('is_tourist')])->save();
+        }
+        if ($withId) {
+            \App\Http\Controllers\AccountController::saveId($request, $user, $idData);
+        }
 
         $this->signIn($request, $user);
 

@@ -39,14 +39,18 @@
         </div>
 
         <form method="POST" action="{{ route('account.id.store') }}" enctype="multipart/form-data" class="card p-4 sm:p-6"
-              x-data="{ needed: true, useSaved: false, type: @js(old('id_type', $u->id_type ?: 'emirates_id')) }">
+              x-data="{ needed: true, useSaved: false, tourist: @js((bool) old('is_tourist', $u->is_tourist)), type: @js(old('id_type', $u->id_type ?: 'emirates_id')) }" x-effect="if (tourist) type = 'passport'">
             @csrf
             <h3 class="font-display text-xl">{{ $u->id_saved_at ? __('shop.id.replace') : __('shop.id.add_id') }}</h3>
-            @if (\App\Support\TaxFree::enabled())<p class="mt-1 text-xs text-muted">🛂 {{ __('shop.id.tourist_hint') }}</p>@endif
+            @if (\App\Support\TaxFree::enabled())
+                <input type="hidden" name="is_tourist" :value="tourist ? 1 : 0">
+                <label class="mt-3 flex items-start gap-2 rounded-xl bg-sand px-4 py-3 text-sm"><input type="checkbox" x-model="tourist" class="mt-0.5 accent-gold-600">
+                    <span><span class="font-medium">{{ __('shop.signup.tourist_yes') }}</span><span class="block text-xs text-muted">{{ __('shop.id.tourist_hint') }}</span></span></label>
+            @endif
             <div class="mt-4 grid gap-4 sm:grid-cols-2">
                 <div><label class="label" for="acc_id_type">{{ __('shop.id.type') }}</label>
                     <select id="acc_id_type" name="id_type" class="input" x-model="type" required>
-                        @foreach (\App\Support\IdDocument::TYPES as $t)<option value="{{ $t }}">{{ __('shop.id.types.'.$t) }}</option>@endforeach
+                        @foreach (\App\Support\IdDocument::TYPES as $t)<option value="{{ $t }}" @if ($t !== 'passport') :disabled="tourist" @endif>{{ __('shop.id.types.'.$t) }}</option>@endforeach
                     </select></div>
                 <div><label class="label" for="acc_id_number">{{ __('shop.id.number') }}</label>
                     <input id="acc_id_number" name="id_number" value="{{ old('id_number') }}" class="input" dir="ltr" required autocomplete="off" :placeholder="type === 'emirates_id' ? '784-1990-1234567-1' : ''">

@@ -58,17 +58,32 @@ class AccountController extends Controller
     /** Customer adds or replaces their ID in My account, so checkout is one tap later. */
     public function storeId(Request $request)
     {
+        $data = $request->validate(self::idRules($request, $request->user()));
+        self::saveId($request, $request->user(), $data);
+
+        return redirect()->to(route('account').'#id')->with('status', __('shop.id.saved_ok'));
+    }
+
+    /** Rules for saving an ID (My account, or the optional step at sign-up). A tourist's ID must be a passport. */
+    public static function idRules(Request $request, ?\App\Models\User $user): array
+    {
         $photos = \App\Http\Controllers\CheckoutController::idPhotos();
         $file = ['file', 'mimes:jpg,jpeg,png,webp,heic,pdf', 'max:15360'];
-        $data = $request->validate([
-            'id_type' => ['required', \Illuminate\Validation\Rule::in(\App\Support\IdDocument::TYPES)],
+        $types = $request->boolean('is_tourist') && \App\Support\TaxFree::enabled() ? ['passport'] : \App\Support\IdDocument::TYPES;
+
+        return [
+            'id_type' => ['required', \Illuminate\Validation\Rule::in($types)],
             'id_number' => ['required', 'string', 'max:32', \App\Support\IdDocument::numberRule($request->input('id_type'))],
             'id_expiry' => ['required', 'date', 'after:today'],
             'id_country' => ['nullable', 'required_if:id_type,passport', \Illuminate\Validation\Rule::in(array_keys(\App\Support\TaxFree::countries()))],
-            'id_front' => [$photos === 'required' && ! $request->user()->id_front_path ? 'required' : 'nullable', ...$file],
-            'id_back' => [$photos === 'required' && ! $request->user()->id_back_path ? 'required' : 'nullable', ...$file],
-        ]);
-        $user = $request->user();
+            'id_front' => [$photos === 'required' && ! $user?->id_front_path ? 'required' : 'nullable', ...$file],
+            'id_back' => [$photos === 'required' && ! $user?->id_back_path ? 'required' : 'nullable', ...$file],
+            'is_tourist' => ['nullable', 'boolean'],
+        ];
+    }
+
+    public static function saveId(Request $request, \App\Models\User $user, array $data): void
+    {
         $number = \App\Support\IdDocument::normalise($data['id_type'], $data['id_number']);
         $changed = $user->id_type !== $data['id_type'] || $user->id_number !== $number;
         $user->forceFill([
@@ -78,9 +93,8 @@ class AccountController extends Controller
             'id_back_path' => $request->hasFile('id_back') ? \App\Support\IdDocument::store($request->file('id_back')) : ($changed ? null : $user->id_back_path),
             'id_saved_at' => now(),
             ...(\Illuminate\Support\Facades\Schema::hasColumn('users', 'id_country') ? ['id_country' => $data['id_type'] === 'passport' ? ($data['id_country'] ?? null) : null] : []),
+            ...(\Illuminate\Support\Facades\Schema::hasColumn('users', 'is_tourist') && $request->has('is_tourist') ? ['is_tourist' => $request->boolean('is_tourist')] : []),
         ])->save();
-
-        return redirect()->to(route('account').'#id')->with('status', __('shop.id.saved_ok'));
     }
 
     /** Forget the saved ID (copies kept with past orders for delivery records stay with those orders). */

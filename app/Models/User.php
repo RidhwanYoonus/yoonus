@@ -30,6 +30,7 @@ class User extends Authenticatable implements FilamentUser
             'password' => 'hashed',
             'id_number' => 'encrypted',
             'id_expiry' => 'date',
+            'is_tourist' => 'boolean',
             'id_saved_at' => 'datetime',
             'is_admin' => 'boolean',
             'is_staff' => 'boolean',

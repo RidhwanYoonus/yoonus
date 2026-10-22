@@ -20,7 +20,7 @@
         'buyer_trn' => old('buyer_trn', $user?->buyer_trn), 'fulfilment' => $deliveryEnabled ? old('fulfilment', 'delivery') : 'pickup',
         'zone_id' => (int) old('zone_id', $quote->zone?->id ?? $zones->first()?->id), 'line1' => old('line1', $addresses->first()?->line1), 'line2' => old('line2', $addresses->first()?->line2), 'city' => old('city', $addresses->first()?->city),
         'pickup_branch_id' => old('pickup_branch_id', $branches->first()?->id), 'coupon' => old('coupon', ''), 'gift_card' => old('gift_card', ''),
-        'loyalty_points' => (int) old('loyalty_points', 0), 'tax_free' => old('tax_free') === '1', 'payment_method' => old('payment_method', isset($methods['card']) ? 'card' : array_key_first($methods)), 'notes' => old('notes', ''),
+        'loyalty_points' => (int) old('loyalty_points', 0), 'tax_free' => old('tax_free') !== null ? old('tax_free') === '1' : (bool) ($user?->is_tourist && \App\Support\TaxFree::enabled()), 'payment_method' => old('payment_method', isset($methods['card']) ? 'card' : array_key_first($methods)), 'notes' => old('notes', ''),
     ];
 @endphp
 
