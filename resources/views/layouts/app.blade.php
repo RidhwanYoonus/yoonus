@@ -44,6 +44,12 @@
     {{-- Apply the saved (or system) colour mode before first paint, so there is no white flash. --}}
     <script>try{var t=localStorage.getItem('theme');if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}</script>
     <meta name="color-scheme" content="light dark">
+    @if ($favicon = Settings::imageUrl('brand_favicon'))
+        <link rel="icon" href="{{ $favicon }}">
+        <link rel="apple-touch-icon" href="{{ $favicon }}">
+    @else
+        <link rel="icon" href="{{ asset('favicon.ico') }}">
+    @endif
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @include('partials.pixels')

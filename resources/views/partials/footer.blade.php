@@ -2,7 +2,11 @@
 <footer class="mt-24 bg-onyx text-on-dark/80">
     <div class="container-x grid gap-10 py-14 md:grid-cols-5">
         <div class="md:col-span-2">
-            <p class="font-display text-2xl text-gold-300">{{ \App\Support\Seo::storeName() }}</p>
+            @if ($footerLogo = Settings::imageUrl('brand_logo_dark') ?? Settings::imageUrl('brand_logo'))
+                <img src="{{ $footerLogo }}" alt="{{ \App\Support\Seo::storeName() }}" class="h-12 w-auto max-w-xs object-contain" loading="lazy">
+            @else
+                <p class="font-display text-2xl text-gold-300">{{ \App\Support\Seo::storeName() }}</p>
+            @endif
             <p class="mt-3 max-w-md text-sm text-on-dark/60">{{ __('shop.footer.about') }}</p>
             <form method="POST" action="{{ route('newsletter.subscribe') }}" class="mt-6 flex max-w-md gap-2">
                 @csrf

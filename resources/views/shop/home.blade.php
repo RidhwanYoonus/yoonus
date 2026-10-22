@@ -58,7 +58,9 @@
             <div class="relative mx-auto hidden aspect-square w-full max-w-md sm:block lg:max-w-lg">
                 <div class="absolute inset-6 rounded-full border border-gold-400/30"></div>
                 <div class="absolute inset-16 rounded-full border border-gold-400/15"></div>
-                @if ($heroPhotos->count() >= 1)
+                @if ($heroImage = \App\Support\Settings::imageUrl('home_hero_image'))
+                    <img src="{{ $heroImage }}" alt="{{ \App\Support\Seo::storeName() }}" class="absolute inset-10 h-[calc(100%-5rem)] w-[calc(100%-5rem)] rounded-full object-cover shadow-2xl">
+                @elseif ($heroPhotos->count() >= 1)
                     <img src="{{ $heroPhotos->first()->primaryImage() }}" alt="{{ $heroPhotos->first()->localized('name') }}" class="absolute inset-10 h-[calc(100%-5rem)] w-[calc(100%-5rem)] rounded-full object-cover shadow-2xl">
                 @else
                     <div class="absolute inset-[12%] drop-shadow-[0_25px_45px_rgba(212,180,104,.35)]">{!! JewelleryArt::icon('necklace', 'hn') !!}</div>
@@ -144,6 +146,26 @@
             @foreach ($newArrivals as $product)<div class="w-[46%] shrink-0 snap-start sm:w-auto">@include('partials.product-card')</div>@endforeach
         </div>
     </section>
+
+    {{-- Showroom (Settings → Branding) --}}
+    @if ($showroom = \App\Support\Settings::imageUrl('showroom_image'))
+        @php($address = \App\Support\Settings::get('store_address'))
+        <section class="container-x mt-16 sm:mt-24">
+            <div class="grid overflow-hidden rounded-3xl border border-line bg-card lg:grid-cols-2">
+                <img src="{{ $showroom }}" alt="{{ __('shop.showroom.title') }}" class="aspect-[16/10] h-full w-full object-cover" loading="lazy">
+                <div class="flex flex-col justify-center gap-4 p-8 sm:p-12">
+                    <p class="eyebrow">{{ __('shop.showroom.eyebrow') }}</p>
+                    <h2 class="font-display text-3xl sm:text-4xl">{{ \App\Support\Settings::get(app()->getLocale() === 'ar' ? 'showroom_title_ar' : 'showroom_title') ?: __('shop.showroom.title') }}</h2>
+                    @if ($address)<p class="text-muted">📍 {{ $address }}</p>@endif
+                    <p class="text-sm text-muted">{{ __('shop.showroom.text') }}</p>
+                    <div class="flex flex-wrap gap-3">
+                        @if ($address)<a href="https://www.google.com/maps/search/?api=1&query={{ rawurlencode($address) }}" target="_blank" rel="noopener" class="btn-dark">{{ __('shop.showroom.directions') }}</a>@endif
+                        @if ($wa = \App\Support\Settings::get('whatsapp_number'))<a href="{{ \App\Messaging\WhatsApp::link($wa, __('shop.showroom.whatsapp')) }}" target="_blank" rel="noopener" class="btn-whatsapp">WhatsApp</a>@endif
+                    </div>
+                </div>
+            </div>
+        </section>
+    @endif
 
     {{-- Gold price alerts --}}
     <section class="container-x mt-16 sm:mt-24">

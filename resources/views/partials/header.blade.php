@@ -19,7 +19,13 @@
         </div>
 
         <a href="{{ route('home') }}" class="text-center leading-none">
-            <span class="font-display text-gold-silver block max-w-[52vw] truncate whitespace-nowrap text-lg font-semibold uppercase tracking-[0.14em] sm:max-w-none sm:text-xl lg:text-2xl">{{ \App\Support\Seo::storeName() }}</span>
+            @if ($logo = \App\Support\Settings::imageUrl('brand_logo'))
+                @php($logoDark = \App\Support\Settings::imageUrl('brand_logo_dark'))
+                <img src="{{ $logo }}" alt="{{ \App\Support\Seo::storeName() }}" class="mx-auto h-9 w-auto max-w-[52vw] object-contain sm:h-11 sm:max-w-xs lg:h-12 {{ $logoDark ? 'dark:hidden' : '' }}">
+                @if ($logoDark)<img src="{{ $logoDark }}" alt="{{ \App\Support\Seo::storeName() }}" class="mx-auto hidden h-9 w-auto max-w-[52vw] object-contain sm:h-11 sm:max-w-xs lg:h-12 dark:block">@endif
+            @else
+                <span class="font-display text-gold-silver block max-w-[52vw] truncate whitespace-nowrap text-lg font-semibold uppercase tracking-[0.14em] sm:max-w-none sm:text-xl lg:text-2xl">{{ \App\Support\Seo::storeName() }}</span>
+            @endif
             <span class="mt-1.5 hidden whitespace-nowrap text-[0.5625rem] uppercase tracking-[0.18em] text-muted xl:block">{{ \App\Support\Settings::get($rtl ? 'store_caption_ar' : 'store_caption') }}</span>
         </a>
 

@@ -447,6 +447,9 @@ return [
 
     'share' => ['email' => 'Email', 'copy' => 'Copy link', 'copied' => 'Link copied'],
 
+    'showroom' => ['eyebrow' => 'Our showroom', 'title' => 'Visit our showroom', 'text' => 'See every piece in person, try it on, and collect your online orders here.',
+        'directions' => 'Get directions', 'whatsapp' => 'Hello, I would like to visit your showroom.'],
+
     'signup' => [
         'verify_optional' => 'Optional: verify it now with a code — or later. A verified number is needed to order.',
         'code_hint' => 'A friend’s or an affiliate partner’s code.',

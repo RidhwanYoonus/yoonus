@@ -71,6 +71,25 @@ class Settings extends Page implements HasForms
                             ->helperText('One per line: English = Arabic. Used before the translator, so names and shop words are always right. Common jewellery words (rings, necklaces, bangles, earrings, pendants, sets, gold, diamond…) are already built in.'),
                     ]),
                 ]),
+                Forms\Components\Tabs\Tab::make('Branding')->icon('heroicon-o-swatch')->columns(2)->schema([
+                    Forms\Components\FileUpload::make('brand_logo')->label('Logo')->image()->disk('public')->directory('branding')->maxSize(6144)
+                        ->imageResizeMode('contain')->imageResizeTargetWidth('800')->imageResizeTargetHeight('240')
+                        ->helperText('Shown at the top of every page instead of the shop name, and in the admin. PNG / SVG / WebP with a transparent background works best; wide logos look best.'),
+                    Forms\Components\FileUpload::make('brand_logo_dark')->label('Logo for dark backgrounds (optional)')->image()->disk('public')->directory('branding')->maxSize(6144)
+                        ->imageResizeMode('contain')->imageResizeTargetWidth('800')->imageResizeTargetHeight('240')
+                        ->helperText('A light / gold version for the dark footer and dark mode. Empty = the normal logo.'),
+                    Forms\Components\FileUpload::make('brand_favicon')->label('Favicon (browser tab icon)')->image()->disk('public')->directory('branding')->maxSize(2048)
+                        ->imageResizeMode('cover')->imageCropAspectRatio('1:1')->imageResizeTargetWidth('512')->imageResizeTargetHeight('512')
+                        ->helperText('A square picture (e.g. your emblem). Also used as the phone home-screen icon.'),
+                    Forms\Components\FileUpload::make('home_hero_image')->label('Home page photo (the big circle)')->image()->disk('public')->directory('branding')->maxSize(6144)
+                        ->imageResizeMode('cover')->imageResizeTargetWidth('1200')->imageResizeTargetHeight('1200')
+                        ->helperText('Empty = the main photo of your newest featured product (or the drawn gold design).'),
+                    Forms\Components\FileUpload::make('showroom_image')->label('Showroom photo')->image()->disk('public')->directory('branding')->maxSize(6144)
+                        ->imageResizeMode('cover')->imageResizeTargetWidth('1600')->imageResizeTargetHeight('1000')
+                        ->helperText('Shown on the home page in a “Visit our showroom” section with your address and directions. Empty = the section is hidden.'),
+                    $text('showroom_title', 'Showroom heading')->placeholder('Visit our showroom'),
+                    $text('showroom_title_ar', 'Showroom heading (Arabic)')->placeholder('زوروا معرضنا')->extraInputAttributes(['dir' => 'rtl']),
+                ]),
                 Forms\Components\Tabs\Tab::make('Admin display')->icon('heroicon-o-computer-desktop')->columns(2)->schema([
                     Forms\Components\Select::make('admin_text_size')->label('Admin text size')->native(false)->selectablePlaceholder(false)
                         ->options(['auto' => 'Automatic (bigger on large monitors)', 'normal' => 'Normal', 'large' => 'Large', 'xlarge' => 'Extra large'])

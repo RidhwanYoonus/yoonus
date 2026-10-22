@@ -163,6 +163,8 @@ return [
         'gold_rate_api_key' => null,
         'gold_rate_auto_website' => false,  // cron reads the rate website every 15 minutes
         'store_visit_button' => true,
+        'brand_logo' => null, 'brand_logo_dark' => null, 'brand_favicon' => null,   // Settings → Branding
+        'home_hero_image' => null, 'showroom_image' => null, 'showroom_title' => null, 'showroom_title_ar' => null,
         'phone_verify_email' => true,       // customers may get the mobile-verification code by email       // "Book a store visit" on product pages
         'sms_provider' => 'none',           // phone codes by SMS: none, twilio, http
         'admin_text_size' => 'auto',        // admin panel text: auto (grows on big monitors), normal, large, xlarge

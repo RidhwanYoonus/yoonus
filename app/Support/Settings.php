@@ -36,6 +36,14 @@ class Settings
         return array_key_exists($key, $all) && $all[$key] !== null ? $all[$key] : $default;
     }
 
+    /** Link to a picture uploaded in Settings (logo, favicon, home photo…), or null when none. */
+    public static function imageUrl(string $key): ?string
+    {
+        $path = static::get($key);
+
+        return is_string($path) && $path !== '' ? \Illuminate\Support\Facades\Storage::disk('public')->url($path) : null;
+    }
+
     public static function bool(string $key): bool
     {
         return filter_var(static::get($key, false), FILTER_VALIDATE_BOOLEAN);
