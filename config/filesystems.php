@@ -33,7 +33,9 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Off: its /storage/… route would answer photo links with 403 when public/storage is missing.
+            // Photos are served by PublicFileController then (see bootstrap/app.php); private files stay private.
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

@@ -12,6 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        // Uploaded photos, when public/storage is missing (no session, no logging — just the file).
+        then: fn () => \Illuminate\Support\Facades\Route::get('storage/{path}', \App\Http\Controllers\PublicFileController::class)
+            ->where('path', '.*')->name('storage.file'),
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(prepend: [HandleRedirects::class], append: [SetLocale::class, \App\Http\Middleware\TrackAffiliate::class, \App\Http\Middleware\LogActivity::class, SecurityHeaders::class]);

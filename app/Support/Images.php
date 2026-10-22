@@ -19,12 +19,20 @@ class Images
         if (! $img) {
             return $file->store($dir, 'public');
         }
+        // Some servers' PHP cannot write WebP (missing or empty output): use JPEG then, never an empty file.
+        $ext = 'webp';
         ob_start();
-        imagewebp($img, null, $quality);
+        $ok = function_exists('imagewebp') && @imagewebp($img, null, $quality);
         $data = ob_get_clean();
+        if (! $ok || strlen((string) $data) < 100) {
+            ob_start();
+            imagejpeg($img, null, 85);
+            $data = ob_get_clean();
+            $ext = 'jpg';
+        }
         imagedestroy($img);
 
-        $path = trim($dir, '/').'/'.Str::random(32).'.webp';
+        $path = trim($dir, '/').'/'.Str::random(32).'.'.$ext;
         Storage::disk('public')->put($path, $data);
 
         return $path;
@@ -61,7 +69,7 @@ class Images
         $tmp = tempnam(sys_get_temp_dir(), 'img');
         file_put_contents($tmp, Storage::disk($disk)->get($path));
         $new = self::storeWebp(new UploadedFile($tmp, basename($path), null, null, true), dirname($path), $maxSide);
-        if ($new !== $path && str_ends_with($new, '.webp')) {
+        if ($new !== $path && Storage::disk($disk)->size($new) > 0) {
             Storage::disk($disk)->delete($path);
         }
         @unlink($tmp);
