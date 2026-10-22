@@ -10,12 +10,12 @@
             @include('partials.sold-watermark')
         @endunless
         @include('partials.diamond-specs')
-        {{-- Phones: only the karat on the photo (the card is small); the rest is listed under the photo. --}}
+        {{-- Phones: karat and making % on the photo (the card is small); diamond details are listed under the photo. --}}
         <div class="pointer-events-none absolute inset-x-2 top-2 z-[3] flex items-start justify-between sm:inset-x-3 sm:top-3">
             <span class="flex flex-col items-start gap-1.5">
                 @if ($product->goldCategory)<span class="rounded-full bg-card/90 px-2 py-0.5 text-[0.5625rem] font-semibold tracking-wider text-gold-700 shadow-sm sm:px-2.5 sm:py-1 sm:text-[0.625rem]">{{ $product->goldCategory->name }}</span>@endif
                 @if ($badge = $product->makingBadge())
-                    <span class="hidden rounded-full px-2.5 py-1 text-[0.625rem] font-semibold shadow-sm sm:inline {{ $badge['highlight'] ? 'bg-onyx text-gold-300' : 'bg-card/90 text-ink/70' }}">{{ $badge['text'] }}</span>
+                    <span class="rounded-full px-2 py-0.5 text-[0.5625rem] font-semibold shadow-sm sm:px-2.5 sm:py-1 sm:text-[0.625rem] {{ $badge['highlight'] ? 'bg-onyx text-gold-300' : 'bg-card/90 text-ink/70' }}">{{ $badge['text'] }}</span>
                 @endif
                 @if ($origin = $product->diamondOriginLabel())<span class="hidden rounded-full px-2.5 py-1 text-[0.625rem] font-semibold shadow-sm sm:inline {{ $product->diamond_origin === 'natural' ? 'bg-emerald-50 text-emerald-800' : 'bg-sky-50 text-sky-800' }}">{{ $origin }}</span>@endif
                 @if ($price->hasDiscount())<span class="rounded-full bg-gold-silver px-2 py-0.5 text-[0.5625rem] font-semibold text-zinc-900 sm:px-2.5 sm:py-1 sm:text-[0.625rem]">{{ __('shop.product.save_percent', ['percent' => $price->savingsPercent()]) }}</span>@endif
@@ -41,7 +41,6 @@
         @php($mobileFacts = array_filter([
             $product->diamondSpecs() ? implode(' · ', array_map(fn ($sp) => $sp[1], $product->diamondSpecs())) : null,
             $product->diamondOriginLabel(),
-            ($badge = $product->makingBadge()) ? $badge['text'] : null,
         ]))
         @if ($mobileFacts)
             <p class="mt-1 flex items-center gap-1 text-[0.6875rem] font-medium text-gold-700 sm:hidden">@if ($product->diamondSpecs() || $product->diamondOriginLabel())<span aria-hidden="true">💎</span>@endif<span class="line-clamp-1">{{ implode(' · ', $mobileFacts) }}</span></p>
