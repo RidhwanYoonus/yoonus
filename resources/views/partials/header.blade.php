@@ -54,10 +54,10 @@
                     <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.1a7.5 7.5 0 0115 0A17.9 17.9 0 0112 21.75c-2.68 0-5.22-.58-7.5-1.65z"/></svg>
                 </a>
             @endauth
-            <a href="{{ route('cart.show') }}" class="{{ $icon }} inline-flex" aria-label="{{ __('shop.nav.cart') }}">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"/></svg>
+            <a href="{{ route('cart.show') }}" class="{{ $icon }} inline-flex text-ink" aria-label="{{ __('shop.nav.cart') }}" data-cart-icon>
+                <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z"/></svg>
                 @if ($cartCount ?? 0)
-                    <span class="absolute top-0.5 end-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold-silver px-1 text-[0.625rem] text-zinc-900">{{ $cartCount }}</span>
+                    <span class="absolute -top-0.5 -end-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[0.6875rem] font-bold text-white shadow ring-2 ring-ivory" data-cart-count>{{ $cartCount }}</span>
                 @endif
             </a>
         </div>

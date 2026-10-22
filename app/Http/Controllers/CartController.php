@@ -33,7 +33,8 @@ class CartController extends Controller
             return response()->json(['count' => $this->cart->count()]);
         }
 
-        return back()->with('status', __('shop.cart.added', ['name' => $product->localized('name')]))
+        // Straight to the bag, so the customer sees what is in it and can check out.
+        return redirect()->route('cart.show')->with('status', __('shop.cart.added', ['name' => $product->localized('name')]))
             ->with('analytics_event', ['name' => 'add_to_cart', 'sku' => $product->sku, 'value' => $product->displayPrice()->total / 100, 'item_name' => $product->name]);
     }
 

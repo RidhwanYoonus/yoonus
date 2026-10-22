@@ -436,6 +436,15 @@ return [
         'whatsapp_alt' => 'Prefer a WhatsApp video call?', 'whatsapp_text' => 'Hello, I would like a live video call about :name (:sku).',
     ],
 
+    'cart_id' => [
+        'title' => 'Your ID for this order',
+        'intro' => 'Add it now and checkout is one tap. Tourists who want a tax-free invoice: passport only.',
+        'guest' => 'Sign in or create an account to save your ID now — or add it at checkout.',
+        'saved' => 'ID saved (:id) — checkout uses it automatically.',
+        'change' => 'Change',
+        'optional' => 'optional',
+    ],
+
     'signup' => [
         'verify_optional' => 'Optional: verify it now with a WhatsApp code — or later. A verified number is needed to order.',
         'code_hint' => 'A friend’s or an affiliate partner’s code.',

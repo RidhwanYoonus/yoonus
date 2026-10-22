@@ -1,6 +1,6 @@
 @php($price = $product->displayPrice())
 @php($wished = in_array($product->id, \App\Http\Controllers\ShopController::wishlistIds(request()), true))
-<article class="group relative">
+<article class="group relative" data-fly-scope>
     <div class="relative overflow-hidden rounded-2xl border border-line bg-gradient-to-b from-card to-sand transition duration-300 group-hover:-translate-y-1 group-hover:border-gold-300 group-hover:shadow-[0_20px_45px_-20px_rgba(122,95,34,.45)]">
         <a href="{{ route('product.show', $product) }}" class="block">
             <img src="{{ $product->primaryImage() }}" alt="{{ $product->localized('name') }}" loading="lazy" decoding="async" width="600" height="600"
@@ -29,7 +29,7 @@
             </button>
         </form>
         @if ($product->inStock())
-            <form method="POST" action="{{ route('cart.add', $product) }}" class="absolute inset-x-3 bottom-3 z-[3] hidden translate-y-2 opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 lg:block">
+            <form method="POST" action="{{ route('cart.add', $product) }}" data-add-to-bag class="absolute inset-x-3 bottom-3 z-[3] hidden translate-y-2 opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 lg:block">
                 @csrf
                 <button class="w-full rounded-md bg-gold-silver py-2.5 text-xs font-semibold uppercase tracking-[0.15em] text-zinc-900 shadow-md hover:bg-onyx">{{ __('shop.product.add_to_cart') }}</button>
             </form>

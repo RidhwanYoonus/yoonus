@@ -61,6 +61,10 @@ class AccountController extends Controller
         $data = $request->validate(self::idRules($request, $request->user()));
         self::saveId($request, $request->user(), $data);
 
+        if ($request->input('back') === 'cart') {
+            return redirect()->to(route('cart.show').'#cart-id')->with('status', __('shop.id.saved_ok'))->with('id_saved_here', true);
+        }
+
         return redirect()->to(route('account').'#id')->with('status', __('shop.id.saved_ok'));
     }
 
@@ -74,7 +78,7 @@ class AccountController extends Controller
         return [
             'id_type' => ['required', \Illuminate\Validation\Rule::in($types)],
             'id_number' => ['required', 'string', 'max:32', \App\Support\IdDocument::numberRule($request->input('id_type'))],
-            'id_expiry' => ['required', 'date', 'after:today'],
+            'id_expiry' => ['nullable', 'date', 'after:today'],   // optional: not every customer has it at hand
             'id_country' => ['nullable', 'required_if:id_type,passport', \Illuminate\Validation\Rule::in(array_keys(\App\Support\TaxFree::countries()))],
             'id_front' => [$photos === 'required' && ! $user?->id_front_path ? 'required' : 'nullable', ...$file],
             'id_back' => [$photos === 'required' && ! $user?->id_back_path ? 'required' : 'nullable', ...$file],
@@ -87,7 +91,7 @@ class AccountController extends Controller
         $number = \App\Support\IdDocument::normalise($data['id_type'], $data['id_number']);
         $changed = $user->id_type !== $data['id_type'] || $user->id_number !== $number;
         $user->forceFill([
-            'id_type' => $data['id_type'], 'id_number' => $number, 'id_last4' => \App\Support\IdDocument::last4($number), 'id_expiry' => $data['id_expiry'],
+            'id_type' => $data['id_type'], 'id_number' => $number, 'id_last4' => \App\Support\IdDocument::last4($number), 'id_expiry' => $data['id_expiry'] ?? null,
             // A different ID drops the photos of the old one; the same ID keeps them unless new ones are added.
             'id_front_path' => $request->hasFile('id_front') ? \App\Support\IdDocument::store($request->file('id_front')) : ($changed ? null : $user->id_front_path),
             'id_back_path' => $request->hasFile('id_back') ? \App\Support\IdDocument::store($request->file('id_back')) : ($changed ? null : $user->id_back_path),

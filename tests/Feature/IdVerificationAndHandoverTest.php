@@ -54,7 +54,8 @@ class IdVerificationAndHandoverTest extends TestCase
         $this->post('/cart/add/band');
         $this->get('/checkout')->assertSee('Identity verification')->assertSee('enctype="multipart/form-data"', false);
 
-        $this->post('/checkout', $this->delivery())->assertSessionHasErrors(['id_number', 'id_expiry'])->assertSessionDoesntHaveErrors('id_front');
+        // Expiry date is optional; a date in the past is still refused.
+        $this->post('/checkout', $this->delivery())->assertSessionHasErrors(['id_number'])->assertSessionDoesntHaveErrors(['id_front', 'id_expiry']);
         $this->post('/checkout', $this->delivery($this->idFields(['id_number' => '123-456'])))->assertSessionHasErrors('id_number');
         $this->post('/checkout', $this->delivery($this->idFields(['id_expiry' => now()->subDay()->toDateString()])))->assertSessionHasErrors('id_expiry');
         $this->assertSame(0, Order::count());

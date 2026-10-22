@@ -53,8 +53,8 @@ class UserResource extends Resource
                     Forms\Components\Placeholder::make('signup_affiliate')->label('Affiliate')
                         ->content(fn (?User $record) => $record?->signupAffiliate ? $record->signupAffiliate->code.' — '.($record->signupAffiliate->user?->name ?? '') : '—'),
                     Forms\Components\Placeholder::make('markup_now')->label('Prices now')
-                        ->content(fn (?User $record) => ! \App\Support\Settings::bool('affiliate_signup_markup', false) ? 'Normal shop prices (switched off in Settings → Affiliates)'
-                            : ($record?->markupAffiliate() ? 'With the affiliate\'s mark-up' : 'Normal shop prices')),
+                        ->content(fn (?User $record) => $record?->markupAffiliate() ? 'With the affiliate\'s mark-up'
+                            : ($record?->signupAffiliate && ! $record->signupAffiliate->signup_markup ? 'Normal shop prices (switched off for this affiliate)' : 'Normal shop prices')),
                     Forms\Components\Toggle::make('affiliate_markup_on')->label('Show this customer the affiliate\'s mark-up')->inline(false),
                 ]),
         ]);

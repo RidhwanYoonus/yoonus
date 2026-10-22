@@ -19,7 +19,7 @@
 
     <div class="mt-6 grid gap-10 lg:grid-cols-2">
         <div x-data="{ active: 0 }">
-            <div class="relative overflow-hidden rounded-3xl border border-line bg-sand">
+            <div class="relative overflow-hidden rounded-3xl border border-line bg-sand" data-fly-scope>
                 @foreach ($images as $i => $img)
                     <img x-show="active === {{ $i }}" @if($i) x-cloak @endif src="{{ $img }}" alt="{{ $name }}" class="aspect-square w-full object-cover {{ $product->inStock() ? '' : 'grayscale-[35%]' }}" loading="{{ $i ? 'lazy' : 'eager' }}" width="900" height="900">
                 @endforeach
@@ -87,7 +87,7 @@
             @endif
 
             @if ($product->inStock())
-                <form id="add-to-bag" method="POST" action="{{ route('cart.add', $product) }}" class="mt-6 flex gap-3">
+                <form id="add-to-bag" method="POST" action="{{ route('cart.add', $product) }}" data-add-to-bag class="mt-6 flex gap-3">
                     @csrf
                     <label class="sr-only" for="qty">{{ __('shop.cart.qty') }}</label>
                     <input id="qty" type="number" name="qty" value="1" min="1" max="{{ $product->stock_qty }}" class="input w-20 text-center">

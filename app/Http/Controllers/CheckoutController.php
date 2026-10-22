@@ -293,7 +293,7 @@ class CheckoutController extends Controller
             'id_type' => ['required', $taxFree ? Rule::in(['passport']) : Rule::in(IdDocument::TYPES)],
             'id_country' => [$taxFree ? 'required' : 'nullable', Rule::in(array_keys(\App\Support\TaxFree::countries()))],
             'id_number' => ['required', 'string', 'max:32', IdDocument::numberRule($request->input('id_type'))],
-            'id_expiry' => ['required', 'date', 'after:today'],
+            'id_expiry' => ['nullable', 'date', 'after:today'],
             // Settings → Delivery & pickup → ID photos: optional (default), required, or not asked.
             'id_front' => [self::idPhotos() === 'required' ? 'required' : 'nullable', ...$file],
             'id_back' => [self::idPhotos() === 'required' ? 'required' : 'nullable', ...$file],

@@ -168,7 +168,7 @@
                             <input id="id_number" name="id_number" value="{{ old('id_number') }}" class="input" dir="ltr" placeholder="784-1990-1234567-1" autocomplete="off" :required="needed && !useSaved" :disabled="!needed || useSaved">
                             @error('id_number')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror</div>
                         <div><label class="label" for="id_expiry">{{ __('shop.id.expiry') }}</label>
-                            <input id="id_expiry" type="date" name="id_expiry" value="{{ old('id_expiry') }}" min="{{ now()->addDay()->toDateString() }}" class="input" :required="needed && !useSaved" :disabled="!needed || useSaved">
+                            <input id="id_expiry" type="date" name="id_expiry" value="{{ old('id_expiry') }}" min="{{ now()->addDay()->toDateString() }}" class="input" :disabled="!needed || useSaved">
                             @error('id_expiry')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror</div>
                         <div class="hidden sm:block" x-show="!form.tax_free"></div>
                         @php($idPhotos = \App\Http\Controllers\CheckoutController::idPhotos())

@@ -56,7 +56,7 @@
                     <input id="acc_id_number" name="id_number" value="{{ old('id_number') }}" class="input" dir="ltr" required autocomplete="off" :placeholder="type === 'emirates_id' ? '784-1990-1234567-1' : ''">
                     @error('id_number')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror</div>
                 <div><label class="label" for="acc_id_expiry">{{ __('shop.id.expiry') }}</label>
-                    <input id="acc_id_expiry" type="date" name="id_expiry" value="{{ old('id_expiry', $u->id_expiry?->toDateString()) }}" min="{{ now()->addDay()->toDateString() }}" class="input" required>
+                    <input id="acc_id_expiry" type="date" name="id_expiry" value="{{ old('id_expiry', $u->id_expiry?->toDateString()) }}" min="{{ now()->addDay()->toDateString() }}" class="input">
                     @error('id_expiry')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror</div>
                 <div x-show="type === 'passport'" x-cloak><label class="label" for="acc_id_country">{{ __('shop.tax_free.nationality') }}</label>
                     <select id="acc_id_country" name="id_country" class="input" :required="type === 'passport'" :disabled="type !== 'passport'">

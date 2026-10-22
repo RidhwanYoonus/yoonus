@@ -36,7 +36,6 @@ class SignupAffiliateMarkupTest extends TestCase
 
     public function test_customer_who_signed_up_with_the_affiliate_code_always_sees_the_mark_up(): void
     {
-        Settings::set(['affiliate_signup_markup' => true]);
         $this->post('/register', $this->form)->assertSessionHasNoErrors();
         $sara = User::where('email', 'sara@example.com')->sole();
         $this->assertSame(Affiliate::first()->id, $sara->signup_affiliate_id);
@@ -44,12 +43,13 @@ class SignupAffiliateMarkupTest extends TestCase
         $this->get('/product/band')->assertSee('1,120.00')->assertDontSee('1,100.00');
     }
 
-    public function test_switched_off_in_settings_or_for_the_customer_shows_normal_prices(): void
+    public function test_switched_off_for_the_affiliate_or_for_the_customer_shows_normal_prices(): void
     {
+        Affiliate::first()->update(['signup_markup' => false]);
         $this->post('/register', $this->form);
-        $this->get('/product/band')->assertSee('1,100.00');   // setting is off by default
+        $this->get('/product/band')->assertSee('1,100.00');   // switched off for this affiliate
 
-        Settings::set(['affiliate_signup_markup' => true]);
+        Affiliate::first()->update(['signup_markup' => true]);
         $sara = User::where('email', 'sara@example.com')->sole();
         $sara->forceFill(['affiliate_markup_on' => false])->save();
         Cache::flush();
@@ -58,7 +58,6 @@ class SignupAffiliateMarkupTest extends TestCase
 
     public function test_admin_can_switch_off_or_remove_the_link(): void
     {
-        Settings::set(['affiliate_signup_markup' => true]);
         $this->post('/register', $this->form);
         $sara = User::where('email', 'sara@example.com')->sole();
         auth()->logout();

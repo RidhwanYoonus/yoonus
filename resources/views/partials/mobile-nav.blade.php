@@ -13,14 +13,14 @@
         @foreach ($items as [$pattern, $url, $label, $icon])
             @php($active = request()->routeIs($pattern))
             <li>
-                <a href="{{ $url }}" class="relative flex flex-col items-center gap-0.5 py-2 text-[0.625rem] {{ $active ? 'text-gold-700' : 'text-muted' }}" @if($active) aria-current="page" @endif>
-                    <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="{{ $active ? 2 : 1.5 }}" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $icon }}"/></svg>
+                <a href="{{ $url }}" @if ($pattern === 'cart.*') data-cart-icon @endif class="relative flex flex-col items-center gap-0.5 py-2 text-[0.625rem] {{ $active ? 'text-gold-700' : 'text-muted' }}" @if($active) aria-current="page" @endif>
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="{{ $active || $pattern === 'cart.*' ? 2 : 1.5 }}" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $icon }}"/></svg>
                     <span>{{ $label }}</span>
                     @if ($pattern === 'wishlist' && ($wishlistCount ?? 0))
                         <span class="absolute top-1 start-1/2 ms-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold-silver px-1 text-[0.625rem] text-zinc-900">{{ $wishlistCount }}</span>
                     @endif
                     @if ($pattern === 'cart.*' && ($cartCount ?? 0))
-                        <span class="absolute top-1 start-1/2 ms-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-gold-silver px-1 text-[0.625rem] text-zinc-900">{{ $cartCount }}</span>
+                        <span class="absolute top-0.5 start-1/2 ms-1.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[0.6875rem] font-bold text-white shadow ring-2 ring-ivory" data-cart-count>{{ $cartCount }}</span>
                     @endif
                 </a>
             </li>

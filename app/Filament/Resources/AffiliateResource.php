@@ -124,6 +124,8 @@ class AffiliateResource extends Resource
 
         return [
             Forms\Components\Toggle::make('white_page_enabled')->label('Allow white page')->live()->columnSpanFull(),
+            Forms\Components\Toggle::make('signup_markup')->label('Customers who sign up with this code keep this affiliate\'s prices')->default(true)->columnSpanFull()->visible($on)
+                ->helperText('On: a customer who types this affiliate\'s code when signing up always sees the white-page prices (mark-up) while signed in. Off: those customers see normal shop prices.'),
             Forms\Components\ToggleButtons::make('markup_mode')->label('How is the mark-up added?')->inline()->required()->live()->default('percent')->columnSpanFull()
                 ->visible($on)->options(['percent' => 'Different for each item type', 'amount' => 'Same amount per piece for every item']),
 

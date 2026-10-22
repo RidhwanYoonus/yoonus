@@ -67,6 +67,7 @@
                 <p class="mt-3 text-center text-xs text-muted">{{ __('shop.cart.bnpl_hint') }}</p>
             </aside>
         </div>
+        @include('partials.cart-id')
     @endif
 </div>
 @endsection

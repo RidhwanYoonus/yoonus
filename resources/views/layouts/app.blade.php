@@ -76,6 +76,7 @@
     @unless ($focus)
         @include('partials.mobile-nav')
     @endunless
+    @include('partials.fly-to-bag')
     @stack('scripts')
 </body>
 </html>
