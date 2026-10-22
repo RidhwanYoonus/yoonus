@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 
 /** Lets the admin see whether the cPanel cron job runs and how the automatic gold rate update went. */
@@ -59,5 +60,25 @@ class AutoTasks
 
         return ($status['ok'] ? '✓ ' : '✗ ').'Last automatic update '.$status['at']->timezone(config('app.timezone'))->format('d M Y, h:i A')
             .' ('.$status['at']->diffForHumans().'): '.$status['message'];
+    }
+
+    /**
+     * Back-up for the cron job: after a page has been sent, the website itself runs the automatic gold
+     * rate update when the last one failed or is over 16 minutes old (at most once every 10 minutes).
+     * The web's PHP is the one the "Fetch rate" button uses, so this works even when the cron's PHP cannot.
+     */
+    public static function goldRateFromWeb(): void
+    {
+        if (! Settings::get('gold_rate_auto_website') && ! Settings::get('gold_rate_api_url')) {
+            return;
+        }
+        $last = self::goldRate();
+        if ($last && $last['ok'] && $last['at']->gt(now()->subMinutes(16))) {
+            return;
+        }
+        if (! Cache::add('auto.gold_rate_web_lock', 1, 600)) {
+            return;
+        }
+        Artisan::call('shop:fetch-gold-rates');
     }
 }

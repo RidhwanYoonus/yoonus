@@ -57,16 +57,49 @@ class AutoGoldRateTest extends TestCase
         Carbon::setTestNow();
     }
 
-    public function test_big_jump_is_skipped(): void
+    public function test_website_replaces_a_hand_typed_test_rate(): void
     {
         $this->seed(ReferenceDataSeeder::class);
+        GoldCategory::query()->update(['rate_per_gram' => 5]);
         Settings::set(['gold_rate_auto_website' => true]);
-        Http::fake(['dubaicityofgold.com/*' => Http::sequence()->push(self::CARD)->push(str_replace('386.75', '480.00', self::CARD))]);
+        Http::fake(['dubaicityofgold.com/*' => Http::response(self::CARD)]);
+
         $this->artisan('shop:fetch-gold-rates')->assertSuccessful();
+
+        $this->assertSame('386.75', GoldCategory::where('name', '24K')->value('rate_per_gram'));
+    }
+
+    public function test_api_big_jump_is_skipped(): void
+    {
+        $this->seed(ReferenceDataSeeder::class);
+        GoldCategory::query()->update(['rate_per_gram' => 300]);
+        Settings::set(['gold_rate_api_url' => 'https://rates.example/api']);
+        Http::fake(['rates.example/*' => Http::response(['rates' => ['24K' => 480]])]);
 
         $this->artisan('shop:fetch-gold-rates')->assertFailed();
 
+        $this->assertSame('300.00', GoldCategory::orderByDesc('karat')->value('rate_per_gram'));
+    }
+
+    public function test_website_runs_the_update_when_the_cron_did_not(): void
+    {
+        $this->seed(ReferenceDataSeeder::class);
+        Settings::set(['gold_rate_auto_website' => true]);
+        Http::fake(['dubaicityofgold.com/*' => Http::response(self::CARD)]);
+
+        AutoTasks::goldRateFromWeb();
         $this->assertSame('386.75', GoldCategory::where('name', '24K')->value('rate_per_gram'));
+        $this->assertTrue(AutoTasks::goldRate()['ok']);
+
+        AutoTasks::goldRateFromWeb();   // fresh and OK: nothing is fetched again
+        Http::assertSentCount(1);
+    }
+
+    public function test_view_shop_link_keeps_the_sub_folder(): void
+    {
+        $admin = User::factory()->create();
+        $admin->forceFill(['is_admin' => true])->save();
+        $this->actingAs($admin)->get('/admin')->assertOk()->assertSee('href="'.url('/').'"', false);
     }
 
     public function test_admin_text_size_setting(): void

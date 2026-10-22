@@ -95,8 +95,10 @@ class FetchGoldRates extends Command
         $checked = false;
         foreach ($pairs as [$category, $rate]) {
             $current = (float) $category->rate_per_gram;
-            // Ignore absurd swings (>15%) — likely a bad feed; leave for a human to confirm.
-            if ($current > 0 && abs($rate - $current) / $current > 0.15) {
+            // API feed: ignore absurd swings (>15%) — likely a bad feed; leave for a human to confirm.
+            // The website's karats are already checked against each other, so a rate typed by hand
+            // (e.g. a test value) never blocks the website update.
+            if ($source === 'api' && $current > 0 && abs($rate - $current) / $current > 0.15) {
                 $this->error("Rejected suspicious {$category->name} rate {$rate} (current {$current}).");
                 $ok = false;
 

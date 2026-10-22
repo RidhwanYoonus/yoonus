@@ -37,7 +37,7 @@ class AdminPanelProvider extends PanelProvider
             ->sidebarCollapsibleOnDesktop()
             ->navigationGroups(['Sales', 'Gold rates', 'Catalogue', 'Offers', 'Customers', 'Affiliates', 'Marketing', 'Settings'])
             ->navigationItems([
-                NavigationItem::make('View shop')->url('/', shouldOpenInNewTab: true)->icon('heroicon-o-arrow-top-right-on-square')->sort(99),
+                NavigationItem::make('View shop')->url(fn () => url('/'), shouldOpenInNewTab: true)->icon('heroicon-o-arrow-top-right-on-square')->sort(99),
             ])
             ->renderHook(PanelsRenderHook::STYLES_AFTER, fn () => self::textSizeStyle())
             ->renderHook(PanelsRenderHook::STYLES_AFTER, fn () => '<style>
