@@ -324,8 +324,10 @@ class Settings extends Page implements HasForms
                     ->requiresConfirmation()->modalHeading('Speed up the shop')
                     ->modalDescription('Saves ready-made copies of settings, routes, pages and the admin panel (same as "php artisan optimize"). Safe to press any time. After an update or a .env change the copies are rebuilt automatically.')
                     ->action(function () {
-                        \App\Support\SpeedCache::build();
-                        Notification::make()->success()->title('Speed cache is on')->body('Pages now load faster. Press again after big changes if something looks old.')->send();
+                        // Built after this page's answer is sent: building it in the middle of the answer
+                        // resets the admin panel's live parts (the window would stay grey).
+                        \App\Support\SpeedCache::buildAfterResponse();
+                        Notification::make()->success()->title('Speed cache is turning on')->body('Ready in a few seconds — reload the page to see "Speed cache: on". Pages then load faster.')->send();
                     }),
                 \Filament\Actions\Action::make('storageLink')->label('Repair photo link')->icon('heroicon-o-photo')->color('gray')
                     ->requiresConfirmation()->modalHeading('Repair the photo link')

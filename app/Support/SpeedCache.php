@@ -42,6 +42,12 @@ class SpeedCache
         return self::run(self::inSubfolder() ? array_values(array_diff(self::BUILD, ['route:cache'])) : self::BUILD);
     }
 
+    /** Build once the current page has been sent (safe to call from an admin button or any web request). */
+    public static function buildAfterResponse(): void
+    {
+        app()->runningInConsole() ? self::build() : app()->terminating(fn () => rescue(fn () => self::build(), null, false));
+    }
+
     public static function clear(): string
     {
         return self::run(self::CLEAR);
@@ -112,6 +118,17 @@ class SpeedCache
         if (! app()->configurationIsCached() || ! self::isStale()) {
             return;
         }
+        if (! app()->runningInConsole()) {
+            // Rebuild after this page has been sent, never while it is being built.
+            app()->terminating(fn () => rescue(fn () => self::rebuildLocked(), null, false));
+
+            return;
+        }
+        self::rebuildLocked();
+    }
+
+    private static function rebuildLocked(): void
+    {
         $lock = fopen(storage_path('framework/speed-cache.lock'), 'c');
         if ($lock && flock($lock, LOCK_EX | LOCK_NB)) {
             try {
