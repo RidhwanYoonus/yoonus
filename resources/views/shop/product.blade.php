@@ -102,7 +102,26 @@
 
             <div class="mt-3 grid gap-3 sm:grid-cols-2">
                 <a href="{{ \App\Messaging\WhatsApp::link($whatsapp, $enquireText) }}" target="_blank" rel="noopener" class="btn-whatsapp">{{ __('shop.whatsapp.enquire_cta') }}</a>
-                <a href="https://wa.me/?text={{ rawurlencode($shareText) }}" target="_blank" rel="noopener" class="btn-outline">{{ __('shop.whatsapp.share_cta') }}</a>
+                {{-- Share: the phone's own share sheet (any app); on computers a small menu. --}}
+                @php($shareUrl = route('product.show', $product))
+                <div class="relative" x-data="{ menu: false, copied: false,
+                        async share() {
+                            if (navigator.share) { try { await navigator.share({ title: @js($name), text: @js($shareText), url: @js($shareUrl) }); } catch (e) {} return; }
+                            this.menu = ! this.menu;
+                        },
+                        copy() { navigator.clipboard?.writeText(@js($shareUrl)); this.copied = true; setTimeout(() => this.copied = false, 2000); } }" @click.outside="menu = false">
+                    <button type="button" @click="share()" class="btn-outline w-full gap-2">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M7.2 10.9a2.25 2.25 0 100 2.2m0-2.2c.2.3.3.7.3 1.1s-.1.8-.3 1.1m0-2.2l9.6-5.3m-9.6 7.5l9.6 5.3m0 0a2.25 2.25 0 103.9 2.2 2.25 2.25 0 00-3.9-2.2zm0-12.8a2.25 2.25 0 103.9-2.2 2.25 2.25 0 00-3.9 2.2z"/></svg>
+                        {{ __('shop.whatsapp.share_cta') }}</button>
+                    <div x-show="menu" x-cloak x-transition class="card absolute inset-x-0 top-full z-20 mt-2 grid gap-1 p-2 text-sm shadow-lg">
+                        <a class="rounded-lg px-3 py-2 hover:bg-sand" target="_blank" rel="noopener" href="https://wa.me/?text={{ rawurlencode($shareText) }}">WhatsApp</a>
+                        <a class="rounded-lg px-3 py-2 hover:bg-sand" target="_blank" rel="noopener" href="https://www.facebook.com/sharer/sharer.php?u={{ rawurlencode($shareUrl) }}">Facebook</a>
+                        <a class="rounded-lg px-3 py-2 hover:bg-sand" target="_blank" rel="noopener" href="https://t.me/share/url?url={{ rawurlencode($shareUrl) }}&text={{ rawurlencode($name) }}">Telegram</a>
+                        <a class="rounded-lg px-3 py-2 hover:bg-sand" target="_blank" rel="noopener" href="https://x.com/intent/post?url={{ rawurlencode($shareUrl) }}&text={{ rawurlencode($name) }}">X (Twitter)</a>
+                        <a class="rounded-lg px-3 py-2 hover:bg-sand" href="mailto:?subject={{ rawurlencode($name) }}&body={{ rawurlencode($shareText) }}">{{ __('shop.share.email') }}</a>
+                        <button type="button" class="rounded-lg px-3 py-2 text-start hover:bg-sand" @click="copy()"><span x-show="!copied">{{ __('shop.share.copy') }}</span><span x-show="copied" x-cloak class="text-green-700">✓ {{ __('shop.share.copied') }}</span></button>
+                    </div>
+                </div>
             </div>
 
             @if ($lock = \App\Affiliates\PriceLocks::forProduct($product->id))
@@ -123,7 +142,8 @@
                 </div>
             @endif
 
-            {{-- Book a store visit to see the piece --}}
+            {{-- Book a store visit to see the piece (Settings → Video calls can hide it) --}}
+            @if (\App\Support\Settings::bool('store_visit_button', true))
             <div x-data="{ open: {{ $errors->has('preferred_at') ? 'true' : 'false' }} }" class="mt-3">
                 <button type="button" @click="open = !open" class="btn-outline w-full">🏬 {{ __('shop.affiliate.visit_cta') }}</button>
                 <form x-show="open" x-cloak method="POST" action="{{ route('store-visit.store') }}" class="card mt-2 grid gap-3 p-4 text-sm">
@@ -139,6 +159,7 @@
                     <button class="btn-gold h-10">{{ __('shop.affiliate.visit_send') }}</button>
                 </form>
             </div>
+            @endif
             @if ($product->videoCallAvailable())
                 <div x-data="{ open: {{ $errors->has('name') || $errors->has('phone') ? 'true' : 'false' }} }" class="mt-3">
                     <button type="button" @click="open = true" class="btn-outline w-full gap-2">

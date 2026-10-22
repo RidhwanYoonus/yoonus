@@ -34,6 +34,12 @@ class Product extends Model
         ]));
     }
 
+    /** A diamond piece: diamond type chosen, carat entered, or "Diamond" among its stones. */
+    public function hasDiamond(): bool
+    {
+        return filled($this->diamond_origin) || filled($this->diamond_carat) || str_contains(strtolower((string) $this->stone_type), 'diamond');
+    }
+
     /** "Natural diamond" / "Lab-grown diamond" in the shop's language, or null. */
     public function diamondOriginLabel(): ?string
     {

@@ -246,7 +246,9 @@ class Settings extends Page implements HasForms
                     $text('video_call_hours', 'Hours shown to customers')->placeholder('Daily 10:00 – 22:00'),
                     $text('video_call_notify_email', 'Email staff about new calls')->email()->placeholder('Store email is used when empty'),
                     $text('video_call_base_url', 'Video service address')->url()
-                        ->helperText('https://meet.jit.si works free with no account (staff sign in with Google once to open the room). Use your own Jitsi server or 8x8 JaaS address for a branded service.'),
+                        ->helperText('Recommended: https://meet.jit.si — free, a new private room for every call (staff sign in with Google once to start it). A Google Meet / Zoom / Teams meeting link also works: then every customer joins that same meeting and staff must be in it to let them in.'),
+                    Forms\Components\Toggle::make('store_visit_button')->label('"Book a store visit to see this piece" button on products')->inline(false)
+                        ->helperText('Switch off to hide the store-visit booking from product pages.'),
                 ]),
                 Forms\Components\Tabs\Tab::make('Loyalty & referrals')->icon('heroicon-o-star')->columns(2)->schema([
                     Forms\Components\TextInput::make('loyalty_earn_per_aed')->label('Spend per point')->numeric()->prefix('AED')->helperText('1 point per AED X spent'),
@@ -285,6 +287,21 @@ class Settings extends Page implements HasForms
                         $text('twilio_sid', 'Account SID'), $secret('twilio_token', 'Auth token'),
                         $text('twilio_whatsapp_from', 'WhatsApp sender number'),
                     ]),
+                    Forms\Components\Section::make('SMS — for customers without mobile data')->columns(2)->collapsible()
+                        ->description('Optional. When set up, the mobile verification lets customers choose "WhatsApp" or "SMS" for their code.')
+                        ->schema([
+                            Forms\Components\Select::make('sms_provider')->label('Send SMS through')->live()->selectablePlaceholder(false)
+                                ->options(['none' => 'Off (WhatsApp only)', 'twilio' => 'Twilio (uses the Account SID / token above)', 'http' => 'Another SMS company (web link)']),
+                            $text('sms_from', 'Sender (number or name)')->placeholder('+12025550123 or ALMASROOR')->visible(fn (Forms\Get $get) => $get('sms_provider') === 'twilio'),
+                            $text('sms_http_url', 'SMS web link')->columnSpanFull()->visible(fn (Forms\Get $get) => $get('sms_provider') === 'http')
+                                ->placeholder('https://api.smscompany.ae/send?user=ME&pass=SECRET&to={to}&text={message}')
+                                ->helperText('From your SMS company. Put {to} where the number goes (971501234567) or {to_plus} (+971…), and {message} for the text.'),
+                            Forms\Components\Select::make('sms_http_method')->label('Send as')->options(['GET' => 'GET (link)', 'POST' => 'POST'])->default('GET')
+                                ->visible(fn (Forms\Get $get) => $get('sms_provider') === 'http'),
+                            Forms\Components\Section::make('Twilio account')->columns(2)->visible(fn (Forms\Get $get) => $get('sms_provider') === 'twilio' && $get('whatsapp_provider') !== 'twilio')->schema([
+                                $text('twilio_sid', 'Account SID'), $secret('twilio_token', 'Auth token'),
+                            ]),
+                        ]),
                     Forms\Components\Placeholder::make('wa_hint')->label('')->columnSpanFull()
                         ->content('Sent automatically: order updates, the paid tax invoice, handover codes, abandoned-cart reminders and gold-drop alerts. Use "Send test WhatsApp" above to check.'),
                 ]),

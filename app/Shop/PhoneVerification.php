@@ -29,9 +29,9 @@ class PhoneVerification
     }
 
     /** Messages can't actually be delivered yet (testing PC): the code is shown on screen instead. */
-    public static function testMode(): bool
+    public static function testMode(string $channel = 'whatsapp'): bool
     {
-        return ! WhatsApp::configured();
+        return $channel === 'sms' ? ! \App\Messaging\Sms::configured() : ! WhatsApp::configured();
     }
 
     public static function normalise(?string $phone): ?string
@@ -54,7 +54,8 @@ class PhoneVerification
     }
 
     /** @return string|null the code itself in test mode, so the flow can be tried before WhatsApp is set up */
-    public function send(string $phone, string $locale = 'en'): ?string
+    /** $channel: 'whatsapp' or 'sms' (for customers without mobile data). */
+    public function send(string $phone, string $locale = 'en', string $channel = 'whatsapp'): ?string
     {
         $phone = self::normalise($phone) ?? throw new RuntimeException(__('shop.verify.invalid'));
         $sendsKey = 'phone_otp_sends:'.sha1($phone);
@@ -66,10 +67,12 @@ class PhoneVerification
         $code = (string) random_int(100000, 999999);
         Cache::put('phone_otp:'.sha1($phone), ['hash' => Hash::make($code), 'tries' => 0], now()->addMinutes(10));
 
-        Messenger::inLocale($locale, fn () => $this->messenger->whatsapp($phone,
-            __('shop.verify.message', ['code' => $code, 'store' => Settings::get('store_name')]), 'phone_verification'));
+        $text = fn () => __('shop.verify.message', ['code' => $code, 'store' => Settings::get('store_name')]);
+        Messenger::inLocale($locale, fn () => $channel === 'sms' && \App\Messaging\Sms::configured()
+            ? $this->messenger->sms($phone, $text(), 'phone_verification')
+            : $this->messenger->whatsapp($phone, $text(), 'phone_verification'));
 
-        return self::testMode() ? $code : null;
+        return self::testMode($channel) ? $code : null;
     }
 
     public function check(Request $request, string $phone, string $code): void

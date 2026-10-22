@@ -9,7 +9,12 @@ use Throwable;
 
 class Messenger
 {
-    public function __construct(private readonly WhatsApp $whatsapp) {}
+    public function __construct(private readonly WhatsApp $whatsapp, private readonly Sms $sms) {}
+
+    public function sms(?string $phone, string $body, string $template): bool
+    {
+        return $this->sms->send($phone, $body, $template);
+    }
 
     public function email(?string $to, ShopMessage $message, string $template): bool
     {

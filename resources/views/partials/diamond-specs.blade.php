@@ -13,4 +13,12 @@
             @endforeach
         </div>
     </div>
+@elseif (($large ?? false) && $product->hasDiamond())
+    {{-- Diamond piece without carat/colour/clarity entered: still say it on the photo. --}}
+    <div class="pointer-events-none absolute bottom-4 start-4 z-[2]">
+        <div class="flex items-center gap-2 rounded-xl bg-onyx/70 px-4 py-2.5 text-white shadow-lg ring-1 ring-white/15 backdrop-blur-md">
+            <svg class="h-5 w-5 text-gold-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M12 21 8 9l4-6 4 6-4 12"/></svg>
+            <span class="text-sm font-semibold">{{ $product->diamondOriginLabel() ?? \App\Models\StoneType::label('Diamond') }}</span>
+        </div>
+    </div>
 @endif

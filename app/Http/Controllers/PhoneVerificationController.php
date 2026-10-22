@@ -18,15 +18,16 @@ class PhoneVerificationController extends Controller
 
     public function send(Request $request)
     {
-        $data = $request->validate(['phone' => ['required', 'string', 'max:32', 'regex:/^[+0-9 ()-]{7,}$/']]);
+        $data = $request->validate(['phone' => ['required', 'string', 'max:32', 'regex:/^[+0-9 ()-]{7,}$/'], 'channel' => 'nullable|in:whatsapp,sms']);
+        $channel = ($data['channel'] ?? 'whatsapp') === 'sms' && \App\Messaging\Sms::configured() ? 'sms' : 'whatsapp';
         try {
-            $code = $this->verification->send($data['phone'], app()->getLocale());
+            $code = $this->verification->send($data['phone'], app()->getLocale(), $channel);
         } catch (RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
 
         return response()->json(array_filter([
-            'message' => __('shop.verify.sent'),
+            'message' => $channel === 'sms' ? __('shop.verify.sent_sms') : __('shop.verify.sent'),
             'test_code' => $code,   // only while WhatsApp is not set up (testing)
         ]));
     }

@@ -56,9 +56,9 @@ Alpine.data('phoneVerify', (cfg) => ({
         if (!r.ok) throw new Error(j.message || (j.errors ? Object.values(j.errors)[0][0] : 'Error'));
         return j;
     },
-    async send() {
+    async send(channel = 'whatsapp') {
         this.busy = true; this.error = false;
-        try { const j = await this.post(cfg.send, { phone: this.phone }); this.sent = true; this.message = j.message; this.testCode = j.test_code || ''; }
+        try { const j = await this.post(cfg.send, { phone: this.phone, channel }); this.sent = true; this.message = j.message; this.testCode = j.test_code || ''; }
         catch (e) { this.error = true; this.message = e.message; } finally { this.busy = false; }
     },
     async check() {

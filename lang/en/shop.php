@@ -445,6 +445,8 @@ return [
         'optional' => 'optional',
     ],
 
+    'share' => ['email' => 'Email', 'copy' => 'Copy link', 'copied' => 'Link copied'],
+
     'signup' => [
         'verify_optional' => 'Optional: verify it now with a WhatsApp code — or later. A verified number is needed to order.',
         'code_hint' => 'A friend’s or an affiliate partner’s code.',
@@ -530,7 +532,7 @@ return [
         'checkout_intro' => 'One last step: we send a 6-digit code on WhatsApp to the mobile number above.',
         'after_signup' => 'You will verify this number with a WhatsApp code after signing up.',
         'send' => 'Send code on WhatsApp', 'resend' => 'Send a new code', 'code' => '6-digit code', 'confirm' => 'Verify',
-        'sent' => 'Code sent on WhatsApp — it is valid for 10 minutes.', 'done' => 'Mobile number verified. Thank you!',
+        'sent' => 'Code sent on WhatsApp — it is valid for 10 minutes.', 'sent_sms' => 'Code sent by SMS — it is valid for 10 minutes.', 'send_sms' => 'Send code by SMS', 'no_data' => 'No mobile data? Get the code by SMS.', 'done' => 'Mobile number verified. Thank you!',
         'verified' => 'Verified:', 'wrong' => 'That code is not right — please check and try again.',
         'expired' => 'The code has expired — please send a new one.', 'too_many' => 'Too many attempts — please wait 10 minutes and try again.',
         'invalid' => 'Please enter a valid mobile number.', 'required' => 'Please verify your mobile number (WhatsApp code) before placing the order.',

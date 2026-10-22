@@ -42,9 +42,23 @@ class VideoCallRequest extends Model
         return $this->belongsTo(User::class, 'staff_id');
     }
 
-    /** Video room both sides open (Jitsi Meet by default; any Jitsi-compatible server works). */
+    /**
+     * Video room both sides open. Jitsi (default) makes a fresh room per call by adding its name;
+     * a ready meeting link (Google Meet, Zoom, Teams, Whereby) is used exactly as entered.
+     */
     public function roomUrl(): string
     {
-        return rtrim((string) Settings::get('video_call_base_url', 'https://meet.jit.si'), '/').'/'.$this->room;
+        $base = rtrim((string) Settings::get('video_call_base_url', 'https://meet.jit.si'), '/');
+
+        return self::isFixedMeetingLink($base) ? $base : $base.'/'.$this->room;
+    }
+
+    /** Services where rooms can't be made by name: the link is one fixed meeting. */
+    public static function isFixedMeetingLink(string $url): bool
+    {
+        $host = strtolower((string) parse_url($url, PHP_URL_HOST));
+
+        return $host === 'meet.google.com' || $host === 'whereby.com' || str_ends_with($host, 'zoom.us')
+            || str_ends_with($host, 'teams.microsoft.com') || str_ends_with($host, 'teams.live.com');
     }
 }
