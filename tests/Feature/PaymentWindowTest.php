@@ -32,6 +32,9 @@ class PaymentWindowTest extends TestCase
     private function place(string $method = 'card', array $extra = []): Order
     {
         $branch = Branch::firstOrCreate(['name' => 'Souk'], ['emirate' => 'Dubai', 'address' => 'Deira']);
+        // Each call is a new customer (a new browser with its own cart).
+        $this->flushSession();
+        app()->forgetInstance(\App\Shop\CartService::class);
         $this->post('/cart/add/band');
         $form = ['email' => 'm@example.com', 'phone' => '+971501234567', 'name' => 'Mariam', 'fulfilment' => 'pickup', 'pickup_branch_id' => $branch->id, 'payment_method' => $method] + $extra;
         $form['expected_total'] = $this->postJson('/checkout/quote', $form)->json('grand_total_raw');
@@ -134,5 +137,48 @@ class PaymentWindowTest extends TestCase
         $list()->set('activeTab', 'cancelled')->assertCanSeeTableRecords([$expired])->assertCanNotSeeTableRecords([$waiting, $paid]);
         $list()->filterTable('payment_status', ['expired'])->assertCanSeeTableRecords([$expired])->assertCanNotSeeTableRecords([$waiting, $paid]);
         $this->actingAs($admin)->get('/admin/orders')->assertOk()->assertSee('Unpaid')->assertSee('Cancelled');
+    }
+
+    public function test_items_stay_in_the_cart_until_the_payment_goes_through(): void
+    {
+        $order = $this->place();
+        $this->get('/cart')->assertSee('Band');   // left the payment page: the bag is still there
+
+        app(OrderService::class)->markPaid($order, 'stripe', 'pi_cart');
+        app()->forgetInstance(\App\Shop\CartService::class);   // each real visit starts fresh
+        $this->assertSame(0, app(\App\Shop\CartService::class)->count());
+        $this->assertNotNull(\App\Models\Cart::where('order_id', $order->id)->value('converted_at'));
+    }
+
+    public function test_ordering_again_from_the_same_cart_releases_the_unpaid_order(): void
+    {
+        $first = $this->place();
+        $this->assertSame(2, Product::first()->stock_qty);
+
+        $branch = Branch::first();
+        $form = ['email' => 'm@example.com', 'phone' => '+971501234567', 'name' => 'Mariam', 'fulfilment' => 'pickup', 'pickup_branch_id' => $branch->id, 'payment_method' => 'card'];
+        $form['expected_total'] = $this->postJson('/checkout/quote', $form)->json('grand_total_raw');
+        $this->post('/checkout', $form);
+        $second = Order::latest('id')->first();
+
+        $this->assertNotSame($first->id, $second->id);
+        $this->assertSame('cancelled', $first->fresh()->status);
+        $this->assertSame(1, $second->items()->sum('qty'));
+        $this->assertSame(2, Product::first()->stock_qty);   // held once, not twice
+    }
+
+    public function test_time_limit_can_be_switched_off(): void
+    {
+        Settings::set(['payment_window_minutes' => 0]);
+        $this->assertSame(0, OrderService::paymentWindow());
+
+        $order = $this->place();
+        $this->assertNull($order->payment_expires_at);
+        $this->get('/checkout')->assertDontSee('Gold prices are held for');
+
+        $this->travel(3)->days();
+        $this->artisan('shop:expire-unpaid')->assertSuccessful();
+        $this->assertSame('pending', $order->fresh()->status);
+        $this->get('/cart')->assertSee('Band');
     }
 }

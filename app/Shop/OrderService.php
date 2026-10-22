@@ -106,7 +106,8 @@ class OrderService
                 // Written only once "Update database now" has added the columns.
                 ...(self::hasColumn('tax_free_requested') ? ['id_country' => $data['id']['country'] ?? null, 'tax_free_requested' => (bool) ($data['tax_free'] ?? false)] : []),
                 // Online payments must be completed quickly: the gold price is only held this long.
-                'payment_expires_at' => $data['payment_method'] !== 'cod' && $quote->amountDue > 0 ? now()->addMinutes(self::paymentWindow()) : null,
+                // (Settings → Payments → "No time limit": the order simply waits for payment.)
+                'payment_expires_at' => $data['payment_method'] !== 'cod' && $quote->amountDue > 0 && self::paymentWindow() > 0 ? now()->addMinutes(self::paymentWindow()) : null,
             ]);
 
             foreach ($quote->lines as $i => $line) {
@@ -180,10 +181,12 @@ class OrderService
         });
     }
 
-    /** Minutes an unpaid online order keeps its gold price (Settings → Payments). */
+    /** Minutes an unpaid online order keeps its gold price (Settings → Payments); 0 = no time limit. */
     public static function paymentWindow(): int
     {
-        return max(10, min(240, (int) \App\Support\Settings::get('payment_window_minutes', 30)));
+        $minutes = (int) \App\Support\Settings::get('payment_window_minutes', 30);
+
+        return $minutes === 0 ? 0 : max(10, min(240, $minutes));
     }
 
     /** Unpaid online orders whose payment time has run out (also older orders saved before the window existed). */
@@ -191,22 +194,23 @@ class OrderService
     {
         return Order::where('status', 'pending')->where('payment_status', 'unpaid')->where('payment_method', '!=', 'cod')
             ->where(fn ($q) => $q->where('payment_expires_at', '<', now())
-                ->orWhere(fn ($q) => $q->whereNull('payment_expires_at')->where('created_at', '<', now()->subMinutes(self::paymentWindow()))));
+                ->when(self::paymentWindow() > 0, fn ($q) => $q->orWhere(fn ($q) => $q->whereNull('payment_expires_at')->where('created_at', '<', now()->subMinutes(self::paymentWindow())))));
     }
 
     /**
      * The customer did not pay in time: cancel the order and give back everything it was holding
      * (stock, coupon use, loyalty points, gift-card balance) so the price can't be claimed later.
      */
-    public function expireUnpaid(Order $order): bool
+    public function expireUnpaid(Order $order, ?string $reason = null): bool
     {
         if (! \Illuminate\Support\Facades\Schema::hasColumn('orders', 'payment_expires_at')) {
             return false;   // database update not run yet
         }
 
-        return DB::transaction(function () use ($order) {
+        return DB::transaction(function () use ($order, $reason) {
             $order = Order::lockForUpdate()->with('items.product')->find($order->id);
-            if (! $order || ! self::expiredUnpaid()->whereKey($order->id)->exists()) {
+            $waiting = $order && $order->status === 'pending' && $order->payment_status === 'unpaid' && $order->payment_method !== 'cod';
+            if (! $waiting || (! $reason && ! self::expiredUnpaid()->whereKey($order->id)->exists())) {
                 return false;
             }
             $order->forceFill(['status' => 'cancelled', 'payment_status' => 'expired'])->save();
@@ -227,7 +231,7 @@ class OrderService
                 }
             }
             app(\App\Affiliates\AffiliateService::class)->sync($order);
-            $this->history($order, 'pending', 'cancelled', null, 'Payment not completed within '.self::paymentWindow().' minutes — order cancelled, gold price released, stock returned.');
+            $this->history($order, 'pending', 'cancelled', null, $reason ?? 'Payment not completed within '.self::paymentWindow().' minutes — order cancelled, gold price released, stock returned.');
 
             return true;
         });
@@ -275,6 +279,8 @@ class OrderService
                     .($late ? ' — after the payment time had run out. Stock was reserved again: please check it is still available.' : ''));
             }
 
+            // The bag was kept while the customer paid; now it is done.
+            \App\Models\Cart::where('order_id', $order->id)->whereNull('converted_at')->update(['converted_at' => now()]);
             app(\App\Affiliates\AffiliateService::class)->sync($order);
             $this->invoices->issue($order);
             $this->loyalty->earn($order);

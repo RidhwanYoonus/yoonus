@@ -134,6 +134,12 @@ class CheckoutController extends Controller
             'city' => $data['city'], 'zone' => $quote->zone?->name, 'country' => 'AE',
         ] : null;
 
+        // Ordering again from a bag whose earlier order was never paid: cancel that one first, so its
+        // stock, coupon and gold price are released instead of being held twice.
+        if ($previous = $this->cart->waitingOrder()) {
+            app(OrderService::class)->expireUnpaid($previous, 'Not paid — the customer placed a new order from the same cart instead. Stock returned.');
+        }
+
         $id = $this->idDocument($request, $quote->fulfilment);
         try {
             $affiliate = app(\App\Affiliates\AffiliateContext::class);
@@ -166,7 +172,9 @@ class CheckoutController extends Controller
             );
         }
 
-        $this->cart->markConverted($order->id);
+        in_array($order->payment_method, ['cod', 'giftcard'], true) || $order->fresh()->isPaid()
+            ? $this->cart->markConverted($order->id)
+            : $this->cart->holdForPayment($order->id);
         $request->session()->push('orders', $order->number);
         $request->attributes->set('activity_order', $order->number);   // for the Activity log
 

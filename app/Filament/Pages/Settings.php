@@ -95,8 +95,8 @@ class Settings extends Page implements HasForms
                         ->description('How long an online order keeps its gold price. If the customer has not paid by then, the order is cancelled automatically, the stock is released and no invoice is made. They must order again at the current gold price. (Cash on delivery is not affected.)')
                         ->schema([
                             Forms\Components\Select::make('payment_window_minutes')->label('Customer must pay within')->required()->native(false)->selectablePlaceholder(false)
-                                ->options([10 => '10 minutes', 15 => '15 minutes', 20 => '20 minutes', 30 => '30 minutes (recommended)', 45 => '45 minutes', 60 => '1 hour', 90 => '1 hour 30 minutes', 120 => '2 hours', 180 => '3 hours', 240 => '4 hours'])
-                                ->helperText('Shorter = less risk when the gold rate moves. Stripe keeps its card page open for at least 30 minutes.'),
+                                ->options([0 => 'No time limit (off) — the order waits; items stay in the cart', 10 => '10 minutes', 15 => '15 minutes', 20 => '20 minutes', 30 => '30 minutes (recommended)', 45 => '45 minutes', 60 => '1 hour', 90 => '1 hour 30 minutes', 120 => '2 hours', 180 => '3 hours', 240 => '4 hours'])
+                                ->helperText('Shorter = less risk when the gold rate moves. Stripe keeps its card page open for at least 30 minutes. "No time limit": unpaid orders are never cancelled automatically and keep the price from the moment of ordering — cancel old ones yourself in Orders → Unpaid. In every case the items stay in the customer\'s cart until the payment goes through.'),
                             Forms\Components\Placeholder::make('payment_window_now')->label('Waiting for payment right now')
                                 ->content(fn () => rescue(fn () => \App\Models\Order::where('status', 'pending')->where('payment_status', 'unpaid')->where('payment_method', '!=', 'cod')->count().' order(s)', '—', false)),
                         ]),

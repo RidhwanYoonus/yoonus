@@ -21,7 +21,8 @@ class CartService
 
     public function model(bool $create = false): ?Cart
     {
-        if ($this->cart) {
+        // Only reuse the remembered bag while it is still this browser's bag.
+        if ($this->cart && $this->cart->token === session('cart_token')) {
             return $this->cart;
         }
         $token = session('cart_token');
@@ -135,6 +136,24 @@ class CartService
             'user_id' => Auth::id(),
             'checkout_started_at' => $cart->checkout_started_at ?? now(),
         ]))->save();
+    }
+
+    /**
+     * Online payment started: the items stay in the bag until the payment is confirmed, so a customer
+     * who leaves the payment page (or runs out of time) still finds them there.
+     */
+    public function holdForPayment(int $orderId): void
+    {
+        $this->model()?->forceFill(['order_id' => $orderId])->save();
+        $this->cart = null;   // read it again next time: the payment may have finished it meanwhile
+    }
+
+    /** Unpaid online order made earlier from this same bag (the customer is ordering again). */
+    public function waitingOrder(): ?\App\Models\Order
+    {
+        $id = $this->model()?->order_id;
+
+        return $id ? \App\Models\Order::where('status', 'pending')->where('payment_status', 'unpaid')->where('payment_method', '!=', 'cod')->find($id) : null;
     }
 
     public function markConverted(int $orderId): void

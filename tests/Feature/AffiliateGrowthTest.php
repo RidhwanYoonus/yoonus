@@ -51,6 +51,8 @@ class AffiliateGrowthTest extends TestCase
         $form = ['email' => 'buyer'.uniqid().'@example.com', 'phone' => '+971501234567', 'name' => 'Buyer', 'fulfilment' => 'pickup', 'pickup_branch_id' => $branch->id, 'payment_method' => 'card'] + $extra;
         $form['expected_total'] = $this->postJson('/checkout/quote', $form)->json('grand_total_raw');
         $this->post('/checkout', $form);
+        // Each checkout is a separate purchase: the card payment finished, so the bag is done.
+        \App\Models\Cart::whereNotNull('order_id')->update(['converted_at' => now()]);
 
         return Order::latest('id')->firstOrFail();
     }
