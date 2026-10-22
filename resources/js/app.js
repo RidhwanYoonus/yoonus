@@ -44,6 +44,9 @@ Alpine.data('themeToggle', () => ({
 // Mobile verification: send a WhatsApp code, then confirm it.
 Alpine.data('phoneVerify', (cfg) => ({
     phone: '', code: '', sent: false, busy: false, message: '', error: false, testCode: '', verified: cfg.verified || [],
+    channel: 'whatsapp', email: cfg.email || '',
+    // Email for "send by email": the page's own email box when there is one (sign-up, checkout), else the account's.
+    currentEmail() { const i = cfg.emailInput && document.querySelector(cfg.emailInput); return (i && i.value) || this.email; },
     norm(p) {
         let d = String(p || '').replace(/\D+/g, '');
         if (d.startsWith('00')) d = d.slice(2); else if (d.startsWith('05') && d.length === 10) d = '971' + d.slice(1);
@@ -58,7 +61,7 @@ Alpine.data('phoneVerify', (cfg) => ({
     },
     async send(channel = 'whatsapp') {
         this.busy = true; this.error = false;
-        try { const j = await this.post(cfg.send, { phone: this.phone, channel }); this.sent = true; this.message = j.message; this.testCode = j.test_code || ''; }
+        try { const j = await this.post(cfg.send, { phone: this.phone, channel, email: this.currentEmail() }); this.sent = true; this.message = j.message; this.testCode = j.test_code || ''; }
         catch (e) { this.error = true; this.message = e.message; } finally { this.busy = false; }
     },
     async check() {

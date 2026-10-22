@@ -60,6 +60,9 @@ class AdminTwoFactor
         ]), 'admin_two_factor');
         if ($user->phone) {
             $messenger->whatsapp($user->phone, "{$store} admin sign-in code: {$code} (valid 10 minutes). Never share this code.", 'admin_two_factor');
+            if (\App\Messaging\Sms::configured()) {
+                $messenger->sms($user->phone, "{$store} admin sign-in code: {$code} (valid 10 minutes).", 'admin_two_factor');
+            }
         }
         SecurityLog::record('two_factor_sent', $user);
     }

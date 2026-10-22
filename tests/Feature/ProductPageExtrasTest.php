@@ -64,15 +64,30 @@ class ProductPageExtrasTest extends TestCase
     public function test_customer_can_get_the_verification_code_by_sms(): void
     {
         Settings::set(['phone_verification' => true]);
-        $this->get('/register')->assertDontSee('Send code by SMS');   // SMS not set up yet
+        $this->get('/register')->assertDontSee('value="sms"', false);   // SMS not set up yet
 
         Settings::set(['sms_provider' => 'http', 'sms_http_url' => 'https://sms.example.ae/send?to={to}&text={message}']);
         Http::fake(['sms.example.ae/*' => Http::response('OK')]);
-        $this->get('/register')->assertSee('Send code by SMS');
+        $this->get('/register')->assertSee('value="sms"', false)->assertSee('Get the code by:');
 
         $this->postJson('/verify-phone/send', ['phone' => '0501112233', 'channel' => 'sms'])->assertOk()->assertJsonPath('message', 'Code sent by SMS — it is valid for 10 minutes.')
             ->assertJsonMissingPath('test_code');
         Http::assertSent(fn ($r) => str_starts_with($r->url(), 'https://sms.example.ae/send?to=971501112233&text='));
         $this->assertSame('sms', NotificationLog::latest('id')->value('channel'));
+    }
+
+    public function test_customer_can_get_the_verification_code_by_email(): void
+    {
+        \Illuminate\Support\Facades\Mail::fake();
+        Settings::set(['phone_verification' => true]);
+        $this->get('/register')->assertSee('value="email"', false);
+
+        $this->postJson('/verify-phone/send', ['phone' => '0501112233', 'channel' => 'email'])->assertStatus(422)->assertJsonValidationErrors('email');
+        $this->postJson('/verify-phone/send', ['phone' => '0501112233', 'channel' => 'email', 'email' => 'nora@example.com'])->assertOk()
+            ->assertJsonPath('message', 'Code sent to your email — it is valid for 10 minutes. Check the spam folder too.');
+        \Illuminate\Support\Facades\Mail::assertSent(\App\Mail\ShopMessage::class, fn ($m) => $m->hasTo('nora@example.com'));
+
+        Settings::set(['phone_verify_email' => false]);
+        $this->get('/register')->assertDontSee('value="email"', false);
     }
 }

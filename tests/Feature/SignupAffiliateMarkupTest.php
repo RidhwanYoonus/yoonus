@@ -86,6 +86,6 @@ class SignupAffiliateMarkupTest extends TestCase
     public function test_sign_up_page_offers_mobile_verification(): void
     {
         Settings::set(['phone_verification' => true]);
-        $this->get('/register')->assertOk()->assertSee('verify it now with a WhatsApp code');
+        $this->get('/register')->assertOk()->assertSee('verify it now with a code');
     }
 }

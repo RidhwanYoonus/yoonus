@@ -168,7 +168,9 @@ class Settings extends Page implements HasForms
                 ]),
                 Forms\Components\Tabs\Tab::make('Login & verification')->icon('heroicon-o-key')->columns(2)->schema([
                     Forms\Components\Toggle::make('phone_verification')->label('Customers must verify their mobile before ordering')->inline(false)->columnSpanFull()
-                        ->helperText('A 6-digit code is sent on WhatsApp at the final checkout step (and after signing up). Until WhatsApp is set up, the code is shown on screen for testing.'),
+                        ->helperText('A 6-digit code at the final checkout step (and at sign-up). The customer chooses WhatsApp, SMS (when set up in Settings → WhatsApp) or email. Until WhatsApp is set up, the code is shown on screen for testing.'),
+                    Forms\Components\Toggle::make('phone_verify_email')->label('Allow the code by email too')->inline(false)
+                        ->helperText('For customers without WhatsApp or mobile data. Note: an email code confirms the customer, not that the mobile number is theirs.'),
                     Forms\Components\Section::make('Continue with Google')->columns(2)
                         ->description(fn () => 'Google Cloud Console → APIs & Services → Credentials → Create OAuth client ID (Web application). Authorised redirect URI: '.route('google.callback'))
                         ->schema([

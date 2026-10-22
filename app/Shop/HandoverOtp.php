@@ -70,6 +70,9 @@ class HandoverOtp
             $body = __("{$key}_body", $vars);
             $this->messenger->email($order->email, new ShopMessage($subject, [$body, __('shop.otp.warning')], mailLocale: $order->locale), 'handover_otp');
             $this->messenger->whatsapp($order->phone, $subject."\n".$body."\n".__('shop.otp.warning'), 'handover_otp');
+            if (\App\Messaging\Sms::configured()) {   // also reaches customers without mobile data
+                $this->messenger->sms($order->phone, $subject."\n".$body, 'handover_otp');
+            }
         });
     }
 

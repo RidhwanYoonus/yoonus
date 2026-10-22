@@ -11,7 +11,7 @@
         <div x-data="{ suPhone: @js(old('phone', '')) }"><label class="label" for="phone">{{ __('shop.checkout.phone') }}</label><input id="phone" name="phone" x-model="suPhone" class="input" dir="ltr" autocomplete="tel">
             @if (\App\Shop\PhoneVerification::enabled())
                 <p class="mt-1 text-xs text-muted">{{ __('shop.signup.verify_optional') }}</p>
-                <div class="mt-2">@include('partials.phone-verify', ['phoneModel' => 'suPhone', 'verifiedPhones' => session('verified_phones', [])])</div>
+                <div class="mt-2">@include('partials.phone-verify', ['phoneModel' => 'suPhone', 'verifiedPhones' => session('verified_phones', []), 'emailInput' => '#email'])</div>
             @else
                 <p class="mt-1 text-xs text-muted">{{ __('shop.verify.after_signup') }}</p>
             @endif

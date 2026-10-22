@@ -448,7 +448,7 @@ return [
     'share' => ['email' => 'Email', 'copy' => 'Copy link', 'copied' => 'Link copied'],
 
     'signup' => [
-        'verify_optional' => 'Optional: verify it now with a WhatsApp code — or later. A verified number is needed to order.',
+        'verify_optional' => 'Optional: verify it now with a code — or later. A verified number is needed to order.',
         'code_hint' => 'A friend’s or an affiliate partner’s code.',
         'title' => 'Speed up your first order (optional)',
         'intro' => 'You can skip this now. When you place an order we need it, so adding it here makes checkout one tap.',
@@ -532,7 +532,10 @@ return [
         'checkout_intro' => 'One last step: we send a 6-digit code on WhatsApp to the mobile number above.',
         'after_signup' => 'You will verify this number with a WhatsApp code after signing up.',
         'send' => 'Send code on WhatsApp', 'resend' => 'Send a new code', 'code' => '6-digit code', 'confirm' => 'Verify',
-        'sent' => 'Code sent on WhatsApp — it is valid for 10 minutes.', 'sent_sms' => 'Code sent by SMS — it is valid for 10 minutes.', 'send_sms' => 'Send code by SMS', 'no_data' => 'No mobile data? Get the code by SMS.', 'done' => 'Mobile number verified. Thank you!',
+        'sent' => 'Code sent on WhatsApp — it is valid for 10 minutes.', 'sent_sms' => 'Code sent by SMS — it is valid for 10 minutes.', 'send_sms' => 'Send code by SMS',
+        'sent_whatsapp' => 'Code sent on WhatsApp — it is valid for 10 minutes.', 'sent_email' => 'Code sent to your email — it is valid for 10 minutes. Check the spam folder too.',
+        'send_email' => 'Send code by email', 'how' => 'Get the code by:', 'via_whatsapp' => 'WhatsApp', 'via_sms' => 'SMS', 'via_email' => 'Email',
+        'email_needed' => 'Enter your email address first.', 'email_subject' => ':store code: :code', 'no_data' => 'No mobile data? Get the code by SMS.', 'done' => 'Mobile number verified. Thank you!',
         'verified' => 'Verified:', 'wrong' => 'That code is not right — please check and try again.',
         'expired' => 'The code has expired — please send a new one.', 'too_many' => 'Too many attempts — please wait 10 minutes and try again.',
         'invalid' => 'Please enter a valid mobile number.', 'required' => 'Please verify your mobile number (WhatsApp code) before placing the order.',

@@ -31,7 +31,21 @@ class PhoneVerification
     /** Messages can't actually be delivered yet (testing PC): the code is shown on screen instead. */
     public static function testMode(string $channel = 'whatsapp'): bool
     {
-        return $channel === 'sms' ? ! \App\Messaging\Sms::configured() : ! WhatsApp::configured();
+        return match ($channel) {
+            'sms' => ! \App\Messaging\Sms::configured(),
+            'email' => in_array(config('mail.default'), ['log', 'array'], true),
+            default => ! WhatsApp::configured(),
+        };
+    }
+
+    /** Ways the customer can choose to get the code: WhatsApp always, SMS when set up, email when allowed. */
+    public static function channels(): array
+    {
+        return array_values(array_filter([
+            'whatsapp',
+            \App\Messaging\Sms::configured() ? 'sms' : null,
+            Settings::bool('phone_verify_email', true) ? 'email' : null,
+        ]));
     }
 
     public static function normalise(?string $phone): ?string
@@ -54,8 +68,8 @@ class PhoneVerification
     }
 
     /** @return string|null the code itself in test mode, so the flow can be tried before WhatsApp is set up */
-    /** $channel: 'whatsapp' or 'sms' (for customers without mobile data). */
-    public function send(string $phone, string $locale = 'en', string $channel = 'whatsapp'): ?string
+    /** $channel: 'whatsapp', 'sms' (customers without mobile data) or 'email' (to $email). */
+    public function send(string $phone, string $locale = 'en', string $channel = 'whatsapp', ?string $email = null): ?string
     {
         $phone = self::normalise($phone) ?? throw new RuntimeException(__('shop.verify.invalid'));
         $sendsKey = 'phone_otp_sends:'.sha1($phone);
@@ -68,9 +82,12 @@ class PhoneVerification
         Cache::put('phone_otp:'.sha1($phone), ['hash' => Hash::make($code), 'tries' => 0], now()->addMinutes(10));
 
         $text = fn () => __('shop.verify.message', ['code' => $code, 'store' => Settings::get('store_name')]);
-        Messenger::inLocale($locale, fn () => $channel === 'sms' && \App\Messaging\Sms::configured()
-            ? $this->messenger->sms($phone, $text(), 'phone_verification')
-            : $this->messenger->whatsapp($phone, $text(), 'phone_verification'));
+        Messenger::inLocale($locale, fn () => match (true) {
+            $channel === 'sms' && \App\Messaging\Sms::configured() => $this->messenger->sms($phone, $text(), 'phone_verification'),
+            $channel === 'email' && filled($email) => $this->messenger->email($email, new \App\Mail\ShopMessage(
+                __('shop.verify.email_subject', ['code' => $code, 'store' => Settings::get('store_name')]), [$text()], mailLocale: $locale), 'phone_verification'),
+            default => $this->messenger->whatsapp($phone, $text(), 'phone_verification'),
+        });
 
         return self::testMode($channel) ? $code : null;
     }
