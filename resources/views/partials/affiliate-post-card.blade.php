@@ -16,6 +16,18 @@
                 <p><span class="text-muted">{{ __('shop.affiliate.earn_markup') }}:</span> <b class="price">{{ \App\Pricing\Money::format($earn['markup']) }}</b>
                     · <span class="text-muted">{{ __('shop.affiliate.earn_total') }}:</span> <b class="price text-gold-700">{{ \App\Pricing\Money::format($earn['commission'] + $earn['markup']) }}</b></p>
             @endif
+            <div x-data="{ how: false }">
+                <button type="button" class="mt-1 text-[0.6875rem] font-medium text-gold-700 underline" @click="how = !how" :aria-expanded="how">{{ __('shop.affiliate.how.button') }}</button>
+                <div x-show="how" x-cloak x-transition class="price mt-2 space-y-2 border-t border-gold-500/20 pt-2 text-[0.6875rem] leading-relaxed">
+                    @foreach (['price' => 'title_price', 'commission' => 'title_commission', 'markup' => 'title_markup'] as $part => $title)
+                        @if ($earn['steps'][$part])
+                            <div><p class="font-semibold">{{ __('shop.affiliate.how.'.$title) }}</p>
+                                <ul class="text-muted">@foreach ($earn['steps'][$part] as $step)<li>{{ $step }}</li>@endforeach</ul></div>
+                        @endif
+                    @endforeach
+                    <p class="text-muted">{{ __('shop.affiliate.how.note') }}</p>
+                </div>
+            </div>
         </div>
         <div class="mt-2 flex flex-wrap gap-2">
             <button type="button" class="btn-whatsapp h-8 px-3 text-xs" @click="share('wa', @js($texts))">WhatsApp</button>

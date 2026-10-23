@@ -65,7 +65,8 @@ class LogActivity
 
     private function row(Request $request, Response $response): ?array
     {
-        if (! Settings::bool('activity_log_enabled', true) || $request->isMethod('HEAD') || $request->isMethod('OPTIONS')) {
+        if (! Settings::bool('activity_log_enabled', true) || $request->isMethod('HEAD') || $request->isMethod('OPTIONS')
+            || ($request->hasSession() && $request->session()->has(\App\Support\Impersonation::KEY))) {   // admin looking in as someone
             return null;
         }
         $route = $request->route();

@@ -74,6 +74,16 @@ class UserResource extends Resource
         ])->filters([
             Tables\Filters\TernaryFilter::make('signup_affiliate_id')->label('Signed up with an affiliate code')->nullable(),
         ])->actions([
+            \Filament\Tables\Actions\Action::make('loginAs')->label('Log in as')->icon('heroicon-o-eye')->color('gray')
+                ->visible(fn () => (bool) auth()->user()?->is_admin)
+                ->requiresConfirmation()->modalHeading('Log in as this person')
+                ->modalDescription('Opens the shop exactly as they see it (their portal, prices and orders). They are not told and their last-login time does not change. A red bar lets you go back to the admin; orders cannot be placed meanwhile.')
+                ->action(function ($record) {
+                    $user = $record instanceof \App\Models\User ? $record : $record->user;
+                    \App\Support\Impersonation::start(auth()->user(), $user);
+
+                    return redirect()->to($user->affiliate ? route('affiliate.dashboard') : route('account'));
+                }),
             Tables\Actions\Action::make('activity')->label('Activity')->icon('heroicon-o-finger-print')->color('gray')
                 ->visible(fn () => \App\Support\StaffAccess::current('activity'))
                 ->url(fn (User $record) => \App\Filament\Resources\ActivityLogResource::urlFor($record->id)),

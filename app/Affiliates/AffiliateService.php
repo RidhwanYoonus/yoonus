@@ -43,13 +43,17 @@ class AffiliateService
         $couponShares = $this->couponShares($order, $affiliate, $items);
         foreach ($items as $item) {
             $markup = Money::toFils($item->affiliate_markup);
+            $stoneMarkup = Money::toFils($item->affiliate_stone_markup ?? 0);
             $fixed = $item->product ? $item->product->isFixedPrice() : $item->karat === 'Fixed price';
             // The affiliate's own code: commission is worked out on the price before that discount,
             // then the discount is taken from the affiliate's money on this line.
             $share = $couponShares[$item->id] ?? 0;
             $calc = clone $item;
             $calc->discount_amount = Money::toAed(max(0, Money::toFils($item->discount_amount) - $share));
-            [$basis, $baseShown, $rateShown, $commission] = $this->line($affiliate, $calc, $fixed, $markup);
+            // Commission is worked out on the shop's own price: the making / price without the mark-up,
+            // the stone value without the stone mark-up.
+            $calc->stone_value = Money::toAed(max(0, Money::toFils($item->stone_value ?? 0) - $stoneMarkup));
+            [$basis, $baseShown, $rateShown, $commission] = $this->line($affiliate, $calc, $fixed, $markup - $stoneMarkup);
             [$bonus, $bonusNote] = $this->extras($commission, $level, $boosters, $item->product, $fixed);
             $deduction = min($share, $commission + $bonus + $markup);
             if ($commission + $bonus + $markup <= 0) {
@@ -277,7 +281,63 @@ class AffiliateService
             }
         }
 
-        return ['commission' => $commission, 'markup' => $markup];
+        return ['commission' => $commission, 'markup' => $markup, 'steps' => $this->explain($affiliate, $product, $base, $rule, $commission, $markup)];
+    }
+
+    /**
+     * The working-out behind earningsFor(), line by line, in the visitor's language:
+     * the shop price, how the commission is reached, and how the white-page mark-up is reached.
+     *
+     * @return array{price: array<string>, commission: array<string>, markup: array<string>}
+     */
+    private function explain(Affiliate $a, \App\Models\Product $p, \App\Pricing\PriceBreakdown $base, \App\Pricing\Markup $rule, int $commission, int $markup): array
+    {
+        $f = fn (int $fils) => Money::format($fils);
+        $pct = fn ($v) => rtrim(rtrim(number_format((float) $v, 2, '.', ''), '0'), '.').'%';
+        $grams = rtrim(rtrim(number_format((float) $p->weight_grams, 3, '.', ''), '0'), '.').' g';
+        $fixed = $p->isFixedPrice();
+        $t = fn (string $key, array $r = []) => __('shop.affiliate.how.'.$key, $r);
+
+        $price = $fixed
+            ? [$t('fixed_price', ['amount' => $f($base->subtotal)])]
+            : array_values(array_filter([
+                $t('gold', ['weight' => $grams, 'rate' => $f($base->rateFils), 'amount' => $f($base->goldValue)]),
+                $t('making', ['amount' => $f($base->makingFee)]),
+                $base->stoneValue ? $t('stone', ['amount' => $f($base->stoneValue)]) : null,
+                $base->wastage ? $t('wastage', ['amount' => $f($base->wastage)]) : null,
+                $t('shop_price', ['amount' => $f($base->subtotal)]),
+            ]));
+
+        $perPiece = $a->commission_mode === 'per_piece' ? $a->commission_per_piece : ($fixed && $a->fixed_commission_type === 'per_piece' ? $a->fixed_commission_amount : null);
+        $comm = match (true) {
+            $perPiece !== null => [$t('per_piece', ['rate' => $f(Money::toFils($perPiece)), 'amount' => $f($commission)])],
+            $fixed => [$t('of_price', ['base' => $f($base->subtotal), 'pct' => $pct($a->fixed_commission_percent), 'amount' => $f($commission)])],
+            $a->making_commission_type === 'per_gram' => array_values(array_filter([
+                $t('per_gram', ['weight' => $grams, 'rate' => $f(Money::toFils($a->commission_per_gram)), 'amount' => $f(Money::divRound(Money::scaled($p->weight_grams, 3) * Money::toFils($a->commission_per_gram), 1000))]),
+                (float) ($a->stone_commission_percent ?? 0) > 0 && $base->stoneValue
+                    ? $t('of_stone', ['base' => $f($base->stoneValue), 'pct' => $pct($a->stone_commission_percent), 'amount' => $f(Money::percentOf($base->stoneValue, Money::scaled($a->stone_commission_percent, 2)))]) : null,
+            ])),
+            default => [$t('of_making', ['base' => $f($base->makingFee), 'pct' => $pct($a->making_commission_percent), 'amount' => $f($commission)])],
+        };
+        $comm[] = $t('commission_total', ['amount' => $f($commission)]);
+
+        $mk = [];
+        if ($markup > 0) {
+            if ($rule->amountFils > 0) {
+                $mk[] = $t('mk_amount', ['amount' => $f($rule->amountFils)]);
+            }
+            if ($fixed) {
+                $rule->fixedBp && $mk[] = $t('mk_price', ['base' => $f($base->subtotal), 'pct' => $pct($rule->fixedBp / 100), 'amount' => $f(Money::percentOf($base->subtotal, $rule->fixedBp))]);
+                $rule->fixedPieceFils && $mk[] = $t('mk_piece', ['amount' => $f($rule->fixedPieceFils)]);
+            } else {
+                $rule->makingBp && $mk[] = $t('mk_making', ['base' => $f($base->makingFee), 'pct' => $pct($rule->makingBp / 100), 'amount' => $f(Money::percentOf($base->makingFee, $rule->makingBp))]);
+                $rule->perGramFils && $mk[] = $t('mk_gram', ['weight' => $grams, 'rate' => $f($rule->perGramFils), 'amount' => $f(Money::divRound(Money::scaled($p->weight_grams, 3) * $rule->perGramFils, 1000))]);
+                $rule->stoneBp && $base->stoneValue && $mk[] = $t('mk_stone', ['base' => $f($base->stoneValue), 'pct' => $pct($rule->stoneBp / 100), 'amount' => $f($rule->onStone($base->stoneValue))]);
+            }
+            $mk[] = $t('mk_total', ['amount' => $f($markup), 'price' => $f($base->subtotal + $markup)]);
+        }
+
+        return ['price' => $price, 'commission' => $comm, 'markup' => $mk];
     }
 
     /**

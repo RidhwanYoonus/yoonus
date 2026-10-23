@@ -6,6 +6,11 @@
     <a href="{{ route('affiliate.dashboard') }}" class="text-sm text-gold-700 hover:underline">{{ __('shop.affiliate.back_dashboard') }}</a>
     <h1 class="mt-3 font-display text-3xl sm:text-4xl">{{ __('shop.affiliate.share_all_title') }}</h1>
     <p class="mt-1 text-sm text-muted">{{ __('shop.affiliate.share_all_intro') }}</p>
+    {{-- The rates the shop set for this affiliate. --}}
+    <div class="card mt-4 grid gap-1 bg-gold-300/10 p-4 text-sm">
+        <p><span class="text-muted">{{ __('shop.affiliate.your_rates') }}:</span> <b>{{ $affiliate->commissionSummary() }}</b>@if ((float) ($affiliate->stone_commission_percent ?? 0) > 0 && $affiliate->making_commission_type === 'per_gram') · {{ __('shop.affiliate.stone_label', ['pct' => rtrim(rtrim((string) $affiliate->stone_commission_percent, '0'), '.')]) }}@endif</p>
+        @if ($affiliate->white_page_enabled)<p><span class="text-muted">{{ __('shop.affiliate.your_markup') }}:</span> <b>{{ $affiliate->markupSummary() }}</b></p>@endif
+    </div>
 
     <form method="GET" class="card mt-6 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-[1fr_12rem_9rem_11rem_11rem_auto]">
         <input type="search" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="{{ __('shop.affiliate.search_pieces') }}" class="input" aria-label="{{ __('shop.affiliate.search_pieces') }}">

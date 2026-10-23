@@ -29,6 +29,9 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Lockout::class, fn ($e) => \App\Support\SecurityLog::record('lockout', email: (string) $e->request->input('email', $e->request->input('data.email'))));
         \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Logout::class, fn ($e) => $e->user ? \App\Support\SecurityLog::record('logout', $e->user) : null);
         \Illuminate\Support\Facades\Event::listen(\Illuminate\Auth\Events\Login::class, function ($e) {
+            if (\App\Support\Impersonation::quiet()) {
+                return;   // an admin looking in as the person (or returning): not a real sign-in
+            }
             // When each person last signed in (Affiliates list shows it).
             if ($e->user instanceof \App\Models\User && \Illuminate\Support\Facades\Schema::hasColumn('users', 'last_login_at')) {
                 $e->user->forceFill(['last_login_at' => now()])->saveQuietly();

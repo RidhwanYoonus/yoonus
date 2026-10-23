@@ -277,6 +277,19 @@ return [
     ],
 
     'affiliate' => [
+        'your_rates' => 'Commission the shop pays you', 'your_markup' => 'Your white-page mark-up',
+        'stone_label' => 'stones +:pct% of the stone value',
+        'how' => [
+            'button' => 'How is this calculated?', 'title_price' => 'Shop price (today)', 'title_commission' => 'Your commission', 'title_markup' => 'Your white-page mark-up',
+            'gold' => 'Gold: :weight × :rate = :amount', 'making' => 'Making charge: :amount', 'stone' => 'Stone value: :amount', 'wastage' => 'Wastage: :amount',
+            'shop_price' => 'Shop price (excl. VAT): :amount', 'fixed_price' => 'Fixed price (excl. VAT): :amount',
+            'per_piece' => '1 piece × :rate = :amount', 'of_price' => 'Price :base × :pct = :amount', 'per_gram' => ':weight × :rate per gram = :amount',
+            'of_stone' => 'Stone :base × :pct = :amount', 'of_making' => 'Making :base × :pct = :amount', 'commission_total' => 'Commission: :amount',
+            'mk_amount' => ':amount per piece', 'mk_price' => 'Price :base × :pct = :amount', 'mk_piece' => ':amount per piece', 'mk_making' => 'Making :base × :pct = :amount',
+            'mk_gram' => ':weight × :rate per gram = :amount', 'mk_stone' => 'Stone :base × :pct = :amount', 'mk_total' => 'Mark-up :amount → your customer sees :price + VAT',
+            'note' => 'Worked out with today\'s gold rate. Level and booster bonuses come on top; your own coupon discount is taken off.',
+        ],
+        'stone_items' => 'Stones (diamonds and other stones): % of the stone value', 'stone_example' => 'Example: 5% on a diamond worth AED 2,400 adds AED 120. 0 = none.',
         'earn_commission' => 'Your commission', 'earn_markup' => 'Your white-page mark-up', 'earn_total' => 'Total',
         'see_all' => 'See all :count pieces to share',
         'share_all_title' => 'Pieces to share',

@@ -58,6 +58,13 @@
 </head>
 @php($focus = $focus ?? false)
 <body class="min-h-screen flex flex-col {{ $focus ? 'pb-24' : 'pb-16' }} lg:pb-0">
+    @if (\App\Support\Impersonation::active())
+        {{-- Admin looking in as an affiliate / customer (only the admin sees this bar). --}}
+        <div class="sticky top-0 z-50 flex flex-wrap items-center justify-center gap-3 bg-red-700 px-4 py-2 text-sm text-white">
+            <span>🔒 Admin view — logged in as <b>{{ auth()->user()?->name }}</b> ({{ auth()->user()?->email }}). They are not told; orders can't be placed.</span>
+            <form method="POST" action="{{ route('impersonate.leave') }}">@csrf<button class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-red-700">Back to admin</button></form>
+        </div>
+    @endif
     @include('partials.rate-banner')
     @include('partials.header')
     @if (isset($affiliateContext) && $affiliateContext->whitePage && $affiliateContext->affiliate)

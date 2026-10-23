@@ -135,7 +135,8 @@ class OrderService
                     'coupon_code_applied' => implode(',', array_keys(array_filter($line->discountsByCode))) ?: null,
                     // White page: the part of the price the affiliate added on top of the shop price.
                     ...($white && $pricing->markup()->isActive()
-                        ? ['affiliate_markup' => Money::toAed(max(0, $u->subtotal - $pricing->base($line->product)->subtotal) * $line->qty)] : []),
+                        ? ['affiliate_markup' => Money::toAed(max(0, $u->subtotal - $pricing->base($line->product)->subtotal) * $line->qty),
+                            ...(self::hasColumn('affiliate_stone_markup', 'order_items') ? ['affiliate_stone_markup' => Money::toAed(max(0, $u->stoneValue - $pricing->base($line->product)->stoneValue) * $line->qty)] : [])] : []),
                 ]);
                 $products[$line->product->id]->decrement('stock_qty', $line->qty);
             }
@@ -473,10 +474,10 @@ class OrderService
         OrderStatusHistory::create(['order_id' => $order->id, 'from_status' => $from, 'to_status' => $to, 'changed_by' => $by?->id, 'note' => $note]);
     }
 
-    private static function hasColumn(string $column): bool
+    private static function hasColumn(string $column, string $table = 'orders'): bool
     {
         static $known = [];
 
-        return $known[$column] ??= rescue(fn () => \Illuminate\Support\Facades\Schema::hasColumn('orders', $column), false, false);
+        return $known[$table.'.'.$column] ??= rescue(fn () => \Illuminate\Support\Facades\Schema::hasColumn($table, $column), false, false);
     }
 }

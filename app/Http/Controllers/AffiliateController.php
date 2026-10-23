@@ -212,7 +212,7 @@ class AffiliateController extends Controller
         $pairs = [
             'making_markup_percent' => 'max_making_markup_percent', 'making_markup_per_gram' => 'max_making_markup_per_gram',
             'fixed_markup_percent' => 'max_fixed_markup_percent', 'fixed_markup_amount' => 'max_fixed_markup_amount',
-            'markup_amount' => 'max_markup_amount',
+            'markup_amount' => 'max_markup_amount', 'stone_markup_percent' => 'max_stone_markup_percent',
         ];
         $data = $request->validate([
             'display_name' => 'nullable|string|max:80',

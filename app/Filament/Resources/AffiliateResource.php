@@ -152,6 +152,11 @@ class AffiliateResource extends Resource
                         ? 'Example: AED 25 per piece on 2 diamond pendants shows AED 25 more each.'
                         : 'Example: 5% on a fixed-price piece of AED 2,000 shows AED 100 more.'),
             ]),
+            Forms\Components\Fieldset::make('Stones: mark-up on the stone value')->columns(2)->columnSpanFull()->visible($byType)->schema([
+                ...$pair('stone_markup_percent', 'max_stone_markup_percent', '', '% of stone value', fn () => true),
+                Forms\Components\Placeholder::make('stone_markup_hint')->hiddenLabel()->columnSpanFull()
+                    ->content('Example: 5% on a diamond worth AED 2,400 shows AED 120 more. Shown to the customer inside the stone value. 0 = no stone mark-up.'),
+            ]),
             Forms\Components\Fieldset::make('Amount added to each piece (any item)')->columns(2)->columnSpanFull()
                 ->visible(fn (Forms\Get $get) => $on($get) && $get('markup_mode') === 'amount')->schema([
                     ...$pair('markup_amount', 'max_markup_amount', 'AED', 'per piece', fn () => true, 'affiliate_default_max_markup_amount'),
@@ -248,7 +253,17 @@ class AffiliateResource extends Resource
                 Tables\Columns\TextColumn::make('created_at')->label('Joined')->date('d M Y')->sortable()->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([Tables\Filters\TernaryFilter::make('is_active')->label('Status')->trueLabel('Active')->falseLabel('Disabled')])
-            ->actions([self::collectAction(), self::toggleActive(Tables\Actions\Action::class), Tables\Actions\ActionGroup::make([self::storeSaleAction(), self::adjustAction()]), Tables\Actions\EditAction::make()])
+            ->actions([self::collectAction(), self::toggleActive(Tables\Actions\Action::class), Tables\Actions\ActionGroup::make([self::storeSaleAction(), self::adjustAction(),
+                \Filament\Tables\Actions\Action::make('loginAs')->label('Log in as')->icon('heroicon-o-eye')->color('gray')
+                ->visible(fn () => (bool) auth()->user()?->is_admin)
+                ->requiresConfirmation()->modalHeading('Log in as this person')
+                ->modalDescription('Opens the shop exactly as they see it (their portal, prices and orders). They are not told and their last-login time does not change. A red bar lets you go back to the admin; orders cannot be placed meanwhile.')
+                ->action(function ($record) {
+                    $user = $record instanceof \App\Models\User ? $record : $record->user;
+                    \App\Support\Impersonation::start(auth()->user(), $user);
+
+                    return redirect()->to($user->affiliate ? route('affiliate.dashboard') : route('account'));
+                })]), Tables\Actions\EditAction::make()])
             ->bulkActions([
                 Tables\Actions\BulkAction::make('activate')->label('Activate')->icon('heroicon-o-play')->color('success')->requiresConfirmation()
                     ->visible(fn () => \App\Support\StaffAccess::current('affiliates', 'edit'))

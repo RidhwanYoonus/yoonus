@@ -33,7 +33,8 @@ final class PriceCalculator
         $making = $in->chargeType === 'PER_PIECE' ? $in->chargeValue : Money::percentOf($gold, $in->chargeValue);
         $wastage = Money::percentOf($gold, $in->wastageBp);
         $making += $markup->onMaking($making, $in->weightMg);
-        $base = $gold + $making + $in->stoneFils + $wastage;
+        $stone = $in->stoneFils + $markup->onStone($in->stoneFils);
+        $base = $gold + $making + $stone + $wastage;
 
         // Undiscounted reference price (for strikethrough display).
         [$origTaxable, $origVat, $origRounding] = $this->finalise($base, $vatBp, $rounding, $gold);
@@ -41,14 +42,14 @@ final class PriceCalculator
         // Hard floor: a discount can never take the taxable value below gold cost.
         $discount = max(0, min($discount, $origTaxable - $gold));
         if ($discount === 0) {
-            return new PriceBreakdown($rateFils, $gold, $making, $in->stoneFils, $wastage, $origRounding,
+            return new PriceBreakdown($rateFils, $gold, $making, $stone, $wastage, $origRounding,
                 $origTaxable, 0, $origTaxable, $vatBp, $origVat, $origTaxable + $origVat, $origTaxable + $origVat);
         }
 
         [$taxable, $vat] = $this->finalise($origTaxable - $discount, $vatBp, $rounding, $gold);
         $discount = $origTaxable - $taxable;
 
-        return new PriceBreakdown($rateFils, $gold, $making, $in->stoneFils, $wastage, $origRounding,
+        return new PriceBreakdown($rateFils, $gold, $making, $stone, $wastage, $origRounding,
             $origTaxable, $discount, $taxable, $vatBp, $vat, $taxable + $vat, $origTaxable + $origVat);
     }
 

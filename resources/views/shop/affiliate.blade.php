@@ -216,6 +216,11 @@
                             <div class="mt-2" x-show="fixed === 'percent'">@include('partials.markup-field', ['name' => 'fixed_markup_percent', 'max' => 'max_fixed_markup_percent', 'unit' => '%'])</div>
                             <div class="mt-2" x-show="fixed === 'per_piece'" x-cloak>@include('partials.markup-field', ['name' => 'fixed_markup_amount', 'max' => 'max_fixed_markup_amount', 'unit' => 'AED'])</div>
                         </div>
+                        <div class="rounded-xl border border-line p-3 text-sm sm:col-span-2">
+                            <p class="font-medium">{{ __('shop.affiliate.stone_items') }}</p>
+                            <div class="mt-2 sm:w-1/2">@include('partials.markup-field', ['name' => 'stone_markup_percent', 'max' => 'max_stone_markup_percent', 'unit' => '%'])</div>
+                            <p class="mt-1 text-xs text-muted">{{ __('shop.affiliate.stone_example') }}</p>
+                        </div>
                         <p class="text-xs text-muted sm:col-span-2">{{ __('shop.affiliate.percent_example') }}</p>
                     </div>
                     <div class="mt-3" x-show="mode === 'amount'" x-cloak>

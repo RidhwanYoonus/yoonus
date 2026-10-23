@@ -122,3 +122,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/affiliate/page', [\App\Http\Controllers\AffiliateController::class, 'update'])->middleware('throttle:10,1')->name('affiliate.update');
     Route::post('/affiliate/lock', [\App\Http\Controllers\AffiliateController::class, 'lock'])->middleware('throttle:20,60')->name('affiliate.lock.create');
 });
+
+// Admin "log in as": back to the admin's own account.
+Route::post('/login-as/leave', function () {
+    \App\Support\Impersonation::stop();
+
+    return redirect()->to(url('/admin/affiliates'));
+})->middleware('auth')->name('impersonate.leave');

@@ -78,6 +78,9 @@ class CheckoutController extends Controller
 
     public function place(Request $request)
     {
+        if (\App\Support\Impersonation::active()) {
+            return back()->withInput()->withErrors(['checkout' => 'Admin view: orders cannot be placed while you are logged in as a customer.']);
+        }
         $data = $request->validate([
             'email' => 'required|email:rfc|max:191',
             'phone' => ['required', 'string', 'max:32', 'regex:/^[+0-9 ()-]{7,}$/'],

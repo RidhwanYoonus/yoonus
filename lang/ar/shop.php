@@ -277,6 +277,19 @@ return [
     ],
 
     'affiliate' => [
+        'your_rates' => 'العمولة التي يدفعها لك المتجر', 'your_markup' => 'هامشك في صفحتك الخاصة',
+        'stone_label' => 'الأحجار +:pct% من قيمة الحجر',
+        'how' => [
+            'button' => 'كيف يتم الحساب؟', 'title_price' => 'سعر المتجر (اليوم)', 'title_commission' => 'عمولتك', 'title_markup' => 'هامشك في صفحتك الخاصة',
+            'gold' => 'الذهب: :weight × :rate = :amount', 'making' => 'أجرة الصنعة: :amount', 'stone' => 'قيمة الحجر: :amount', 'wastage' => 'الهالك: :amount',
+            'shop_price' => 'سعر المتجر (بدون الضريبة): :amount', 'fixed_price' => 'السعر الثابت (بدون الضريبة): :amount',
+            'per_piece' => 'قطعة واحدة × :rate = :amount', 'of_price' => 'السعر :base × :pct = :amount', 'per_gram' => ':weight × :rate للغرام = :amount',
+            'of_stone' => 'الحجر :base × :pct = :amount', 'of_making' => 'الصنعة :base × :pct = :amount', 'commission_total' => 'العمولة: :amount',
+            'mk_amount' => ':amount لكل قطعة', 'mk_price' => 'السعر :base × :pct = :amount', 'mk_piece' => ':amount لكل قطعة', 'mk_making' => 'الصنعة :base × :pct = :amount',
+            'mk_gram' => ':weight × :rate للغرام = :amount', 'mk_stone' => 'الحجر :base × :pct = :amount', 'mk_total' => 'الهامش :amount ← يرى عميلك :price + الضريبة',
+            'note' => 'محسوب بسعر الذهب اليوم. مكافآت المستوى والحملات تُضاف؛ وخصم قسيمتك يُطرح.',
+        ],
+        'stone_items' => 'الأحجار (الألماس وغيره): نسبة من قيمة الحجر', 'stone_example' => 'مثال: 5% على ألماس قيمته 2,400 درهم تضيف 120 درهم. 0 = لا شيء.',
         'earn_commission' => 'عمولتك', 'earn_markup' => 'هامشك في صفحتك الخاصة', 'earn_total' => 'الإجمالي',
         'see_all' => 'عرض كل القطع للمشاركة (:count)',
         'share_all_title' => 'قطع للمشاركة',
