@@ -8,6 +8,15 @@
     <div class="min-w-0 flex-1">
         <p class="truncate text-sm font-medium">{{ $p->localized('name') }}</p>
         <p class="text-xs text-muted">{{ $p->goldCategory?->name }}@if((float) $p->weight_grams > 0) · {{ rtrim(rtrim((string) $p->weight_grams, '0'), '.') }} g @endif</p>
+        {{-- What the affiliate earns for selling this piece today. --}}
+        @php($earn = app(\App\Affiliates\AffiliateService::class)->earningsFor($affiliate, $p))
+        <div class="mt-1.5 rounded-lg bg-gold-300/15 px-2.5 py-1.5 text-xs">
+            <p><span class="text-muted">{{ __('shop.affiliate.earn_commission') }}:</span> <b class="price">{{ \App\Pricing\Money::format($earn['commission']) }}</b></p>
+            @if ($earn['markup'] > 0)
+                <p><span class="text-muted">{{ __('shop.affiliate.earn_markup') }}:</span> <b class="price">{{ \App\Pricing\Money::format($earn['markup']) }}</b>
+                    · <span class="text-muted">{{ __('shop.affiliate.earn_total') }}:</span> <b class="price text-gold-700">{{ \App\Pricing\Money::format($earn['commission'] + $earn['markup']) }}</b></p>
+            @endif
+        </div>
         <div class="mt-2 flex flex-wrap gap-2">
             <button type="button" class="btn-whatsapp h-8 px-3 text-xs" @click="share('wa', @js($texts))">WhatsApp</button>
             <button type="button" class="btn-outline h-8 px-3 text-xs" @click="share('copy', @js($texts), 'p{{ $p->id }}')" x-text="done === 'p{{ $p->id }}' ? '✓' : @js(__('shop.affiliate.copy_post'))"></button>

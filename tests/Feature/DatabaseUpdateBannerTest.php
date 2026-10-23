@@ -18,7 +18,8 @@ class DatabaseUpdateBannerTest extends TestCase
         $admin = User::factory()->create(['is_admin' => true]);
         $this->assertSame([], PendingMigrations::list());
 
-        Artisan::call('migrate:rollback', ['--step' => 12, '--force' => true]); // the newest migrations
+        Artisan::call('migrate:rollback', ['--step' => 13, '--force' => true]); // the newest migrations
+        $this->assertFalse(Schema::hasColumn('users', 'last_login_at'));
         $this->assertFalse(Schema::hasColumn('affiliates', 'signup_markup'));
         $this->assertFalse(Schema::hasColumn('users', 'signup_affiliate_id'));
         $this->assertFalse(Schema::hasColumn('users', 'is_tourist'));

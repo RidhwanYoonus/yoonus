@@ -277,6 +277,7 @@ return [
     ],
 
     'affiliate' => [
+        'earn_commission' => 'عمولتك', 'earn_markup' => 'هامشك في صفحتك الخاصة', 'earn_total' => 'الإجمالي',
         'see_all' => 'عرض كل القطع للمشاركة (:count)',
         'share_all_title' => 'قطع للمشاركة',
         'share_all_intro' => 'كل القطع المتوفرة. ابحث وصفِّ وشارك برابطك بلمسة واحدة.',

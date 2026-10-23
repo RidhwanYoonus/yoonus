@@ -243,10 +243,41 @@ class AffiliateService
             'weight_grams' => (string) $line->product->weight_grams,
             'making_fee' => Money::toAed($base->makingFee * $line->qty),
             'subtotal' => Money::toAed($base->subtotal * $line->qty),
+            'stone_value' => Money::toAed($base->stoneValue * $line->qty),
             'discount_amount' => '0',
         ];
 
         return $this->line($affiliate, $item, $line->product->isFixedPrice(), 0)[3];
+    }
+
+    /**
+     * What the affiliate earns for selling one piece now: commission (before level / booster extras)
+     * and, with the white page, the mark-up the customer pays on top. Shown on the affiliate's product list.
+     *
+     * @return array{commission: int, markup: int}
+     */
+    public function earningsFor(Affiliate $affiliate, \App\Models\Product $product): array
+    {
+        $pricing = app(\App\Pricing\PricingService::class);
+        $base = $pricing->base($product);
+        $item = (object) [
+            'qty' => 1, 'weight_grams' => (string) $product->weight_grams, 'making_fee' => Money::toAed($base->makingFee),
+            'subtotal' => Money::toAed($base->subtotal), 'stone_value' => Money::toAed($base->stoneValue), 'discount_amount' => '0',
+        ];
+        $commission = $this->line($affiliate, $item, $product->isFixedPrice(), 0)[3];
+        $markup = 0;
+        $rule = $affiliate->effectiveMarkup();
+        if ($rule->isActive()) {
+            $saved = $pricing->markup();
+            $pricing->setMarkup($rule);
+            try {
+                $markup = max(0, $pricing->compute($product)->subtotal - $base->subtotal);
+            } finally {
+                $pricing->setMarkup($saved);
+            }
+        }
+
+        return ['commission' => $commission, 'markup' => $markup];
     }
 
     /**
@@ -274,8 +305,10 @@ class AffiliateService
         if ($a->making_commission_type === 'per_gram') {
             $mg = Money::scaled($item->weight_grams, 3) * $item->qty;
             $rate = Money::toFils($a->commission_per_gram);
+            // Stone pieces: the by-gram commission plus a % of the stone value (Affiliates → edit).
+            $stone = Money::percentOf(Money::toFils($item->stone_value ?? 0), Money::scaled($a->stone_commission_percent ?? 0, 2));
 
-            return ['gram', number_format($mg / 1000, 2, '.', ''), Money::toAed($rate), Money::divRound($mg * $rate, 1000)];
+            return ['gram', number_format($mg / 1000, 2, '.', ''), Money::toAed($rate), Money::divRound($mg * $rate, 1000) + $stone];
         }
         $base = max(0, Money::toFils($item->making_fee) - $markup);
         $rate = Money::scaled($a->making_commission_percent, 2);

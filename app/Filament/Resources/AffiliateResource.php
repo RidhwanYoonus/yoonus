@@ -77,6 +77,9 @@ class AffiliateResource extends Resource
                             ->default(fn () => Settings::get('affiliate_default_commission_per_gram', 2))
                             ->visible(fn (Forms\Get $get) => $get('making_commission_type') === 'per_gram')
                             ->helperText('Example: a 12.5 g chain × AED 2 = AED 25, whatever the making charge.'),
+                        Forms\Components\TextInput::make('stone_commission_percent')->label('Stone items: also % of the stone value')->numeric()->minValue(0)->maxValue(100)->suffix('%')->default(0)
+                            ->visible(fn (Forms\Get $get) => $get('making_commission_type') === 'per_gram')
+                            ->helperText('Added to the per-gram commission on pieces with stones. Example: diamond worth AED 2,400 × 2% = AED 48 extra. 0 = none.'),
                     ]),
                     Forms\Components\Group::make()->visible(fn (Forms\Get $get) => $get('commission_mode') !== 'per_piece')->schema([
                         Forms\Components\ToggleButtons::make('fixed_commission_type')->label('Fixed-price items: commission as')->inline()->required()->live()->default('percent')
@@ -223,6 +226,8 @@ class AffiliateResource extends Resource
                     ->state(fn (Affiliate $r) => $r->commissionSummary())->wrap(),
                 Tables\Columns\TextColumn::make('user.phone')->label('Phone')->searchable()->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\IconColumn::make('white_page_enabled')->label('White page')->boolean(),
+                Tables\Columns\TextColumn::make('user.last_login_at')->label('Last login')->since()->sortable()->placeholder('Never')
+                    ->tooltip(fn (Affiliate $r) => $r->user?->last_login_at?->timezone(config('app.timezone'))->format('d M Y, h:i A')),
                 Tables\Columns\TextColumn::make('markup')->label('White-page mark-up')->wrap()->toggleable(isToggledHiddenByDefault: true)
                     ->state(fn (Affiliate $r) => $r->white_page_enabled ? $r->markupSummary() : '—'),
                 Tables\Columns\TextColumn::make('coupon_discount_percent')->label('Code discount (% of commission)')->suffix('%')->placeholder('—')->toggleable(isToggledHiddenByDefault: true),

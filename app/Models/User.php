@@ -32,6 +32,7 @@ class User extends Authenticatable implements FilamentUser
             'id_expiry' => 'date',
             'is_tourist' => 'boolean',
             'affiliate_markup_on' => 'boolean',
+            'last_login_at' => 'datetime',
             'id_saved_at' => 'datetime',
             'is_admin' => 'boolean',
             'is_staff' => 'boolean',

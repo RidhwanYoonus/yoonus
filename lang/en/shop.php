@@ -277,6 +277,7 @@ return [
     ],
 
     'affiliate' => [
+        'earn_commission' => 'Your commission', 'earn_markup' => 'Your white-page mark-up', 'earn_total' => 'Total',
         'see_all' => 'See all :count pieces to share',
         'share_all_title' => 'Pieces to share',
         'share_all_intro' => 'Every piece in stock. Search, filter and share with your link in one tap.',

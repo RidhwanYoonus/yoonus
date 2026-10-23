@@ -22,6 +22,7 @@ class ViewOrder extends ViewRecord
     {
         return [
             OrderResource::invoiceAction(),
+            self::affiliateCommissionAction(),
             Actions\Action::make('activity')->label('Customer activity')->icon('heroicon-o-finger-print')->color('gray')
                 ->visible(fn () => \App\Support\StaffAccess::current('activity'))
                 ->url(fn () => \App\Filament\Resources\ActivityLogResource::urlFor($this->record->user_id, $this->record->user_id ? null : $this->record->email)),
@@ -92,5 +93,78 @@ class ViewOrder extends ViewRecord
                 }),
             Actions\Action::make('storefront')->label('Customer view')->color('gray')->url(fn (Order $record) => route('order.show', $record->number))->openUrlInNewTab(),
         ];
+    }
+
+    /**
+     * Fix the affiliate side of an order after a mistake: change or remove the affiliate, or correct each
+     * line's commission / mark-up / bonus. The customer's price is not changed. Every change is noted in the order history.
+     */
+    public static function affiliateCommissionAction(): Actions\Action
+    {
+        $money = fn (string $name, string $label) => Forms\Components\TextInput::make($name)->label($label)->numeric()->minValue(0)->prefix('AED')->required();
+
+        return Actions\Action::make('affiliateCommission')->label('Affiliate commission')->icon('heroicon-o-user-plus')->color('warning')
+            ->visible(fn (Order $record) => \App\Support\StaffAccess::current('affiliate_commissions', 'edit')
+                && ($record->affiliate_id || $record->affiliateCommissions()->exists()))
+            ->modalHeading('Edit the affiliate commission of this order')
+            ->modalDescription('Use this to fix a mistake. The customer\'s price and invoice do not change; only what the affiliate earns. Lines already collected by the affiliate cannot be changed here — use an adjustment in the Commission report.')
+            ->fillForm(fn (Order $record) => [
+                'affiliate_id' => $record->affiliate_id,
+                'lines' => $record->affiliateCommissions()->with('affiliate')->get()->map(fn ($c) => [
+                    'id' => $c->id, 'label' => ($c->affiliate?->code ?? '?').' · '.($c->product_name ?? 'Recruiter share').' · '.$c->status,
+                    'commission_amount' => $c->commission_amount, 'markup_amount' => $c->markup_amount, 'bonus_amount' => $c->bonus_amount ?? 0,
+                    'locked' => $c->status === 'paid',
+                ])->all(),
+            ])
+            ->form([
+                Forms\Components\Select::make('affiliate_id')->label('Affiliate on this order')->searchable()->preload()
+                    ->options(fn () => \App\Models\Affiliate::with('user')->orderBy('code')->get()->mapWithKeys(fn ($a) => [$a->id => $a->code.' — '.($a->user?->name ?? '')]))
+                    ->placeholder('No affiliate (remove — commission becomes void)')
+                    ->helperText('Changing it moves the commission lines to the chosen affiliate.'),
+                Forms\Components\Repeater::make('lines')->label('Commission lines')->addable(false)->deletable(false)->reorderable(false)->columns(3)
+                    ->itemLabel(fn (array $state) => $state['label'] ?? null)
+                    ->schema([
+                        Forms\Components\Hidden::make('id'), Forms\Components\Hidden::make('label'), Forms\Components\Hidden::make('locked'),
+                        $money('commission_amount', 'Commission')->disabled(fn (Forms\Get $get) => (bool) $get('locked')),
+                        $money('markup_amount', 'Mark-up (white page)')->disabled(fn (Forms\Get $get) => (bool) $get('locked')),
+                        $money('bonus_amount', 'Level / booster bonus')->disabled(fn (Forms\Get $get) => (bool) $get('locked')),
+                    ]),
+                Forms\Components\Textarea::make('reason')->label('Reason (kept in the order history)')->required()->rows(2)->maxLength(300),
+            ])
+            ->action(function (Order $record, array $data) {
+                \Illuminate\Support\Facades\DB::transaction(function () use ($record, $data) {
+                    $rows = $record->affiliateCommissions()->get()->keyBy('id');
+                    $before = (float) $rows->sum('amount');
+                    $newAffiliate = $data['affiliate_id'] ?: null;
+                    $mainBefore = $record->affiliate_id;
+                    foreach ($data['lines'] ?? [] as $line) {
+                        $c = $rows->get($line['id'] ?? 0);
+                        if (! $c || $c->status === 'paid') {
+                            continue;
+                        }
+                        $commission = (float) ($line['commission_amount'] ?? $c->commission_amount);
+                        $markup = (float) ($line['markup_amount'] ?? $c->markup_amount);
+                        $bonus = (float) ($line['bonus_amount'] ?? $c->bonus_amount ?? 0);
+                        $c->fill(['commission_amount' => $commission, 'markup_amount' => $markup,
+                            ...(\Illuminate\Support\Facades\Schema::hasColumn('affiliate_commissions', 'bonus_amount') ? ['bonus_amount' => $bonus] : []),
+                            'amount' => max(0, $commission + $markup + $bonus - (float) ($c->coupon_deduction ?? 0))]);
+                        // The order's own lines follow the affiliate chosen above; a recruiter's share stays with the recruiter.
+                        if ($c->affiliate_id === $mainBefore) {
+                            $newAffiliate ? $c->affiliate_id = $newAffiliate : $c->status = 'void';
+                        }
+                        $c->save();
+                    }
+                    $record->forceFill(['affiliate_id' => $newAffiliate])->save();
+                    if (! $newAffiliate) {
+                        $record->forceFill(['affiliate_white_page' => false])->save();
+                    }
+                    $after = (float) $record->affiliateCommissions()->where('status', '!=', 'void')->sum('amount');
+                    $who = fn ($id) => $id ? (\App\Models\Affiliate::find($id)?->code ?? '#'.$id) : 'none';
+                    app(OrderService::class)->history($record, $record->status, $record->status, Auth::user(),
+                        'Affiliate commission edited ('.$who($mainBefore).' → '.$who($newAffiliate).', AED '.number_format($before, 2).' → AED '.number_format($after, 2).'): '.$data['reason']);
+                    app(\App\Affiliates\AffiliateService::class)->sync($record->fresh());
+                });
+                Notification::make()->success()->title('Affiliate commission updated')->send();
+            });
     }
 }
