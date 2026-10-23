@@ -40,9 +40,11 @@ class TrackAffiliate
                 }
             }
             // Signed up with an affiliate's code (Settings → Affiliates): that affiliate's prices, always.
-            if (! $context->preview && ($linked = $request->user()?->markupAffiliate())) {
+            // Signed up with an affiliate's code: their orders count for that affiliate (commission), and the
+            // affiliate's white-page prices apply when that is switched on (white page, affiliate and customer).
+            if (! $context->preview && ($linked = $request->user()?->linkedAffiliate())) {
                 $context->affiliate = $linked;
-                $context->whitePage = true;
+                $context->whitePage = (bool) $request->user()->markupAffiliate();
             }
         } catch (Throwable) {
             // Before the database update has run.

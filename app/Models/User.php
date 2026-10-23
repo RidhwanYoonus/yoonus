@@ -91,14 +91,24 @@ class User extends Authenticatable implements FilamentUser
     /** The affiliate whose mark-up this signed-in customer always sees, or null. */
     public function markupAffiliate(): ?Affiliate
     {
-        if (! $this->signup_affiliate_id || ! ($this->affiliate_markup_on ?? true)) {
+        $affiliate = $this->linkedAffiliate();
+
+        // Switched on per affiliate (Affiliates → edit → white page) and per customer; off = normal prices.
+        return $affiliate && ($this->affiliate_markup_on ?? true) && $affiliate->white_page_enabled && ($affiliate->signup_markup ?? false) ? $affiliate : null;
+    }
+
+    /**
+     * Affiliate whose code the customer signed up with, while that affiliate is active: the customer's
+     * orders always count for them (commission). Their mark-up comes on top only per markupAffiliate().
+     */
+    public function linkedAffiliate(): ?Affiliate
+    {
+        if (! $this->signup_affiliate_id) {
             return null;
         }
         $affiliate = $this->signupAffiliate;
 
-        // Switched on per affiliate (Affiliates → edit → white page); off = normal prices for their customers.
-        return $affiliate && $affiliate->is_active && $affiliate->white_page_enabled && ($affiliate->signup_markup ?? false)
-            && $affiliate->user_id !== $this->id ? $affiliate : null;
+        return $affiliate && $affiliate->is_active && $affiliate->user_id !== $this->id ? $affiliate : null;
     }
 
     public function referredBy(): BelongsTo

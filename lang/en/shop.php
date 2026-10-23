@@ -279,6 +279,9 @@ return [
     ],
 
     'affiliate' => [
+        'signup_invited' => 'Welcome! You were invited by :name — create your account to shop at today\'s gold rate.',
+        'signup_link' => 'Your sign-up link', 'signup_note' => 'Customers who create their account with this link stay linked to you: every order they place counts for your commission.',
+        'signup_post' => 'Join :store and shop gold at today\'s live rate: :url', 'share_any' => 'Share', 'share_photo' => '📤 Share with photo',
         'your_rates' => 'Commission the shop pays you', 'your_markup' => 'Your white-page mark-up',
         'stone_label' => 'stones +:pct% of the stone value',
         'how' => [

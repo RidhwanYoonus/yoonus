@@ -2,7 +2,10 @@
 @section('content')
 <div class="container-x max-w-md py-16">
     <h1 class="font-display text-4xl">{{ __('shop.auth.register') }}</h1>
-    @if ($ref)<p class="mt-2 rounded-xl bg-gold-300/20 px-4 py-3 text-sm">{{ __('shop.referral.invited', ['amount' => \App\Support\Settings::get('referral_reward')]) }}</p>@endif
+    @php($refAffiliate = $ref ? rescue(fn () => \App\Models\Affiliate::where('code', strtoupper($ref))->where('is_active', true)->first(), null, false) : null)
+    @if ($refAffiliate)
+        <p class="mt-2 rounded-xl bg-gold-300/20 px-4 py-3 text-sm">{{ __('shop.affiliate.signup_invited', ['name' => $refAffiliate->name()]) }}</p>
+    @elseif ($ref)<p class="mt-2 rounded-xl bg-gold-300/20 px-4 py-3 text-sm">{{ __('shop.referral.invited', ['amount' => \App\Support\Settings::get('referral_reward')]) }}</p>@endif
     <form method="POST" action="{{ route('register') }}" enctype="multipart/form-data" class="card mt-6 space-y-4 p-6">
         @include('partials.google-button', ['ref' => $ref])
         @csrf

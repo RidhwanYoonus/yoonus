@@ -94,6 +94,12 @@ class Affiliate extends Model
         return self::signupEnabled() && \App\Support\Settings::bool('affiliate_team_enabled');
     }
 
+    /** Sign-up link with this affiliate's code filled in: the new customer stays linked to the affiliate. */
+    public function signupLink(): string
+    {
+        return route('register', ['ref' => $this->code]);
+    }
+
     public function joinLink(): string
     {
         return route('affiliate.apply', ['ref' => $this->code]);

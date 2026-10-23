@@ -30,6 +30,8 @@
             </div>
         </div>
         <div class="mt-2 flex flex-wrap gap-2">
+            {{-- Any app, with the product photo attached where the phone allows it. --}}
+            <button type="button" class="btn-dark h-8 px-3 text-xs" @click="share('any', @js($texts), null, @js($p->primaryImage()))">{{ __('shop.affiliate.share_photo') }}</button>
             <button type="button" class="btn-whatsapp h-8 px-3 text-xs" @click="share('wa', @js($texts))">WhatsApp</button>
             <button type="button" class="btn-outline h-8 px-3 text-xs" @click="share('copy', @js($texts), 'p{{ $p->id }}')" x-text="done === 'p{{ $p->id }}' ? '✓' : @js(__('shop.affiliate.copy_post'))"></button>
             <a class="btn-outline h-8 px-3 text-xs" href="{{ $p->primaryImage() }}" download target="_blank">{{ __('shop.affiliate.photo') }}</a>

@@ -1,22 +1,40 @@
 {{-- Affiliates with an own price page pick which link goes into a post: their page (with their mark-up) or normal shop prices. --}}
 @once
 <script>
+// Share to any app (phone share sheet). With a photo when the phone allows it, so WhatsApp, Instagram,
+// Facebook… get the picture and the text together. Computers without a share sheet open WhatsApp Web.
+window.shareAny = async ({ text, url = '', image = null }) => {
+    if (navigator.share) {
+        try {
+            if (image && navigator.canShare) {
+                const blob = await fetch(image).then(r => r.blob());
+                const file = new File([blob], 'jewellery.' + ((blob.type.split('/')[1] || 'jpg').replace('jpeg', 'jpg')), { type: blob.type || 'image/jpeg' });
+                if (navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text }); return; }
+            }
+            await navigator.share({ text, url: url || undefined });
+            return;
+        } catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener');
+};
 document.addEventListener('alpine:init', () => {
     Alpine.data('affShare', (white) => ({
         white, ask: false, pending: null, done: null, remember: false,
-        share(action, texts, key) {
+        share(action, texts, key, image = null) {
             const saved = sessionStorage.getItem('aff_link_choice');
-            if (! this.white) return this.run(action, texts.r, key);
-            if (saved) return this.run(action, texts[saved], key);
-            this.pending = { action, texts, key }; this.ask = true;
+            if (! this.white) return this.run(action, texts.r, key, image);
+            if (saved) return this.run(action, texts[saved], key, image);
+            this.pending = { action, texts, key, image }; this.ask = true;
         },
+        shareAny(opts) { return window.shareAny(opts); },
         choose(mode) {
             if (this.remember) sessionStorage.setItem('aff_link_choice', mode);
             const p = this.pending; this.ask = false; this.pending = null;
-            if (p) this.run(p.action, p.texts[mode], p.key);
+            if (p) this.run(p.action, p.texts[mode], p.key, p.image);
         },
         forget() { sessionStorage.removeItem('aff_link_choice'); this.done = 'forget'; setTimeout(() => this.done = null, 1500); },
-        run(action, text, key) {
+        run(action, text, key, image = null) {
+            if (action === 'any') { window.shareAny({ text, image }); return; }
             if (action === 'wa') { window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener'); return; }
             navigator.clipboard?.writeText(text);
             this.done = key; setTimeout(() => this.done = null, 1500);

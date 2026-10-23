@@ -177,6 +177,18 @@
                 <a class="btn-whatsapp px-4" target="_blank" rel="noopener" href="https://wa.me/?text={{ rawurlencode($affiliate->referralLink()) }}">WhatsApp</a>
             </div>
         </div>
+        {{-- Sign-up link: customers who join with it stay linked to this affiliate for every order. --}}
+        @php($signupText = __('shop.affiliate.signup_post', ['store' => \App\Support\Seo::storeName(), 'url' => $affiliate->signupLink()]))
+        <div class="card p-6">
+            <p class="label">{{ __('shop.affiliate.signup_link') }}</p>
+            <p class="text-sm text-muted">{{ __('shop.affiliate.signup_note') }}</p>
+            <div class="mt-3 flex flex-wrap gap-2">
+                <input readonly value="{{ $affiliate->signupLink() }}" class="input min-w-0 flex-1 text-xs" dir="ltr" onclick="this.select()">
+                <button type="button" class="btn-outline px-4" @click="copy(@js($affiliate->signupLink()), 's')" x-text="copied === 's' ? '✓' : @js(__('shop.affiliate.copy'))"></button>
+                <a class="btn-whatsapp px-4" target="_blank" rel="noopener" href="https://wa.me/?text={{ rawurlencode($signupText) }}">WhatsApp</a>
+                <button type="button" class="btn-dark px-4" @click="shareAny({ text: @js($signupText), url: @js($affiliate->signupLink()) })">{{ __('shop.affiliate.share_any') }}</button>
+            </div>
+        </div>
         @if ($affiliate->white_page_enabled)
             <form method="POST" action="{{ route('affiliate.update') }}" class="card p-6">
                 @csrf
