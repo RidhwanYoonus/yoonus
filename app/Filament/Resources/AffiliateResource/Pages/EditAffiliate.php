@@ -26,6 +26,7 @@ class EditAffiliate extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            \App\Filament\Resources\AffiliateResource::loginAsAction(Actions\Action::class),
             Actions\Action::make('links')->label('Their links')->icon('heroicon-o-link')->color('gray')
                 ->modalSubmitAction(false)->modalCancelActionLabel('Close')
                 ->modalContent(fn () => new \Illuminate\Support\HtmlString(

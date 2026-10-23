@@ -94,4 +94,13 @@ class AffiliateStoneMarkupAndLoginAsTest extends TestCase
         $this->assertFalse(\App\Support\Impersonation::allowed($this->affiliate->user, $other));
         $this->assertFalse(\App\Support\Impersonation::allowed(User::factory()->create(['is_admin' => true]), $other));
     }
+
+    public function test_log_in_as_is_also_on_the_affiliate_edit_page(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $this->actingAs($admin);
+        Livewire::test(\App\Filament\Resources\AffiliateResource\Pages\EditAffiliate::class, ['record' => $this->affiliate->getRouteKey()])
+            ->assertActionVisible('loginAs')->callAction('loginAs')->assertRedirect(route('affiliate.dashboard'));
+        $this->assertSame($this->affiliate->user_id, auth()->id());
+    }
 }

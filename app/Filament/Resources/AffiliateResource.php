@@ -253,17 +253,9 @@ class AffiliateResource extends Resource
                 Tables\Columns\TextColumn::make('created_at')->label('Joined')->date('d M Y')->sortable()->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([Tables\Filters\TernaryFilter::make('is_active')->label('Status')->trueLabel('Active')->falseLabel('Disabled')])
-            ->actions([self::collectAction(), self::toggleActive(Tables\Actions\Action::class), Tables\Actions\ActionGroup::make([self::storeSaleAction(), self::adjustAction(),
-                \Filament\Tables\Actions\Action::make('loginAs')->label('Log in as')->icon('heroicon-o-eye')->color('gray')
-                ->visible(fn () => (bool) auth()->user()?->is_admin)
-                ->requiresConfirmation()->modalHeading('Log in as this person')
-                ->modalDescription('Opens the shop exactly as they see it (their portal, prices and orders). They are not told and their last-login time does not change. A red bar lets you go back to the admin; orders cannot be placed meanwhile.')
-                ->action(function ($record) {
-                    $user = $record instanceof \App\Models\User ? $record : $record->user;
-                    \App\Support\Impersonation::start(auth()->user(), $user);
-
-                    return redirect()->to($user->affiliate ? route('affiliate.dashboard') : route('account'));
-                })]), Tables\Actions\EditAction::make()])
+            ->actions([self::collectAction(), self::toggleActive(Tables\Actions\Action::class), Tables\Actions\ActionGroup::make([self::storeSaleAction(), self::adjustAction()]), self::loginAsAction(Tables\Actions\Action::class), Tables\Actions\EditAction::make()])
+            // Row buttons first: the table is wider than most screens.
+            ->actionsPosition(Tables\Enums\ActionsPosition::BeforeColumns)
             ->bulkActions([
                 Tables\Actions\BulkAction::make('activate')->label('Activate')->icon('heroicon-o-play')->color('success')->requiresConfirmation()
                     ->visible(fn () => \App\Support\StaffAccess::current('affiliates', 'edit'))
@@ -335,5 +327,23 @@ class AffiliateResource extends Resource
             'create' => Pages\CreateAffiliate::route('/create'),
             'edit' => Pages\EditAffiliate::route('/{record}/edit'),
         ];
+    }
+
+    /**
+     * Admin "Log in as" the affiliate (table row and edit page): see their portal exactly as they do.
+     *
+     * @param  class-string  $class  Tables\Actions\Action or Filament\Actions\Action
+     */
+    public static function loginAsAction(string $class)
+    {
+        return $class::make('loginAs')->label('Log in as')->icon('heroicon-o-eye')->color('gray')
+            ->visible(fn () => (bool) auth()->user()?->is_admin)
+            ->requiresConfirmation()->modalHeading('Log in as this affiliate')
+            ->modalDescription('Opens their portal exactly as they see it (prices, commission, orders). They are not told and their last-login time does not change. A red bar lets you go back to the admin; orders cannot be placed meanwhile.')
+            ->action(function (Affiliate $record) {
+                \App\Support\Impersonation::start(auth()->user(), $record->user);
+
+                return redirect()->route('affiliate.dashboard');
+            });
     }
 }
