@@ -45,7 +45,7 @@
     <div class="border-t border-white/10">
         <div class="container-x flex flex-wrap items-center justify-between gap-2 py-5 text-xs text-on-dark/50">
             <p>© {{ date('Y') }} {{ Settings::get('store_legal_name') }}. {{ __('shop.footer.vat_note') }}</p>
-            <p>{{ __('shop.footer.payments') }}</p>
+            <p>{{ \App\Support\HomeContent::paymentList() }}</p>
         </div>
     </div>
 </footer>

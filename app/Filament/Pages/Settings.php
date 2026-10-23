@@ -71,6 +71,38 @@ class Settings extends Page implements HasForms
                             ->helperText('One per line: English = Arabic. Used before the translator, so names and shop words are always right. Common jewellery words (rings, necklaces, bangles, earrings, pendants, sets, gold, diamond…) are already built in.'),
                     ]),
                 ]),
+                Forms\Components\Tabs\Tab::make('Home page')->icon('heroicon-o-home')->columns(2)->schema([
+                    Forms\Components\Placeholder::make('home_help')->hiddenLabel()->columnSpanFull()
+                        ->content('The big banner at the top of the home page and the four small boxes under it. Leave a box empty to keep the built-in wording (shown in grey).'),
+                    $text('home_eyebrow', 'Small line above the headline')->placeholder('Fine gold jewellery · UAE'),
+                    $text('home_eyebrow_ar', 'Small line (Arabic)')->extraInputAttributes(['dir' => 'rtl']),
+                    $text('home_headline', 'Headline')->placeholder('Gold, priced honestly. Crafted beautifully.'),
+                    $text('home_headline_ar', 'Headline (Arabic)')->extraInputAttributes(['dir' => 'rtl']),
+                    Forms\Components\Textarea::make('home_subline')->label('Text under the headline')->rows(2)->placeholder("Every piece is priced live from today's gold rate, with the making charge and 5% VAT shown line by line — no hidden margins."),
+                    Forms\Components\Textarea::make('home_subline_ar')->label('Text under the headline (Arabic)')->rows(2)->extraInputAttributes(['dir' => 'rtl']),
+                    Forms\Components\Placeholder::make('home_caption_help')->hiddenLabel()->columnSpanFull()
+                        ->content('The small rounded line at the very top of the banner is the "Caption" in Store & tax.'),
+                    Forms\Components\Section::make('Box 1')->columns(3)->columnSpanFull()->compact()->collapsible()->schema([
+                        Forms\Components\Select::make('home_box1_icon')->label('Icon')->options(collect(\App\Support\HomeContent::ICONS)->map(fn ($i) => $i[0])->all())->placeholder('Gold rate chart (default)'),
+                        $text('home_box1_title', 'Title')->placeholder('Live gold rate'), $text('home_box1_title_ar', 'Title (Arabic)')->extraInputAttributes(['dir' => 'rtl']),
+                        $text('home_box1_text', 'Text')->placeholder('Prices follow today\'s Dubai rate')->columnStart(2), $text('home_box1_text_ar', 'Text (Arabic)')->extraInputAttributes(['dir' => 'rtl']),
+                    ]),
+                    Forms\Components\Section::make('Box 2')->columns(3)->columnSpanFull()->compact()->collapsible()->schema([
+                        Forms\Components\Select::make('home_box2_icon')->label('Icon')->options(collect(\App\Support\HomeContent::ICONS)->map(fn ($i) => $i[0])->all())->placeholder('Check badge (default)'),
+                        $text('home_box2_title', 'Title')->placeholder('Hallmarked gold'), $text('home_box2_title_ar', 'Title (Arabic)')->extraInputAttributes(['dir' => 'rtl']),
+                        $text('home_box2_text', 'Text')->placeholder('Certified purity on every piece')->columnStart(2), $text('home_box2_text_ar', 'Text (Arabic)')->extraInputAttributes(['dir' => 'rtl']),
+                    ]),
+                    Forms\Components\Section::make('Box 3')->columns(3)->columnSpanFull()->compact()->collapsible()->schema([
+                        Forms\Components\Select::make('home_box3_icon')->label('Icon')->options(collect(\App\Support\HomeContent::ICONS)->map(fn ($i) => $i[0])->all())->placeholder('Shop / showroom (default)'),
+                        $text('home_box3_title', 'Title')->placeholder('Collect in store'), $text('home_box3_title_ar', 'Title (Arabic)')->extraInputAttributes(['dir' => 'rtl']),
+                        $text('home_box3_text', 'Text')->placeholder('Order online, pick up at our showroom')->columnStart(2), $text('home_box3_text_ar', 'Text (Arabic)')->extraInputAttributes(['dir' => 'rtl']),
+                    ]),
+                    Forms\Components\Section::make('Box 4')->columns(3)->columnSpanFull()->compact()->collapsible()->schema([
+                        Forms\Components\Select::make('home_box4_icon')->label('Icon')->options(collect(\App\Support\HomeContent::ICONS)->map(fn ($i) => $i[0])->all())->placeholder('Lock (secure payment) (default)'),
+                        $text('home_box4_title', 'Title')->placeholder('Secure payment'), $text('home_box4_title_ar', 'Title (Arabic)')->extraInputAttributes(['dir' => 'rtl']),
+                        $text('home_box4_text', 'Text')->placeholder('Card, Apple Pay & Google Pay')->columnStart(2), $text('home_box4_text_ar', 'Text (Arabic)')->extraInputAttributes(['dir' => 'rtl']),
+                    ]),
+                ]),
                 Forms\Components\Tabs\Tab::make('Branding')->icon('heroicon-o-swatch')->columns(2)->schema([
                     Forms\Components\FileUpload::make('brand_logo')->label('Logo')->image()->disk('public')->directory('branding')->maxSize(6144)
                         ->imageResizeMode('contain')->imageResizeTargetWidth('800')->imageResizeTargetHeight('240')

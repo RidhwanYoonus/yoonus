@@ -41,9 +41,9 @@
                         {{ $caption }}
                     </p>
                 @endif
-                <p class="eyebrow mt-5 text-gold-300">{{ __('shop.home.eyebrow') }}</p>
-                <h1 class="font-display mt-3 text-[2.6rem] leading-[1.08] sm:mt-4 sm:text-6xl lg:text-7xl">{{ __('shop.home.headline') }}</h1>
-                <p class="mt-4 max-w-xl text-sm leading-relaxed text-on-dark/70 sm:mt-6 sm:text-base">{{ __('shop.home.subline') }}</p>
+                <p class="eyebrow mt-5 text-gold-300">{{ \App\Support\HomeContent::text('eyebrow') }}</p>
+                <h1 class="font-display mt-3 text-[2.6rem] leading-[1.08] sm:mt-4 sm:text-6xl lg:text-7xl">{{ \App\Support\HomeContent::text('headline') }}</h1>
+                <p class="mt-4 max-w-xl text-sm leading-relaxed text-on-dark/70 sm:mt-6 sm:text-base">{{ \App\Support\HomeContent::text('subline') }}</p>
                 <div class="mt-6 flex flex-wrap gap-3 sm:mt-8">
                     <a href="{{ route('shop.index') }}" class="btn-gold px-8">{{ __('shop.home.cta') }}</a>
                     <a href="#price-promise" class="btn border border-white/25 text-on-dark hover:border-gold-400 hover:text-gold-300">{{ __('shop.home.how_priced') }}</a>
@@ -73,17 +73,13 @@
     {{-- Trust bar --}}
     <section class="border-b border-line bg-card">
         <div class="container-x grid grid-cols-2 gap-x-6 gap-y-5 py-6 lg:grid-cols-4">
-            @foreach ([
-                ['rate', 'M3 3v18h18M7 15l4-4 3 3 5-6'],
-                ['hallmark', 'M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z'],
-                ['bnpl', 'M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z'],
-                ['delivery', 'M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12'],
-            ] as [$key, $path])
+            {{-- Settings → Home page: the four boxes (title, text, icon). --}}
+            @foreach (\App\Support\HomeContent::boxes() as $box)
                 <div class="flex items-center gap-3">
                     <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-sand text-gold-700">
-                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $path }}"/></svg>
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="{{ $box['icon'] }}"/></svg>
                     </span>
-                    <span><span class="block text-sm font-medium">{{ __("shop.home.trust_{$key}_title") }}</span><span class="block text-xs text-muted">{{ __("shop.home.trust_{$key}") }}</span></span>
+                    <span><span class="block text-sm font-medium">{{ $box['title'] }}</span><span class="block text-xs text-muted">{{ $box['text'] }}</span></span>
                 </div>
             @endforeach
         </div>

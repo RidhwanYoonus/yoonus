@@ -26,6 +26,8 @@ return [
         'trust_hallmark_title' => 'Hallmarked gold', 'trust_hallmark' => 'Certified purity on every piece',
         'trust_bnpl_title' => 'Pay in 4', 'trust_bnpl' => 'Interest-free with Tabby & Tamara',
         'trust_delivery_title' => 'Insured delivery', 'trust_delivery' => 'Across the UAE, or collect in store',
+        'trust_store_title' => 'Collect in store', 'trust_store' => 'Order online, pick up at our showroom',
+        'trust_secure_title' => 'Secure payment', 'trust_secure' => 'Card, Apple Pay & Google Pay',
         'view_all' => 'View all',
         'new' => 'New arrivals',
         'promise_eyebrow' => 'Transparent pricing',
@@ -388,6 +390,7 @@ return [
     ],
 
     'footer' => [
+        'pay_card' => 'Card', 'pay_cod' => 'Cash on delivery',
         'about' => 'Fine gold and diamond jewellery, priced live from the daily gold rate with every charge shown.',
         'help' => 'Help', 'visit' => 'Visit us', 'trn' => 'TRN',
         'vat_note' => 'Prices in AED, excluding 5% VAT (added at checkout).',
@@ -425,7 +428,7 @@ return [
             'category_both_diamonds' => ', with natural and lab-grown diamonds',
         ],
         'home_title' => 'Gold & Diamond Jewellery in the UAE — Live Gold Rate Prices',
-        'default_description' => 'Shop 18K, 21K, 22K and 24K gold jewellery online in the UAE. Live gold rate pricing, transparent making charges, 5% VAT shown, Tabby & Tamara.',
+        'default_description' => 'Shop 18K, 21K, 22K and 24K gold jewellery online in the UAE. Live gold rate pricing, transparent making charges, 5% VAT shown, collect in store.',
         'product_title' => ':name — :karat Gold, :weight g',
         'product_description' => ':name in :karat gold, :weight g. :price + VAT, priced live from today\'s gold rate. Delivery across the UAE.',
         'category_title' => ':name — Gold Jewellery UAE',
