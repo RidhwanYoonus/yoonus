@@ -37,6 +37,11 @@ class VideoCallRequest extends Model
         return $this->belongsTo(Product::class);
     }
 
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
     public function staff(): BelongsTo
     {
         return $this->belongsTo(User::class, 'staff_id');
@@ -48,9 +53,22 @@ class VideoCallRequest extends Model
      */
     public function roomUrl(): string
     {
+        if (filled($this->meeting_url ?? null)) {
+            return $this->meeting_url;   // link staff sent for this call
+        }
         $base = rtrim((string) Settings::get('video_call_base_url', 'https://meet.jit.si'), '/');
 
         return self::isFixedMeetingLink($base) ? $base : $base.'/'.$this->room;
+    }
+
+    /** Link to open the call: Jitsi gets the person's name and skips its waiting screen; other services get the plain link. */
+    public function joinUrl(string $displayName): string
+    {
+        $url = $this->roomUrl();
+
+        return self::isFixedMeetingLink($url) || filled($this->meeting_url ?? null) && ! str_contains($url, 'jit.si') && ! str_contains($url, '8x8.vc')
+            ? $url
+            : $url.'#userInfo.displayName='.rawurlencode('"'.$displayName.'"').'&config.prejoinPageEnabled=false';
     }
 
     /** Services where rooms can't be made by name: the link is one fixed meeting. */

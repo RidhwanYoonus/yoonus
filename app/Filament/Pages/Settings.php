@@ -299,7 +299,7 @@ class Settings extends Page implements HasForms
                     $text('video_call_hours', 'Hours shown to customers')->placeholder('Daily 10:00 – 22:00'),
                     $text('video_call_notify_email', 'Email staff about new calls')->email()->placeholder('Store email is used when empty'),
                     $text('video_call_base_url', 'Video service address')->url()
-                        ->helperText('Recommended: https://meet.jit.si — free, a new private room for every call (staff sign in with Google once to start it). A Google Meet / Zoom / Teams meeting link also works: then every customer joins that same meeting and staff must be in it to let them in.'),
+                        ->helperText('In the UAE, Jitsi (meet.jit.si) is often blocked by internet providers — use a Google Meet, Zoom or Microsoft Teams meeting link instead. Every customer then joins that meeting and staff let them in. Staff can also send a fresh link per call (Live video calls → Send meeting link).'),
                     Forms\Components\Toggle::make('store_visit_button')->label('"Book a store visit to see this piece" button on products')->inline(false)
                         ->helperText('Switch off to hide the store-visit booking from product pages.'),
                 ]),

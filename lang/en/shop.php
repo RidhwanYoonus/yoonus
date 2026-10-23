@@ -443,6 +443,7 @@ return [
     ],
 
     'video' => [
+        'link_message' => ':store: your live video call is ready. Tap to join: :link', 'link_subject' => ':store — join your video call',
         'cta' => 'Live video call with our staff', 'hint' => 'See this piece live on camera · :hours',
         'title' => 'Live video call', 'eyebrow' => 'See it live',
         'intro' => 'One of our staff will show you :name live on camera and answer your questions.',

@@ -52,6 +52,7 @@ class VideoCallController extends Controller
     /** Polled by the waiting page so the customer sees when staff have joined. */
     public function status(VideoCallRequest $call)
     {
-        return response()->json(['status' => $call->status]);
+        // The join link too: staff may have sent a new meeting link for this call.
+        return response()->json(['status' => $call->status, 'join' => $call->joinUrl($call->name)]);
     }
 }

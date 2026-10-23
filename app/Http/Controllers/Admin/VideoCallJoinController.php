@@ -16,6 +16,6 @@ class VideoCallJoinController extends Controller
             $call->update(['status' => 'answered', 'staff_id' => $request->user()->id, 'answered_at' => now()]);
         }
 
-        return redirect()->away($call->roomUrl().'#userInfo.displayName='.rawurlencode('"'.$request->user()->name.' (staff)"').'&config.prejoinPageEnabled=false');
+        return redirect()->away($call->joinUrl($request->user()->name.' (staff)'));
     }
 }

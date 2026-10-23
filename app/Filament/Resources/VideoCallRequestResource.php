@@ -75,6 +75,21 @@ class VideoCallRequestResource extends Resource
                     ->visible(fn (VideoCallRequest $record) => in_array($record->status, ['waiting', 'answered']))
                     // Marks the call answered by this staff member, then opens the video room in a new tab.
                     ->url(fn (VideoCallRequest $record) => route('admin.video-call.join', $record->id), true),
+                Tables\Actions\Action::make('sendLink')->label('Send meeting link')->icon('heroicon-o-link')->color('warning')
+                    ->visible(fn (VideoCallRequest $record) => in_array($record->status, ['waiting', 'answered']))
+                    ->modalDescription('Paste a link for this customer only, e.g. a new Google Meet (meet.google.com → New meeting → Create a meeting for later) or your Zoom link. Their waiting page switches to it within 5 seconds, and it is also sent on WhatsApp and email.')
+                    ->fillForm(fn (VideoCallRequest $record) => ['meeting_url' => $record->meeting_url])
+                    ->form([\Filament\Forms\Components\TextInput::make('meeting_url')->label('Meeting link')->url()->required()->maxLength(500)->placeholder('https://meet.google.com/abc-defg-hij')])
+                    ->action(function (VideoCallRequest $record, array $data) {
+                        $record->update(['meeting_url' => $data['meeting_url'], 'status' => 'answered', 'staff_id' => $record->staff_id ?? auth()->id(), 'answered_at' => $record->answered_at ?? now()]);
+                        $text = __('shop.video.link_message', ['store' => \App\Support\Settings::get('store_name'), 'link' => $data['meeting_url']]);
+                        $messenger = app(\App\Messaging\Messenger::class);
+                        $messenger->whatsapp($record->phone, $text, 'video_call_link');
+                        if ($email = $record->user?->email) {
+                            $messenger->email($email, new \App\Mail\ShopMessage(__('shop.video.link_subject', ['store' => \App\Support\Settings::get('store_name')]), [$text]), 'video_call_link');
+                        }
+                        \Filament\Notifications\Notification::make()->success()->title('Meeting link sent')->body('Now open the same link yourself and let the customer in.')->send();
+                    }),
                 Tables\Actions\Action::make('whatsapp')->label('WhatsApp')->icon('heroicon-o-chat-bubble-oval-left')->color('gray')
                     ->url(fn (VideoCallRequest $record) => 'https://wa.me/'.preg_replace('/\D/', '', $record->phone), true),
                 Tables\Actions\Action::make('done')->label('Done')->icon('heroicon-o-check')->color('gray')
