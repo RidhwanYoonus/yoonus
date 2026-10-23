@@ -46,6 +46,20 @@ class UserResource extends Resource
             Forms\Components\TextInput::make('referral_code')->disabled(),
             Forms\Components\TextInput::make('password')->password()->revealable()->dehydrated(fn ($state) => filled($state))->required(fn (string $operation) => $operation === 'create'),
             Forms\Components\Toggle::make('marketing_opt_in'),
+            Forms\Components\Section::make('Affiliate commission')->columns(2)->collapsible()->collapsed(fn (?User $record) => ! $record?->affiliate_commission_off)
+                ->visible(fn (string $operation) => $operation === 'edit')
+                ->schema([
+                    Forms\Components\Toggle::make('affiliate_commission_off')->label('No affiliate commission for this customer')->inline(false)
+                        ->helperText('On: this customer\'s orders never earn commission for any affiliate (sign-up code, links or white page) and they see normal shop prices. Orders already placed are not changed — use "Cancel pending commission" below for those.'),
+                    Forms\Components\Actions::make([
+                        Forms\Components\Actions\Action::make('voidPending')->label('Cancel pending commission on their orders')->color('danger')->icon('heroicon-o-x-circle')
+                            ->requiresConfirmation()->modalDescription('Affiliate commission on this customer\'s orders that are not delivered yet is cancelled. Money already available or collected is not touched.')
+                            ->action(function (?User $record) {
+                                $n = app(\App\Affiliates\AffiliateService::class)->voidPending(customer: $record);
+                                \Filament\Notifications\Notification::make()->success()->title($n.' commission line(s) cancelled')->send();
+                            }),
+                    ]),
+                ]),
             Forms\Components\Section::make('Affiliate prices')->columns(2)->collapsible()
                 ->visible(fn (?User $record) => (bool) $record?->signup_affiliate_id)
                 ->description('This customer signed up with an affiliate\'s code and sees that affiliate\'s white-page prices (mark-up) while signed in. If the customer complains, switch it off here or use "Remove affiliate link" at the top.')

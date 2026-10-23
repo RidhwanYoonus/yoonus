@@ -33,6 +33,7 @@ class User extends Authenticatable implements FilamentUser
             'is_tourist' => 'boolean',
             'affiliate_markup_on' => 'boolean',
             'last_login_at' => 'datetime',
+            'affiliate_commission_off' => 'boolean',
             'id_saved_at' => 'datetime',
             'is_admin' => 'boolean',
             'is_staff' => 'boolean',
@@ -103,7 +104,7 @@ class User extends Authenticatable implements FilamentUser
      */
     public function linkedAffiliate(): ?Affiliate
     {
-        if (! $this->signup_affiliate_id) {
+        if (! $this->signup_affiliate_id || $this->affiliate_commission_off) {
             return null;
         }
         $affiliate = $this->signupAffiliate;

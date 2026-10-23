@@ -31,7 +31,7 @@ class AffiliateService
     public function record(Order $order): void
     {
         $affiliate = $order->affiliate;
-        if (! $affiliate || AffiliateCommission::where('order_id', $order->id)->exists()) {
+        if (! $affiliate || AffiliateCommission::where('order_id', $order->id)->exists() || $order->user?->affiliate_commission_off) {
             return;
         }
         // Level from this month's sales before this order, and campaign boosters running now.
@@ -376,6 +376,22 @@ class AffiliateService
         return ['making', Money::toAed($base), Money::toAed($rate), Money::percentOf($base, $rate)];
     }
 
+    /**
+     * Cancel commission not earned yet (orders not delivered), for one affiliate and/or one customer's orders.
+     * It stays cancelled whatever happens to the order later. Returns how many lines were cancelled.
+     */
+    public function voidPending(?Affiliate $affiliate = null, ?User $customer = null): int
+    {
+        if (! $affiliate && ! $customer) {
+            return 0;
+        }
+
+        return AffiliateCommission::where('status', 'pending')
+            ->when($affiliate, fn ($q) => $q->where('affiliate_id', $affiliate->id))
+            ->when($customer, fn ($q) => $q->whereIn('order_id', Order::where('user_id', $customer->id)->select('id')))
+            ->update(['status' => 'void', ...(Schema::hasColumn('affiliate_commissions', 'manual_void') ? ['manual_void' => true] : [])]);
+    }
+
     /** Follow the order: delivered → available, cancelled / refunded → void, otherwise pending. */
     public function sync(Order $order): void
     {
@@ -387,7 +403,8 @@ class AffiliateService
             $order->status === 'delivered' => 'available',
             default => 'pending',
         };
-        $changed = AffiliateCommission::where('order_id', $order->id)->where('status', '!=', $status)->get()
+        $changed = AffiliateCommission::where('order_id', $order->id)->where('status', '!=', $status)
+            ->when(Schema::hasColumn('affiliate_commissions', 'manual_void'), fn ($q) => $q->where('manual_void', false))->get()
             ->each(fn (AffiliateCommission $c) => $c->update([
                 'status' => $status,
                 'available_at' => $status === 'available' ? ($c->available_at ?? now()) : null,

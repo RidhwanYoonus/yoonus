@@ -280,7 +280,14 @@ class AffiliateResource extends Resource
             ->requiresConfirmation()
             ->modalHeading(fn (Affiliate $record) => ($record->is_active ? 'Disable ' : 'Activate ').$record->code.'?')
             ->modalDescription(fn (Affiliate $record) => $record->is_active ? self::DISABLE_NOTE : 'Their link, own page and coupon code work again.')
-            ->action(function (Affiliate $record) use ($after) {
+            ->form(fn (Affiliate $record) => $record->is_active ? [
+                \Filament\Forms\Components\Checkbox::make('void_pending')->label('Also cancel their commission on orders not delivered yet')
+                    ->helperText('Money already available or collected is not touched.'),
+            ] : [])
+            ->action(function (Affiliate $record, array $data) use ($after) {
+                if ($record->is_active && ! empty($data['void_pending'])) {
+                    app(\App\Affiliates\AffiliateService::class)->voidPending($record);
+                }
                 self::setActive($record, ! $record->is_active);
                 \Filament\Notifications\Notification::make()->success()->title($record->code.($record->is_active ? ' is active' : ' is disabled'))->send();
                 $after && $after();

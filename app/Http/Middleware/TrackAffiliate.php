@@ -46,6 +46,11 @@ class TrackAffiliate
                 $context->affiliate = $linked;
                 $context->whitePage = (bool) $request->user()->markupAffiliate();
             }
+            // Admin stopped affiliate commission for this customer: no affiliate at all (normal prices, nothing earned).
+            if (! $context->preview && $request->user()?->affiliate_commission_off) {
+                $context->affiliate = null;
+                $context->whitePage = false;
+            }
         } catch (Throwable) {
             // Before the database update has run.
         }
