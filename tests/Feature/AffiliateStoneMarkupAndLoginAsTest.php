@@ -103,4 +103,16 @@ class AffiliateStoneMarkupAndLoginAsTest extends TestCase
             ->assertActionVisible('loginAs')->callAction('loginAs')->assertRedirect(route('affiliate.dashboard'));
         $this->assertSame($this->affiliate->user_id, auth()->id());
     }
+
+    public function test_opening_the_admin_while_logged_in_as_returns_to_the_admin(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $this->actingAs($admin);
+        Livewire::test(ListAffiliates::class)->callTableAction('loginAs', $this->affiliate);
+        $this->assertSame($this->affiliate->user_id, auth()->id());
+
+        $this->get('/admin')->assertRedirect(url('/admin'));
+        $this->assertSame($admin->id, auth()->id());
+        $this->get('/admin')->assertOk();
+    }
 }
