@@ -215,6 +215,8 @@ class Settings extends Page implements HasForms
                         ->helperText('Checkout asks "Do you need a tax-free invoice?". Tourists who say yes must give a passport; you issue the tax-free tag (e.g. Planet) when the piece is handed over.'),
                     Forms\Components\TextInput::make('tax_free_min')->label('Minimum purchase for tax-free')->numeric()->minValue(0)->prefix('AED')
                         ->visible(fn (Forms\Get $get) => (bool) $get('tax_free_enabled'))->helperText('UAE rule: AED 250 including VAT.'),
+                    Forms\Components\Toggle::make('checkout_auto_account')->label('Guests: "Keep me signed in" at checkout')->inline(false)
+                        ->helperText('Ticked by default for guests. A free account is made with the order\'s email, the customer stays signed in on that phone and gets an email to choose a password.'),
                     Forms\Components\Select::make('delivery_location')->label('Customer\'s map location (delivery)')
                         ->options(['optional' => 'Ask — optional', 'required' => 'Required for delivery orders', 'off' => 'Not asked'])
                         ->helperText('At checkout the customer taps "Use my current location" or pastes a Google Maps link. The order shows "📍 Open in Google Maps" for the driver.'),
@@ -382,6 +384,15 @@ class Settings extends Page implements HasForms
                         ]),
                     Forms\Components\Placeholder::make('wa_hint')->label('')->columnSpanFull()
                         ->content('Sent automatically: order updates, the paid tax invoice, handover codes, abandoned-cart reminders and gold-drop alerts. Use "Send test WhatsApp" above to check.'),
+                ]),
+                Forms\Components\Tabs\Tab::make('Photos')->icon('heroicon-o-photo')->columns(2)->schema([
+                    Forms\Components\Placeholder::make('photo_touch_help')->hiddenLabel()->columnSpanFull()
+                        ->content('Ticked here = ticked by default on the product form ("Photo touch-up"). Staff can still untick it per save. Only photos added in that save are changed.'),
+                    Forms\Components\Toggle::make('photo_touch_light')->label('Improve light & sharpness')->inline(false),
+                    Forms\Components\Toggle::make('photo_touch_square')->label('Square photos with even background')->inline(false),
+                    Forms\Components\Select::make('photo_touch_background')->label('Clean background colour')->options(\App\Support\PhotoStudio::BACKGROUNDS),
+                    $secret('removebg_api_key', 'remove.bg API key (optional)')->placeholder('…')
+                        ->helperText(new \Illuminate\Support\HtmlString('For a clean background behind the piece. Create a key at <a href="https://www.remove.bg/dashboard#api-key" target="_blank" class="underline">remove.bg → API key</a> (50 free low-size photos a month; full size needs credits, about USD 0.20 a photo).')),
                 ]),
                 Forms\Components\Tabs\Tab::make('Email')->icon('heroicon-o-envelope')->columns(2)->schema([
                     Forms\Components\Select::make('mail_mailer')->label('Send email')->live()

@@ -16,6 +16,7 @@ class CreateProduct extends CreateRecord
     {
         $images = [...array_values($data['images'] ?? []), ...array_values($data['camera_photos'] ?? [])];
         unset($data['camera_photos']);
+        $data = ProductResource::touchUpNewPhotos($data, $images, []);
         $data['images'] = array_map(fn ($p) => Images::convertStored($p), array_slice($images, 0, 12));
 
         return $data;

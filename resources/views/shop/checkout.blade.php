@@ -48,7 +48,12 @@
         <div class="space-y-8">
             <section class="card p-4 sm:p-6">
                 <h2 class="font-display text-2xl">{{ __('shop.checkout.contact') }}</h2>
-                @guest<p class="mt-1 text-sm text-muted">{{ __('shop.checkout.guest_note') }} <a href="{{ route('login') }}" class="text-gold-700 underline">{{ __('shop.auth.login') }}</a></p>@endguest
+                @guest<p class="mt-1 text-sm text-muted">{{ __('shop.checkout.guest_note') }} <a href="{{ route('login') }}" class="text-gold-700 underline">{{ __('shop.auth.login') }}</a></p>
+                    @if (\App\Support\Settings::bool('checkout_auto_account', true))
+                        <label class="mt-3 flex items-start gap-2 rounded-xl bg-sand/60 px-3 py-2 text-sm"><input type="checkbox" name="keep_signed_in" value="1" @checked(old('keep_signed_in', '1')) class="mt-0.5 accent-gold-600">
+                            <span>{{ __('shop.checkout.keep_signed_in') }}<span class="block text-xs text-muted">{{ __('shop.checkout.keep_signed_in_note') }}</span></span></label>
+                    @endif
+                @endguest
                 <div class="mt-4 grid gap-4 sm:grid-cols-2">
                     <div><label class="label" for="name">{{ __('shop.checkout.name') }}</label><input id="name" name="name" x-model="form.name" required class="input" autocomplete="name"></div>
                     <div><label class="label" for="phone">{{ __('shop.checkout.phone') }}</label><input id="phone" name="phone" x-model="form.phone" required class="input" dir="ltr" placeholder="+971 50 000 0000" autocomplete="tel"></div>

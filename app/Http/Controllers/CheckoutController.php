@@ -164,6 +164,7 @@ class CheckoutController extends Controller
             return back()->withInput()->withErrors(['checkout' => $e->getMessage()]);
         }
         \App\Affiliates\PriceLocks::used($order);
+        $this->keepSignedIn($request, $order, $data);
         if ($request->boolean('accept_terms')) {
             // Proof for card disputes: when, from where, and which policy version the customer agreed to.
             $order->forceFill(['terms_accepted_at' => now(), 'terms_accepted_ip' => $request->ip(), 'terms_version' => \App\Support\Policies::UPDATED])->save();
@@ -310,6 +311,32 @@ class CheckoutController extends Controller
             'id_back' => [self::idPhotos() === 'required' && ! IdDocument::has($request, 'id_back') ? 'required' : 'nullable', ...$file],
             'save_id' => 'nullable|boolean',
         ];
+    }
+
+    /**
+     * Guest ticked "Keep me signed in on this phone": a free account is made with the order's email and the
+     * customer stays signed in (the next order needs no sign-in). An email that already has an account is never
+     * signed in this way; that customer signs in with their password.
+     */
+    private function keepSignedIn(Request $request, \App\Models\Order $order, array $data): void
+    {
+        if ($request->user() || ! $request->boolean('keep_signed_in') || ! \App\Support\Settings::bool('checkout_auto_account', true)) {
+            return;
+        }
+        $email = strtolower($data['email']);
+        if (\App\Models\User::where('email', $email)->exists()) {
+            return;
+        }
+        $user = \App\Models\User::create([
+            'name' => $data['name'], 'email' => $email, 'phone' => $data['phone'], 'password' => \Illuminate\Support\Str::random(40),
+            'locale' => app()->getLocale(), 'marketing_opt_in' => false,
+        ]);
+        if (\App\Shop\PhoneVerification::isVerified($request, $data['phone'])) {
+            app(\App\Shop\PhoneVerification::class)->markUser($user, \App\Shop\PhoneVerification::normalise($data['phone']));
+        }
+        $order->forceFill(['user_id' => $user->id])->save();
+        app(\App\Http\Controllers\Auth\AuthController::class)->signIn($request, $user);
+        rescue(fn () => \App\Http\Controllers\Auth\PasswordResetController::sendLink($user, 'account_created'), null, false);
     }
 
     /** Coordinates from a Google Maps link; short links (maps.app.goo.gl) are opened to see where they lead. */

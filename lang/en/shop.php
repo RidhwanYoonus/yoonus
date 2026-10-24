@@ -138,6 +138,7 @@ return [
     ],
 
     'checkout' => [
+        'keep_signed_in' => 'Keep me signed in on this phone', 'keep_signed_in_note' => 'We make a free account with your email, so your next order needs no sign-in and you can follow your orders.',
         'press_again' => 'Please check the new total and press Place order again.',
         'title' => 'Checkout', 'delivery_paused' => 'Paused at the moment', 'no_fulfilment' => 'Delivery and pickup are both unavailable right now — please contact us to order.', 'contact' => 'Contact details', 'guest_note' => 'Checking out as a guest. Have an account?',
         'name' => 'Full name', 'phone' => 'Mobile number', 'email' => 'Email address',
@@ -281,6 +282,15 @@ return [
         'declined' => 'The payment did not go through. Please check the card or try another one.', 'back' => 'Back to my order',
         'saved_title' => 'Saved cards', 'saved_none' => 'No saved cards. Tick "Save this card" when you pay to add one.',
         'remove' => 'Remove', 'removed' => 'Card removed.', 'saved_note' => 'Cards are kept safely by Stripe, not on our website.',
+    ],
+
+    'reset' => [
+        'title' => 'Forgot your password?', 'intro' => 'Enter your email and we send you a link to choose a new password.', 'forgot' => 'Forgot password?',
+        'send' => 'Send the link', 'sent' => 'If this email has an account, the link is on its way. Please check your inbox (and spam).',
+        'subject' => 'Choose a new password', 'line' => 'Tap the button to choose a new password. The link works for 60 minutes.',
+        'created_subject' => 'Your account is ready', 'created_line' => 'We made an account with your order so you stay signed in and can follow your orders. Tap the button to choose a password for signing in on other devices.',
+        'button' => 'Choose my password', 'choose' => 'Choose your password', 'save' => 'Save password and sign in',
+        'done' => 'Your password is saved. You are signed in.', 'invalid' => 'This link has expired or was already used. Please ask for a new one.',
     ],
 
     'form' => [

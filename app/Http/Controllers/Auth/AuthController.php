@@ -114,9 +114,10 @@ class AuthController extends Controller
         return redirect()->intended(route('account'))->with('status', __('shop.auth.welcome'));
     }
 
+    /** Customers stay signed in on their phone (remember-me cookie), not only for one visit. */
     public function signIn(Request $request, User $user): void
     {
-        Auth::login($user);
+        Auth::login($user, remember: true);
         $this->keepCart($request);
     }
 

@@ -51,6 +51,18 @@ class ProductResource extends Resource
         return 'danger';
     }
 
+    /** Photo touch-up (ticked in the form) for the photos added in this save only; the tick boxes are not stored. */
+    public static function touchUpNewPhotos(array $data, array $images, array $before): array
+    {
+        $o = ['light' => (bool) ($data['touch_light'] ?? false), 'square' => (bool) ($data['touch_square'] ?? false), 'background' => (string) ($data['touch_background'] ?? 'keep')];
+        unset($data['touch_light'], $data['touch_square'], $data['touch_background']);
+        foreach (array_diff($images, $before) as $path) {
+            \App\Support\PhotoStudio::improve($path, $o);
+        }
+
+        return $data;
+    }
+
     public static function form(Form $form): Form
     {
 
@@ -145,6 +157,16 @@ class ProductResource extends Resource
                         ->extraInputAttributes(['capture' => 'environment'])   // opens the back camera straight away on phones
                         ->placeholder('📷 Tap to open the camera')
                         ->helperText('On a phone this opens the back camera. Photos taken here are added after the images above when you save.'),
+                    Forms\Components\Fieldset::make('Photo touch-up (new photos only)')->columns(['default' => 1, 'sm' => 3])->schema([
+                        Forms\Components\Checkbox::make('touch_light')->label('Improve light & sharpness')->default(fn () => \App\Support\Settings::bool('photo_touch_light'))->formatStateUsing(fn ($state) => $state ?? \App\Support\Settings::bool('photo_touch_light'))
+                            ->helperText('Evens out dark or too-bright photos, adds a little contrast. Gold colour is kept.'),
+                        Forms\Components\Checkbox::make('touch_square')->label('Square, even background')->default(fn () => \App\Support\Settings::bool('photo_touch_square'))->formatStateUsing(fn ($state) => $state ?? \App\Support\Settings::bool('photo_touch_square'))
+                            ->helperText('Every piece shows the same shape in the shop.'),
+                        Forms\Components\Select::make('touch_background')->label('Background')->options(\App\Support\PhotoStudio::BACKGROUNDS)
+                            ->default(fn () => \App\Support\Settings::get('photo_touch_background', 'keep'))->formatStateUsing(fn ($state) => $state ?? \App\Support\Settings::get('photo_touch_background', 'keep'))->selectablePlaceholder(false)
+                            ->disabled(fn () => \App\Support\PhotoStudio::removeBgKey() === '')
+                            ->helperText(fn () => \App\Support\PhotoStudio::removeBgKey() === '' ? 'Needs a remove.bg key (Settings → Photos) to cut the piece out.' : 'The piece is cut out and placed on this colour (uses 1 remove.bg credit per photo).'),
+                    ])->dehydrated(),
                     Forms\Components\FileUpload::make('video_path')->label('Product video (optional)')
                         ->disk('public')->directory('products/videos')->acceptedFileTypes(['video/mp4', 'video/quicktime', 'video/webm'])->maxSize(51200)
                         ->helperText('MP4 or MOV from your phone, up to 50 MB (about 20–40 seconds). It only loads when the customer taps play, so it does not slow down the page.'),
