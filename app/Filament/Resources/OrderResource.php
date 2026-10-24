@@ -67,6 +67,8 @@ class OrderResource extends Resource
             // Affiliate orders stand out (colour defined in the panel's render hook).
             ->recordClasses(fn (Order $record) => $record->affiliate_id ? 'affiliate-order-row' : null)
             ->columns([
+                Tables\Columns\TextColumn::make('order_place')->label('Ordered from')->toggleable(isToggledHiddenByDefault: true)
+                    ->state(fn (Order $record) => \App\Support\IpLocation::label($record))->placeholder('—'),
                 Tables\Columns\TextColumn::make('number')->searchable()->weight('bold')->copyable()
                     ->description(fn (Order $record) => $record->tax_free_requested ? '🛂 Tourist tax-free' : null),
                 Tables\Columns\TextColumn::make('affiliate.code')->visibleFrom('md')->label('Affiliate')->badge()->color('warning')->icon('heroicon-o-user-plus')->placeholder('—')
@@ -199,6 +201,14 @@ class OrderResource extends Resource
                 Infolists\Components\TextEntry::make('buyer_trn')->label('Buyer TRN')->placeholder('—'),
                 Infolists\Components\TextEntry::make('shipping_address')->label('Delivery')->placeholder(fn (Order $record) => $record->pickupBranch ? 'Pickup: '.$record->pickupBranch->name : '—')
                     ->formatStateUsing(fn ($state) => is_array($state) ? implode(', ', array_filter([$state['line1'] ?? null, $state['line2'] ?? null, $state['city'] ?? null, $state['zone'] ?? null])) : $state),
+                Infolists\Components\TextEntry::make('order_place')->label('Ordered from')
+                    ->state(fn (Order $record) => \App\Support\IpLocation::label($record))
+                    ->placeholder(fn (Order $record) => filled($record->order_ip ?? null) ? 'Location not found' : 'Not recorded (orders before this update)')
+                    ->helperText(fn (Order $record) => filled($record->order_ip ?? null) ? 'IP '.$record->order_ip.' · by internet address, an estimate (VPN / mobile data can show another city)' : null)
+                    ->badge(fn (Order $record) => filled($record->order_country ?? null) && $record->order_country !== 'AE')
+                    ->color(fn (Order $record) => filled($record->order_country ?? null) && $record->order_country !== 'AE' ? 'warning' : null)
+                    ->icon(fn (Order $record) => filled($record->order_country ?? null) && $record->order_country !== 'AE' ? 'heroicon-o-globe-alt' : null)
+                    ->visible(fn () => \Illuminate\Support\Facades\Schema::hasColumn('orders', 'order_ip')),
                 Infolists\Components\TextEntry::make('expected_at')->label(fn (Order $record) => $record->fulfilment === 'pickup' ? 'Ready to collect on (told to customer)' : 'Expected delivery (told to customer)')
                     ->date('D d M Y')->placeholder('Automatic estimate')->visible(fn () => \Illuminate\Support\Facades\Schema::hasColumn('orders', 'expected_at')),
                 Infolists\Components\TextEntry::make('delivery_map')->label('Customer\'s location')->state(fn (Order $record) => $record->deliveryMapUrl() ? '📍 Open in Google Maps' : null)

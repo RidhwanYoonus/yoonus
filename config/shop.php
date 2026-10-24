@@ -97,6 +97,7 @@ return [
         'pickup_ready_days' => 0,
         'order_cutoff' => '17:00',
         'working_days' => [1, 2, 3, 4, 5, 6],
+        'ip_lookup' => true,                    // city / country an order was placed from (by internet address)
         'checkout_auto_account' => true,        // guest checkout makes an account and keeps the customer signed in
         'stripe_embedded' => true,              // card form on our own page when the publishable key is set
         'delivery_location' => 'optional',      // customer's map pin at checkout: optional / required / off

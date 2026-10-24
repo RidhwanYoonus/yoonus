@@ -228,6 +228,8 @@ class Settings extends Page implements HasForms
                         Forms\Components\CheckboxList::make('working_days')->label('Working days')->columns(4)->columnSpan(2)
                             ->options([1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday', 7 => 'Sunday']),
                     ]),
+                    Forms\Components\Toggle::make('ip_lookup')->label('Find the city an order was placed from')->inline(false)
+                        ->helperText('Shown on the order as "Ordered from: Sharjah, United Arab Emirates" (by the customer\'s internet address). Uses Cloudflare\'s location, or the free ipapi.co look-up. Tip: in Cloudflare → Rules → Transform Rules → Managed Transforms switch on "Add visitor location headers" for the city without any look-up.'),
                     Forms\Components\Toggle::make('checkout_auto_account')->label('Guests: "Keep me signed in" at checkout')->inline(false)
                         ->helperText('Ticked by default for guests. A free account is made with the order\'s email, the customer stays signed in on that phone and gets an email to choose a password.'),
                     Forms\Components\Select::make('delivery_location')->label('Customer\'s map location (delivery)')

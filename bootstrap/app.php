@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Signing out from an old tab must never fail with "Page expired"; a forced sign-out is harmless.
         $middleware->validateCsrfTokens(except: ['webhooks/*', 'logout']);
         $middleware->trustProxies(at: '*');   // behind Cloudflare / load balancer
+        $middleware->append(\App\Http\Middleware\CloudflareClientIp::class);   // the customer's real address, not Cloudflare's
         $middleware->redirectGuestsTo(fn () => route('login'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -181,6 +181,7 @@ class CheckoutController extends Controller
             return back()->withInput()->withErrors(['checkout' => $e->getMessage()]);
         }
         \App\Affiliates\PriceLocks::used($order);
+        rescue(fn () => \App\Support\IpLocation::recordFor($order, $request), null, false);
         $this->keepSignedIn($request, $order, $data);
         if ($request->boolean('accept_terms')) {
             // Proof for card disputes: when, from where, and which policy version the customer agreed to.
