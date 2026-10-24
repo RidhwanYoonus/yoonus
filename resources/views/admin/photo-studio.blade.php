@@ -36,22 +36,49 @@
     .editor canvas { max-width: 96vw; max-height: 72vh; background: repeating-conic-gradient(#ddd 0% 25%, #fff 0% 50%) 50% / 24px 24px; touch-action: none; border-radius: 8px; }
     .editor .tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; color: #fff; }
     label.opt { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; }
+    .swatches { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .sw { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--line); padding: 0; position: relative; overflow: hidden; background-size: cover; background-position: center; }
+    .sw.on { outline: 3px solid var(--gold); outline-offset: 2px; }
+    .sw input[type=color] { position: absolute; inset: -8px; width: 60px; height: 60px; border: 0; padding: 0; cursor: pointer; }
+    .sw .x { position: absolute; top: 0; right: 0; background: rgba(0,0,0,.6); color: #fff; font-size: 11px; line-height: 1; padding: 2px 4px; border-radius: 0 0 0 6px; }
 </style>
 </head>
 <body>
 <div class="wrap">
     <a href="{{ $back }}">← Back to the product</a>
     <h1>Photo studio — {{ $product->name }}</h1>
-    <p class="muted">The piece is cut out and placed on a clean white background with a soft shadow, light evened out, all photos the same square size.
+    <p class="muted">The piece is cut out and placed on a clean background (white, colours, velvet, or a photo of your store) with a soft shadow, light evened out, all photos the same square size.
         It runs in this browser with a free AI model, so there's no cost and the photos are not sent to any other company.
         The first time, the browser downloads the model (about 45–115 MB) once; after that it is quick. Works best in Chrome or Edge on a computer.</p>
 
     <div class="box">
         <div class="bar" style="margin:0">
-            <button class="gold" id="all">✨ Make all photos white</button>
+            <button class="gold" id="all">✨ Do all photos</button>
             <label class="opt"><input type="checkbox" id="optShadow" checked> Soft shadow</label>
             <label class="opt"><input type="checkbox" id="optLight" checked> Even out light</label>
             <label class="opt">Size <input type="range" id="optSize" min="55" max="92" value="74"> <span id="sizeVal">74%</span></label>
+        </div>
+        <div style="margin-top:14px">
+            <div class="muted" style="margin-bottom:6px">Background <span id="bgName" style="color:var(--ink)"></span></div>
+            <div class="swatches" id="swatches">
+                @foreach ([['white', 'White', '#ffffff'], ['ivory', 'Ivory', '#f7f1e6'], ['grey', 'Soft grey', '#e9e9e7'], ['champagne', 'Champagne glow', 'radial-gradient(circle at 50% 40%, #fffaf0, #ead9b4)'],
+                    ['blush', 'Blush', 'radial-gradient(circle at 50% 40%, #fff6f4, #f1d3cf)'], ['sky', 'Pearl blue', 'radial-gradient(circle at 50% 40%, #f7fbff, #d6e2ee)'],
+                    ['emerald', 'Emerald velvet', 'radial-gradient(circle at 50% 40%, #1f5a4a, #0b2a22)'], ['navy', 'Royal blue velvet', 'radial-gradient(circle at 50% 40%, #29467e, #0d1b3a)'],
+                    ['black', 'Black velvet', 'radial-gradient(circle at 50% 40%, #3a3a3a, #0c0c0c)']] as [$k, $label, $css])
+                    <button type="button" class="sw" data-bg="{{ $k }}" title="{{ $label }}" aria-label="{{ $label }}" style="background: {{ $css }}"></button>
+                @endforeach
+                <label class="sw" title="Any colour" aria-label="Any colour" style="background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red)"><input type="color" id="bgColour" value="#f3e9d8"></label>
+                @foreach ($backgrounds as $b)
+                    <button type="button" class="sw" data-photo="{{ $b['url'] }}" title="{{ $b['label'] }}" aria-label="{{ $b['label'] }}" style="background-image: url('{{ $b['url'] }}')">
+                        @if ($b['path'])<span class="x" data-remove="{{ $b['path'] }}" title="Remove this background">✕</span>@endif</button>
+                @endforeach
+                <label class="sw" title="Add your store photo" aria-label="Add your store photo" style="display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer">+<input type="file" id="bgUpload" accept="image/*" hidden></label>
+            </div>
+            <div class="bar" id="photoOpts" style="margin:8px 0 0; display:none">
+                <label class="opt">Blur the store photo <input type="range" id="bgBlur" min="0" max="24" value="10"></label>
+                <label class="opt">Brighter <input type="range" id="bgLight" min="-30" max="40" value="10"></label>
+            </div>
+            <p class="muted" style="margin:6px 0 0">The "+" adds a photo of your shop or showroom as a background (kept for next time). A little blur makes the piece stand out.</p>
         </div>
         <div class="bar" style="margin:10px 0 0">
             <div class="progress"><div id="prog"></div></div>
@@ -68,7 +95,7 @@
                 </div>
                 <div class="status muted" data-status>{{ $p['original'] ? 'Already done in the studio. You can redo it or put the original back.' : 'Not done yet.' }}</div>
                 <div class="actions">
-                    <button data-run>✨ White background</button>
+                    <button data-run>✨ Do this photo</button>
                     <button data-edit disabled>🖌 Fix edges</button>
                     <button class="dark" data-save disabled>Save to shop</button>
                     <button data-restore @unless ($p['original']) style="display:none" @endunless>↩ Put original back</button>
@@ -94,12 +121,94 @@
 <script type="module">
 const TF = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1';
 const csrf = document.querySelector('meta[name=csrf-token]').content;
-const routes = { save: @js(route('admin.photo-studio.save', $product)), restore: @js(route('admin.photo-studio.restore', $product)) };
+const routes = { save: @js(route('admin.photo-studio.save', $product)), restore: @js(route('admin.photo-studio.restore', $product)),
+    bgAdd: @js(route('admin.photo-studio.bg.add')), bgRemove: @js(route('admin.photo-studio.bg.remove')) };
 const $ = (s, el = document) => el.querySelector(s);
 const prog = $('#prog'), modelStatus = $('#modelStatus');
 const opt = { shadow: () => $('#optShadow').checked, light: () => $('#optLight').checked, size: () => +$('#optSize').value / 100 };
 $('#optSize').addEventListener('input', () => { $('#sizeVal').textContent = $('#optSize').value + '%'; items.forEach(it => it.mask && render(it)); });
-['#optShadow', '#optLight'].forEach(id => $(id).addEventListener('change', () => items.forEach(it => it.mask && render(it))));
+['#optShadow', '#optLight'].forEach(id => $(id).addEventListener('change', () => { items.forEach(it => it.cut = null); items.forEach(it => it.mask && render(it)); }));
+
+// ---- Background: colours, soft gradients, or a (blurred) photo of the store. Last choice is remembered. ----
+const BG = {
+    white: ['White', '#ffffff'], ivory: ['Ivory', '#f7f1e6'], grey: ['Soft grey', '#e9e9e7'],
+    champagne: ['Champagne glow', ['#fffaf0', '#ead9b4']], blush: ['Blush', ['#fff6f4', '#f1d3cf']], sky: ['Pearl blue', ['#f7fbff', '#d6e2ee']],
+    emerald: ['Emerald velvet', ['#1f5a4a', '#0b2a22'], true], navy: ['Royal blue velvet', ['#29467e', '#0d1b3a'], true], black: ['Black velvet', ['#3a3a3a', '#0c0c0c'], true],
+};
+const remembered = (() => { try { return JSON.parse(localStorage.getItem('studioBg') || 'null'); } catch (e) { return null; } })();
+let bg = remembered && (remembered.key || remembered.colour) ? remembered : { key: 'white' };
+const bgPhotos = {};
+function rerender() { items.forEach(it => it.mask && render(it)); }
+function remember() { try { localStorage.setItem('studioBg', JSON.stringify({ key: bg.key, colour: bg.colour })); } catch (e) {} }
+function markBg() {
+    document.querySelectorAll('.sw').forEach(b => b.classList.toggle('on', !! ((bg.key && b.dataset.bg === bg.key) || (bg.photo && b.dataset.photo === bg.photo) || (bg.colour && b.contains($('#bgColour'))))));
+    $('#photoOpts').style.display = bg.photo ? '' : 'none';
+    $('#bgName').textContent = bg.photo ? '— store photo' : bg.colour ? '— ' + bg.colour : '— ' + BG[bg.key][0];
+    $('#all').textContent = '✨ Do all photos';
+}
+function isDark() {
+    if (bg.photo) return +$('#bgLight').value < -10;
+    const hex = bg.colour || (Array.isArray(BG[bg.key][1]) ? BG[bg.key][1][1] : BG[bg.key][1]);
+    const n = parseInt(hex.slice(1), 16);
+    return (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) < 110;
+}
+async function photoBitmap(url) {
+    return bgPhotos[url] ??= createImageBitmap(await (await fetch(url)).blob());
+}
+async function paintBackground(o) {
+    if (bg.photo) {
+        const img = await photoBitmap(bg.photo);
+        const s = Math.max(OUT / img.width, OUT / img.height), w = img.width * s, h = img.height * s;
+        const b = +$('#bgBlur').value;
+        o.imageSmoothingQuality = 'high';
+        if (b && 'filter' in o && CSS.supports?.('filter', 'blur(1px)')) {
+            // Real blur (Chrome, Edge, Firefox); drawn a little larger so the edges do not fade.
+            const pad = b * 6;
+            o.filter = `blur(${b * 2.5}px)`;
+            o.drawImage(img, (OUT - w) / 2 - pad, (OUT - h) / 2 - pad, w + pad * 2, h + pad * 2);
+            o.filter = 'none';
+        } else {
+            // Other browsers: draw small, then scale up smoothly.
+            const k = 1 + b * 1.5, small = canvas(Math.max(8, Math.round(OUT / k)), Math.max(8, Math.round(OUT / k)));
+            const sx = small.getContext('2d'); sx.imageSmoothingQuality = 'high';
+            sx.drawImage(img, (OUT - w) / 2 / k, (OUT - h) / 2 / k, w / k, h / k);
+            o.drawImage(small, 0, 0, OUT, OUT);
+        }
+        const l = +$('#bgLight').value;
+        if (l) { o.fillStyle = l > 0 ? `rgba(255,255,255,${l / 100})` : `rgba(0,0,0,${-l / 100})`; o.fillRect(0, 0, OUT, OUT); }
+        return;
+    }
+    const v = bg.colour || BG[bg.key][1];
+    if (Array.isArray(v)) {
+        const g = o.createRadialGradient(OUT / 2, OUT * 0.4, OUT * 0.05, OUT / 2, OUT * 0.45, OUT * 0.75);
+        g.addColorStop(0, v[0]); g.addColorStop(1, v[1]);
+        o.fillStyle = g;
+    } else { o.fillStyle = v; }
+    o.fillRect(0, 0, OUT, OUT);
+}
+document.querySelectorAll('[data-bg]').forEach(b => b.onclick = () => { bg = { key: b.dataset.bg }; remember(); markBg(); rerender(); });
+$('#bgColour').addEventListener('input', e => { bg = { colour: e.target.value }; remember(); markBg(); rerender(); });
+function bindPhoto(b) { b.onclick = e => { if (e.target.dataset.remove) return; bg = { photo: b.dataset.photo }; markBg(); rerender(); }; }
+document.querySelectorAll('[data-photo]').forEach(bindPhoto);
+['#bgBlur', '#bgLight'].forEach(id => $(id).addEventListener('input', rerender));
+document.querySelectorAll('[data-remove]').forEach(x => x.onclick = async e => {
+    e.stopPropagation();
+    if (! confirm('Remove this background photo?')) return;
+    await fetch(routes.bgRemove, { method: 'POST', headers: { 'X-CSRF-TOKEN': csrf, 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ path: x.dataset.remove }) });
+    x.closest('.sw').remove();
+    if (bg.photo) { bg = { key: 'white' }; markBg(); rerender(); }
+});
+$('#bgUpload').addEventListener('change', async e => {
+    const f = e.target.files[0]; if (! f) return;
+    const body = new FormData(); body.append('file', f);
+    const r = await fetch(routes.bgAdd, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': csrf, Accept: 'application/json' } });
+    if (! r.ok) { alert('Could not add this photo.'); return; }
+    const j = await r.json();
+    const b = Object.assign(document.createElement('button'), { type: 'button', className: 'sw', title: 'Store photo' });
+    b.dataset.photo = j.url; b.style.backgroundImage = `url('${j.url}')`;
+    e.target.closest('.sw').before(b); bindPhoto(b);
+    bg = { photo: j.url }; markBg(); rerender();
+});
 
 // ---- The AI model: BiRefNet (MIT licence, best for jewellery) on WebGPU; ORMBG (Apache-2.0, smaller) otherwise. ----
 let segmenter = null, loading = null;
@@ -169,8 +278,8 @@ async function run(it) {
             px[i] = px[i + 1] = px[i + 2] = 255; px[i + 3] = a;
         }
         tx.putImageData(d, 0, 0);
-        it.mask = tmp;
-        render(it);
+        it.mask = tmp; it.cut = null;
+        await render(it);
         status(it, 'Done — check it, fix edges if needed, then Save to shop.', 'ok');
         $('[data-edit]', it.el).disabled = false;
         $('[data-save]', it.el).disabled = false;
@@ -189,7 +298,27 @@ function lut(meanLum) {
     return t;
 }
 
-function render(it) {
+async function render(it) {
+    if (! it.cut) buildCut(it);
+    const { cut, x0, y0, bw, bh } = it.cut;
+    // Background, then the piece centred (a little low) with a soft shadow.
+    const out = $('[data-out]', it.el);
+    const draft = canvas(OUT, OUT), o = draft.getContext('2d');
+    await paintBackground(o);
+    const s = Math.min(OUT * opt.size() / bw, OUT * opt.size() / bh);
+    const dw = bw * s, dh = bh * s, dx = (OUT - dw) / 2, dy = (OUT - dh) / 2 + OUT * 0.02;
+    o.save();
+    if (opt.shadow()) { o.shadowColor = isDark() ? 'rgba(0, 0, 0, 0.55)' : 'rgba(70, 52, 20, 0.22)'; o.shadowBlur = OUT * 0.035; o.shadowOffsetY = OUT * 0.014; }
+    o.imageSmoothingQuality = 'high';
+    o.drawImage(cut, x0, y0, bw, bh, dx, dy, dw, dh);
+    o.restore();
+    out.width = OUT; out.height = OUT;
+    out.getContext('2d').drawImage(draft, 0, 0);
+    it.done = true;
+}
+
+// The piece cut out with the light evened (kept until the mask or the light option changes).
+function buildCut(it) {
     const w = it.src.width, h = it.src.height;
     const cut = canvas(w, h), cx = cut.getContext('2d');
     cx.drawImage(it.src, 0, 0);
@@ -212,20 +341,7 @@ function render(it) {
         px[i + 3] = m[i + 3];
     }
     cx.putImageData(d, 0, 0);
-
-    // White square, the piece centred (a little low) with a soft warm shadow.
-    const out = $('[data-out]', it.el);
-    out.width = OUT; out.height = OUT;
-    const o = out.getContext('2d');
-    o.fillStyle = '#ffffff'; o.fillRect(0, 0, OUT, OUT);
-    const bw = x1 - x0 + 1, bh = y1 - y0 + 1, s = Math.min(OUT * opt.size() / bw, OUT * opt.size() / bh);
-    const dw = bw * s, dh = bh * s, dx = (OUT - dw) / 2, dy = (OUT - dh) / 2 + OUT * 0.02;
-    o.save();
-    if (opt.shadow()) { o.shadowColor = 'rgba(70, 52, 20, 0.22)'; o.shadowBlur = OUT * 0.035; o.shadowOffsetY = OUT * 0.014; }
-    o.imageSmoothingQuality = 'high';
-    o.drawImage(cut, x0, y0, bw, bh, dx, dy, dw, dh);
-    o.restore();
-    it.done = true;
+    it.cut = { cut, x0, y0, bw: x1 - x0 + 1, bh: y1 - y0 + 1 };
 }
 
 async function save(it) {
@@ -250,7 +366,7 @@ async function restore(it) {
     const r = await fetch(routes.restore, { method: 'POST', headers: { 'X-CSRF-TOKEN': csrf, Accept: 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify({ index: it.index, path: it.path }) });
     if (! r.ok) return status(it, 'Could not put the original back. Reload the page and try again.', 'err');
     const j = await r.json();
-    it.path = j.path; it.url = j.url; it.el.dataset.path = j.path; it.src = null; it.mask = null;
+    it.path = j.path; it.url = j.url; it.el.dataset.path = j.path; it.src = null; it.mask = null; it.cut = null;
     $('[data-now]', it.el).src = j.url;
     $('[data-restore]', it.el).style.display = 'none';
     $('[data-edit]', it.el).disabled = true; $('[data-save]', it.el).disabled = true;
@@ -281,7 +397,7 @@ ed.c.addEventListener('pointermove', e => ed.down && edPaint(e));
 ed.c.addEventListener('pointerup', () => ed.down = false);
 $('#edErase').onclick = () => { ed.mode = 'erase'; $('#edErase').classList.add('on'); $('#edKeep').classList.remove('on'); };
 $('#edKeep').onclick = () => { ed.mode = 'keep'; $('#edKeep').classList.add('on'); $('#edErase').classList.remove('on'); };
-$('#edDone').onclick = () => { ed.el.classList.remove('open'); render(ed.it); $('[data-save]', ed.it.el).disabled = false; };
+$('#edDone').onclick = () => { ed.el.classList.remove('open'); ed.it.cut = null; render(ed.it); $('[data-save]', ed.it.el).disabled = false; };
 
 items.forEach(it => {
     $('[data-run]', it.el).onclick = () => run(it);
@@ -289,6 +405,7 @@ items.forEach(it => {
     $('[data-restore]', it.el).onclick = () => restore(it);
     $('[data-edit]', it.el).onclick = () => { ed.it = it; ed.c.width = it.src.width; ed.c.height = it.src.height; edDraw(); ed.el.classList.add('open'); };
 });
+markBg();
 $('#all').onclick = async () => {
     $('#all').disabled = true;
     for (const it of items) await run(it);

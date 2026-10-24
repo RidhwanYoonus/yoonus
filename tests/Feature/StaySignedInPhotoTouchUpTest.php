@@ -156,7 +156,7 @@ class StaySignedInPhotoTouchUpTest extends TestCase
 
         $this->actingAs(User::factory()->create())->get(route('admin.photo-studio', $product))->assertForbidden();
         $this->actingAs(User::factory()->create(['is_admin' => true]));
-        $this->get(route('admin.photo-studio', $product))->assertOk()->assertSee('White background')->assertSee('BiRefNet_lite-ONNX', false)->assertSee($orig, false);
+        $this->get(route('admin.photo-studio', $product))->assertOk()->assertSee('Royal blue velvet')->assertSee('Do this photo')->assertSee('BiRefNet_lite-ONNX', false)->assertSee($orig, false);
 
         $white = \Illuminate\Http\UploadedFile::fake()->image('studio.jpg', 1600, 1600);
         $new = $this->post(route('admin.photo-studio.save', $product), ['index' => 0, 'path' => $orig, 'file' => $white])->assertOk()->json('path');
@@ -173,5 +173,21 @@ class StaySignedInPhotoTouchUpTest extends TestCase
         $this->assertSame([$orig], $product->images);
         $this->assertNull($product->photo_originals);
         Storage::disk('public')->assertMissing($new);
+    }
+
+    public function test_store_photos_can_be_added_as_studio_backgrounds_and_removed(): void
+    {
+        Storage::fake('public');
+        $product = Product::sole();
+        $this->actingAs(User::factory()->create())->post(route('admin.photo-studio.bg.add'), ['file' => \Illuminate\Http\UploadedFile::fake()->image('shop.jpg', 800, 600)])->assertForbidden();
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+        $path = $this->post(route('admin.photo-studio.bg.add'), ['file' => \Illuminate\Http\UploadedFile::fake()->image('shop.jpg', 800, 600)])->assertOk()->json('path');
+        Storage::disk('public')->assertExists($path);
+        $this->get(route('admin.photo-studio', $product))->assertSee($path, false);
+
+        $this->postJson(route('admin.photo-studio.bg.remove'), ['path' => $path])->assertOk();
+        Storage::disk('public')->assertMissing($path);
+        $this->assertSame([], Settings::get('studio_backgrounds'));
+        $this->postJson(route('admin.photo-studio.bg.remove'), ['path' => 'products/someone-else.jpg'])->assertOk();   // only its own list is touched
     }
 }
