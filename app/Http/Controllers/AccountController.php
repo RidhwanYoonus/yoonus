@@ -80,8 +80,8 @@ class AccountController extends Controller
             'id_number' => ['required', 'string', 'max:32', \App\Support\IdDocument::numberRule($request->input('id_type'))],
             'id_expiry' => ['nullable', 'date', 'after:today'],   // optional: not every customer has it at hand
             'id_country' => ['nullable', 'required_if:id_type,passport', \Illuminate\Validation\Rule::in(array_keys(\App\Support\TaxFree::countries()))],
-            'id_front' => [$photos === 'required' && ! $user?->id_front_path ? 'required' : 'nullable', ...$file],
-            'id_back' => [$photos === 'required' && ! $user?->id_back_path ? 'required' : 'nullable', ...$file],
+            'id_front' => [$photos === 'required' && ! $user?->id_front_path && ! \App\Support\IdDocument::has($request, 'id_front') ? 'required' : 'nullable', ...$file],
+            'id_back' => [$photos === 'required' && ! $user?->id_back_path && ! \App\Support\IdDocument::has($request, 'id_back') ? 'required' : 'nullable', ...$file],
             'is_tourist' => ['nullable', 'boolean'],
         ];
     }
@@ -90,11 +90,13 @@ class AccountController extends Controller
     {
         $number = \App\Support\IdDocument::normalise($data['id_type'], $data['id_number']);
         $changed = $user->id_type !== $data['id_type'] || $user->id_number !== $number;
+        $front = \App\Support\IdDocument::take($request, 'id_front');
+        $back = \App\Support\IdDocument::take($request, 'id_back');
         $user->forceFill([
             'id_type' => $data['id_type'], 'id_number' => $number, 'id_last4' => \App\Support\IdDocument::last4($number), 'id_expiry' => $data['id_expiry'] ?? null,
             // A different ID drops the photos of the old one; the same ID keeps them unless new ones are added.
-            'id_front_path' => $request->hasFile('id_front') ? \App\Support\IdDocument::store($request->file('id_front')) : ($changed ? null : $user->id_front_path),
-            'id_back_path' => $request->hasFile('id_back') ? \App\Support\IdDocument::store($request->file('id_back')) : ($changed ? null : $user->id_back_path),
+            'id_front_path' => $front ?? ($changed ? null : $user->id_front_path),
+            'id_back_path' => $back ?? ($changed ? null : $user->id_back_path),
             'id_saved_at' => now(),
             ...(\Illuminate\Support\Facades\Schema::hasColumn('users', 'id_country') ? ['id_country' => $data['id_type'] === 'passport' ? ($data['id_country'] ?? null) : null] : []),
             ...(\Illuminate\Support\Facades\Schema::hasColumn('users', 'is_tourist') && $request->has('is_tourist') ? ['is_tourist' => $request->boolean('is_tourist')] : []),

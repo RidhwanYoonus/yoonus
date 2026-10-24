@@ -7,7 +7,7 @@ return [
     'required_without' => 'حقل :attribute مطلوب.',
     'email' => 'يجب أن يكون :attribute بريدًا إلكترونيًا صحيحًا.',
     'unique' => ':attribute مستخدم من قبل.',
-    'confirmed' => 'تأكيد :attribute غير مطابق.',
+    'confirmed' => 'خانتا :attribute غير متطابقتين.',
     'numeric' => 'يجب أن يكون :attribute رقمًا.',
     'integer' => 'يجب أن يكون :attribute عددًا صحيحًا.',
     'digits' => 'يجب أن يتكون :attribute من :digits أرقام.',
@@ -22,7 +22,7 @@ return [
         'letters' => 'يجب أن تحتوي :attribute على حرف واحد على الأقل.',
         'numbers' => 'يجب أن تحتوي :attribute على رقم واحد على الأقل.',
         'mixed' => 'يجب أن تحتوي :attribute على حرف كبير وحرف صغير على الأقل.',
-        'uncompromised' => 'ظهرت :attribute هذه في تسريب بيانات. يرجى اختيار كلمة مرور أخرى.',
+        'uncompromised' => 'كلمة المرور هذه معروفة جدًا (وُجدت في قوائم كلمات مرور مسرّبة). يرجى اختيار كلمة أخرى.',
     ],
     'custom' => [
         'accept_terms' => ['accepted' => 'يرجى تأكيد موافقتك على الشروط والأحكام وسياسة عدم الاسترجاع وعدم الاستبدال.'],

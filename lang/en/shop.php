@@ -262,6 +262,10 @@ return [
     ],
 
     'auth' => [
+        'show_password' => 'Show password', 'hide_password' => 'Hide password',
+        'pw_len' => 'At least 8 characters', 'pw_case' => 'Capital and small letter (Aa)', 'pw_num' => 'A number (0-9)',
+        'pw_match' => 'Passwords match', 'pw_no_match' => 'The two passwords are not the same yet.', 'pw_checking' => 'Checking…',
+        'fix_above' => 'Please check the boxes marked in red above.',
         'google' => 'Continue with Google', 'or' => 'or', 'google_failed' => 'Google sign-in did not work. Please try again or use your email.', 'google_staff' => 'Staff accounts sign in with email and password.',
         'login' => 'Sign in', 'logout' => 'Sign out', 'register' => 'Create account', 'password' => 'Password', 'password_confirm' => 'Confirm password',
         'remember' => 'Keep me signed in', 'no_account' => 'New here?', 'marketing' => 'Send me offers and new arrivals',
@@ -494,6 +498,7 @@ return [
         'directions' => 'Get directions', 'whatsapp' => 'Hello, I would like to visit your showroom.'],
 
     'signup' => [
+        'photo_first' => 'Take a photo of your ID: we fill in the number and expiry date for you. The back of the Emirates ID works best.',
         'verify_optional' => 'Optional: verify it now with a code — or later. A verified number is needed to order.',
         'code_hint' => 'A friend’s or an affiliate partner’s code.',
         'title' => 'Speed up your first order (optional)',
@@ -526,6 +531,9 @@ return [
     ],
 
     'id' => [
+        'reading' => 'Reading your ID…', 'read_ok' => 'We filled in the ID details from your photo — please check them.',
+        'read_none' => 'We could not read the details from this photo. Please type them in.', 'attached_before' => 'Photo attached',
+        'uploading' => 'Uploading…', 'change' => 'Change',
         'saved_ok' => 'Your ID is saved. Checkout will use it automatically.',
         'profile_title' => 'Verification',
         'profile_intro' => 'Add your ID and verify your mobile once — checkout then takes seconds.',

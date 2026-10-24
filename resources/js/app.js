@@ -1,6 +1,10 @@
 import './bootstrap';
 import Alpine from 'alpinejs';
 import collapse from '@alpinejs/collapse';
+import { readIdPhoto, fillIdForm } from './id-reader';
+
+// ID photo → ID number / expiry boxes (partials/id-photo-input).
+window.shopIdReader = { readIdPhoto, fillIdForm };
 
 Alpine.plugin(collapse);
 

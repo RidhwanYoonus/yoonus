@@ -298,8 +298,8 @@ class CheckoutController extends Controller
             'id_number' => ['required', 'string', 'max:32', IdDocument::numberRule($request->input('id_type'))],
             'id_expiry' => ['nullable', 'date', 'after:today'],
             // Settings → Delivery & pickup → ID photos: optional (default), required, or not asked.
-            'id_front' => [self::idPhotos() === 'required' ? 'required' : 'nullable', ...$file],
-            'id_back' => [self::idPhotos() === 'required' ? 'required' : 'nullable', ...$file],
+            'id_front' => [self::idPhotos() === 'required' && ! IdDocument::has($request, 'id_front') ? 'required' : 'nullable', ...$file],
+            'id_back' => [self::idPhotos() === 'required' && ! IdDocument::has($request, 'id_back') ? 'required' : 'nullable', ...$file],
             'save_id' => 'nullable|boolean',
         ];
     }
@@ -339,8 +339,8 @@ class CheckoutController extends Controller
         $number = IdDocument::normalise($request->input('id_type'), $request->input('id_number'));
 
         return ['type' => $request->input('id_type'), 'number' => $number, 'last4' => IdDocument::last4($number), 'expiry' => $request->input('id_expiry'),
-            'front' => self::idPhotos() !== 'hidden' && $request->hasFile('id_front') ? IdDocument::store($request->file('id_front')) : null,
-            'back' => self::idPhotos() !== 'hidden' && $request->hasFile('id_back') ? IdDocument::store($request->file('id_back')) : null,
+            'front' => self::idPhotos() !== 'hidden' ? IdDocument::take($request, 'id_front') : null,
+            'back' => self::idPhotos() !== 'hidden' ? IdDocument::take($request, 'id_back') : null,
             'country' => $request->input('id_country') ?: null, 'saved' => false];
     }
 

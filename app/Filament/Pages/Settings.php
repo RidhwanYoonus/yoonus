@@ -214,6 +214,8 @@ class Settings extends Page implements HasForms
                     Forms\Components\Select::make('id_photos')->label('Photos of the ID (front and back)')->required()
                         ->options(['optional' => 'Optional — customer may upload', 'required' => 'Required — front and back must be uploaded', 'hidden' => 'Not asked'])
                         ->helperText('Photos are stored privately; only admins can open them from the order.'),
+                    Forms\Components\Toggle::make('id_auto_read')->label('Read ID details from the photo')->inline(false)
+                        ->helperText('When a customer adds a photo of the Emirates ID or passport, the ID number, expiry date and nationality are filled in for them (read on their own phone; they can correct it). Works best with the back of the Emirates ID or the passport photo page.'),
                     Forms\Components\Toggle::make('handover_otp')->label('Handover code on delivery / collection')->inline(false)
                         ->helperText('A 6-digit code is emailed and WhatsApped to the customer when the order is shipped (or ready for pickup). Staff must enter it to mark the order delivered.'),
                     Forms\Components\Toggle::make('product_store_map')->label('Show store map on every product page')->inline(false)

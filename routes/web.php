@@ -53,6 +53,7 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:login');
+    Route::post('/register/check', [AuthController::class, 'checkRegister'])->middleware('throttle:30,1')->name('register.check');
 });
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
@@ -88,6 +89,7 @@ Route::post('/admin/update-database', \App\Http\Controllers\Admin\DatabaseUpdate
 
 // Live video call with staff (per product, switchable in the admin).
 Route::post('/product/{product}/video-call', [\App\Http\Controllers\VideoCallController::class, 'store'])->middleware('throttle:5,10')->name('video-call.store');
+Route::post('/id-upload', \App\Http\Controllers\IdUploadController::class)->middleware('throttle:20,10')->name('id.upload');
 Route::get('/video-call/{call}', [\App\Http\Controllers\VideoCallController::class, 'show'])->name('video-call.show');
 Route::get('/video-call/{call}/status', [\App\Http\Controllers\VideoCallController::class, 'status'])->name('video-call.status');
 Route::get('/admin/video-calls/{id}/join', \App\Http\Controllers\Admin\VideoCallJoinController::class)

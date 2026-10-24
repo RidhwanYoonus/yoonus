@@ -37,13 +37,39 @@ class AuthController extends Controller
         return view('auth.register', ['seo' => Seo::page(__('shop.auth.register')), 'ref' => $request->query('ref')]);
     }
 
+    /** The rules for a new password (also checked live in the sign-up form). */
+    public static function passwordRule(): Password
+    {
+        return Password::min(8)->letters()->mixedCase()->numbers()->when(app()->isProduction(), fn ($rule) => $rule->uncompromised());
+    }
+
+    /** Checked when the customer leaves the email or password box, so the form is not sent back with an error. */
+    public function checkRegister(Request $request)
+    {
+        $errors = [];
+        if ($request->has('email')) {
+            $v = validator($request->only('email'), ['email' => 'required|email:rfc|max:191|unique:users,email']);
+            if ($v->fails()) {
+                $errors['email'] = $v->errors()->first('email');
+            }
+        }
+        if ($request->has('password')) {
+            $v = validator($request->only('password'), ['password' => ['required', self::passwordRule()]]);
+            if ($v->fails()) {
+                $errors['password'] = $v->errors()->first('password');
+            }
+        }
+
+        return response()->json(['ok' => $errors === [], 'errors' => $errors]);
+    }
+
     public function register(Request $request, ReferralService $referrals)
     {
         $data = $request->validate([
             'name' => 'required|string|max:120',
             'email' => 'required|email:rfc|max:191|unique:users,email',
             'phone' => ['nullable', 'string', 'max:32', 'regex:/^[+0-9 ()-]{7,}$/'],
-            'password' => ['required', 'confirmed', Password::min(8)->letters()->mixedCase()->numbers()->when(app()->isProduction(), fn ($rule) => $rule->uncompromised())],
+            'password' => ['required', 'confirmed', self::passwordRule()],
             'referral_code' => 'nullable|string|max:16',
             'marketing_opt_in' => 'nullable|boolean',
             'is_tourist' => 'nullable|boolean',
