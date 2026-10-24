@@ -106,6 +106,7 @@ class Product extends Model
         return [
             'images' => 'array',
             'sizes' => 'array',
+            'photo_originals' => 'array',
             'gold_colours' => 'array',
             'weight_grams' => 'decimal:3',
             'manufacturer_charge_value' => 'decimal:2',

@@ -16,6 +16,8 @@ class EditProduct extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('studio')->label('Photo studio — white background')->icon('heroicon-o-sparkles')->color('warning')
+                ->url(fn () => route('admin.photo-studio', $this->record)),
             Actions\Action::make('view')->url(fn () => route('product.show', $this->record))->openUrlInNewTab()->color('gray'),
             Actions\DeleteAction::make(),
         ];

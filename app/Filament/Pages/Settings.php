@@ -390,9 +390,8 @@ class Settings extends Page implements HasForms
                         ->content('Ticked here = ticked by default on the product form ("Photo touch-up"). Staff can still untick it per save. Only photos added in that save are changed.'),
                     Forms\Components\Toggle::make('photo_touch_light')->label('Improve light & sharpness')->inline(false),
                     Forms\Components\Toggle::make('photo_touch_square')->label('Square photos with even background')->inline(false),
-                    Forms\Components\Select::make('photo_touch_background')->label('Clean background colour')->options(\App\Support\PhotoStudio::BACKGROUNDS),
-                    $secret('removebg_api_key', 'remove.bg API key (optional)')->placeholder('…')
-                        ->helperText(new \Illuminate\Support\HtmlString('For a clean background behind the piece. Create a key at <a href="https://www.remove.bg/dashboard#api-key" target="_blank" class="underline">remove.bg → API key</a> (50 free low-size photos a month; full size needs credits, about USD 0.20 a photo).')),
+                    Forms\Components\Placeholder::make('photo_studio_help')->label('White background (free)')->columnSpanFull()
+                        ->content('On any product: "Photo studio — white background" at the top of the edit page. The piece is cut out by a free AI model in your browser and placed on white with a soft shadow; the original photo is kept and can be put back.'),
                 ]),
                 Forms\Components\Tabs\Tab::make('Email')->icon('heroicon-o-envelope')->columns(2)->schema([
                     Forms\Components\Select::make('mail_mailer')->label('Send email')->live()

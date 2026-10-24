@@ -101,6 +101,11 @@ Route::post('/product/{product}/video-call', [\App\Http\Controllers\VideoCallCon
 Route::post('/id-upload', \App\Http\Controllers\IdUploadController::class)->middleware('throttle:20,10')->name('id.upload');
 Route::get('/video-call/{call}', [\App\Http\Controllers\VideoCallController::class, 'show'])->name('video-call.show');
 Route::get('/video-call/{call}/status', [\App\Http\Controllers\VideoCallController::class, 'status'])->name('video-call.status');
+Route::middleware('auth')->group(function () {
+    Route::get('/studio/products/{product}', [\App\Http\Controllers\Admin\PhotoStudioController::class, 'show'])->name('admin.photo-studio');
+    Route::post('/studio/products/{product}/save', [\App\Http\Controllers\Admin\PhotoStudioController::class, 'save'])->name('admin.photo-studio.save');
+    Route::post('/studio/products/{product}/restore', [\App\Http\Controllers\Admin\PhotoStudioController::class, 'restore'])->name('admin.photo-studio.restore');
+});
 Route::get('/admin/video-calls/{id}/join', \App\Http\Controllers\Admin\VideoCallJoinController::class)
     ->middleware(['auth', \App\Http\Middleware\AdminSecurity::class])->whereNumber('id')->name('admin.video-call.join');
 Route::get('/admin/id-documents/{owner}/{id}/{side}', \App\Http\Controllers\Admin\IdDocumentController::class)

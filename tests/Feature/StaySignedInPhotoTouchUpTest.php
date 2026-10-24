@@ -123,18 +123,6 @@ class StaySignedInPhotoTouchUpTest extends TestCase
         $img = imagecreatefromstring(Storage::disk('public')->get($path));
         $this->assertSame(imagesx($img), imagesy($img));
         $this->assertGreaterThan(0.25, $this->brightness($path));   // was 50/255 ≈ 0.2
-
-        // Clean background through remove.bg.
-        Settings::set(['removebg_api_key' => 'rb_test']);
-        $cut = imagecreatetruecolor(200, 300);
-        imagefill($cut, 0, 0, imagecolorallocate($cut, 255, 255, 255));
-        ob_start();
-        imagejpeg($cut);
-        Http::fake(['api.remove.bg/*' => Http::response(ob_get_clean(), 200, ['Content-Type' => 'image/jpeg'])]);
-        $p2 = $this->photo(300, 300, 90);
-        PhotoStudio::improve($p2, ['background' => 'ffffff']);
-        Http::assertSent(fn ($r) => str_contains($r->url(), 'api.remove.bg') && $r->hasHeader('X-Api-Key', 'rb_test'));
-        $this->assertGreaterThan(0.95, $this->brightness($p2));
     }
 
     public function test_product_form_touches_up_only_the_new_photos(): void
@@ -157,5 +145,33 @@ class StaySignedInPhotoTouchUpTest extends TestCase
         $this->assertSame([400, 300], [imagesx($first), imagesy($first)]);   // the earlier photo is not touched
         $img = imagecreatefromstring(Storage::disk('public')->get($saved[1]));
         $this->assertSame(imagesx($img), imagesy($img));
+    }
+
+    public function test_photo_studio_saves_the_white_photo_keeps_the_original_and_can_put_it_back(): void
+    {
+        Storage::fake('public');
+        $orig = $this->photo(400, 300, 90);
+        $product = Product::sole();
+        $product->update(['images' => [$orig]]);
+
+        $this->actingAs(User::factory()->create())->get(route('admin.photo-studio', $product))->assertForbidden();
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+        $this->get(route('admin.photo-studio', $product))->assertOk()->assertSee('White background')->assertSee('BiRefNet_lite-ONNX', false)->assertSee($orig, false);
+
+        $white = \Illuminate\Http\UploadedFile::fake()->image('studio.jpg', 1600, 1600);
+        $new = $this->post(route('admin.photo-studio.save', $product), ['index' => 0, 'path' => $orig, 'file' => $white])->assertOk()->json('path');
+        $product->refresh();
+        $this->assertSame([$new], $product->images);
+        $this->assertSame([$new => $orig], $product->photo_originals);
+        Storage::disk('public')->assertExists($orig);   // the original is kept
+
+        // Stale page (photos changed meanwhile) is refused.
+        $this->post(route('admin.photo-studio.save', $product), ['index' => 0, 'path' => $orig, 'file' => $white])->assertStatus(409);
+
+        $this->postJson(route('admin.photo-studio.restore', $product), ['index' => 0, 'path' => $new])->assertOk();
+        $product->refresh();
+        $this->assertSame([$orig], $product->images);
+        $this->assertNull($product->photo_originals);
+        Storage::disk('public')->assertMissing($new);
     }
 }

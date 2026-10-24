@@ -89,8 +89,6 @@ return [
         'affiliate_rate_backgrounds' => [],      // photos behind the affiliates' gold-rate picture
         'photo_touch_light' => false,           // product form: photo touch-up ticked by default
         'photo_touch_square' => false,
-        'photo_touch_background' => 'keep',
-        'removebg_api_key' => null,
         'checkout_auto_account' => true,        // guest checkout makes an account and keeps the customer signed in
         'stripe_embedded' => true,              // card form on our own page when the publishable key is set
         'delivery_location' => 'optional',      // customer's map pin at checkout: optional / required / off

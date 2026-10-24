@@ -3,39 +3,26 @@
 namespace App\Support;
 
 use Illuminate\Support\Facades\Storage;
-use RuntimeException;
 
 /**
  * Photo touch-up for new product photos (only when the admin ticks it):
  *  - light: evens out brightness (gamma), adds a little contrast and sharpness;
  *  - square: puts the photo on an even square background, so all pieces line up in the shop;
- *  - background: a clean background colour behind the piece (needs a remove.bg key: the piece is cut out there).
+ * A white background with the piece cut out is done in the Photo studio (in the browser, free).
  * The gold's own colour is never shifted.
  */
 class PhotoStudio
 {
-    public const BACKGROUNDS = ['keep' => 'Keep the photo\'s own background', 'ffffff' => 'White', 'f7f3ec' => 'Ivory (warm white)', 'ececec' => 'Soft grey', '111111' => 'Black'];
-
-    public static function removeBgKey(): string
-    {
-        return trim((string) Settings::get('removebg_api_key'));
-    }
-
-    /** @param array{light?: bool, square?: bool, background?: string} $o */
+    /** @param array{light?: bool, square?: bool} $o */
     public static function improve(string $path, array $o, string $disk = 'public'): void
     {
-        $o += ['light' => false, 'square' => false, 'background' => 'keep'];
-        $bg = preg_match('/^[0-9a-f]{6}$/', (string) $o['background']) ? $o['background'] : null;
-        if (! $o['light'] && ! $o['square'] && ! $bg) {
+        $o += ['light' => false, 'square' => false];
+        if (! $o['light'] && ! $o['square']) {
             return;
         }
         $file = Storage::disk($disk)->path($path);
         if (! is_file($file)) {
             return;
-        }
-        // Background first (the cut-out works best on the original photo).
-        if ($bg && self::removeBgKey() !== '') {
-            rescue(fn () => self::replaceBackground($file, $bg), null, true);
         }
         $img = Images::load($file, 2000);
         if (! $img) {
@@ -44,8 +31,8 @@ class PhotoStudio
         if ($o['light']) {
             self::light($img);
         }
-        if ($o['square'] || $bg) {
-            $img = self::square($img, $bg);
+        if ($o['square']) {
+            $img = self::square($img, null);
         }
         imagejpeg($img, $file, 92);   // stored as WebP right after (Images::convertStored)
         imagedestroy($img);
@@ -116,17 +103,5 @@ class PhotoStudio
         }
 
         return array_map(fn ($v) => (int) round($v / $n), $t);
-    }
-
-    /** remove.bg cuts the piece out and puts it on the colour; the file is replaced in place. */
-    private static function replaceBackground(string $file, string $hex): void
-    {
-        $res = SecureHttp::send(fn ($http) => $http->timeout(60)->withHeaders(['X-Api-Key' => self::removeBgKey()])
-            ->attach('image_file', (string) file_get_contents($file), 'photo.jpg')
-            ->post('https://api.remove.bg/v1.0/removebg', ['size' => 'auto', 'bg_color' => $hex, 'format' => 'jpg', 'crop' => 'true', 'crop_margin' => '8%', 'type' => 'product']));
-        if (! $res->successful()) {
-            throw new RuntimeException('remove.bg: '.($res->json('errors.0.title') ?? 'HTTP '.$res->status()));
-        }
-        file_put_contents($file, $res->body());
     }
 }

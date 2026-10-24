@@ -54,8 +54,8 @@ class ProductResource extends Resource
     /** Photo touch-up (ticked in the form) for the photos added in this save only; the tick boxes are not stored. */
     public static function touchUpNewPhotos(array $data, array $images, array $before): array
     {
-        $o = ['light' => (bool) ($data['touch_light'] ?? false), 'square' => (bool) ($data['touch_square'] ?? false), 'background' => (string) ($data['touch_background'] ?? 'keep')];
-        unset($data['touch_light'], $data['touch_square'], $data['touch_background']);
+        $o = ['light' => (bool) ($data['touch_light'] ?? false), 'square' => (bool) ($data['touch_square'] ?? false)];
+        unset($data['touch_light'], $data['touch_square'], $data['studio_hint']);
         foreach (array_diff($images, $before) as $path) {
             \App\Support\PhotoStudio::improve($path, $o);
         }
@@ -162,10 +162,10 @@ class ProductResource extends Resource
                             ->helperText('Evens out dark or too-bright photos, adds a little contrast. Gold colour is kept.'),
                         Forms\Components\Checkbox::make('touch_square')->label('Square, even background')->default(fn () => \App\Support\Settings::bool('photo_touch_square'))->formatStateUsing(fn ($state) => $state ?? \App\Support\Settings::bool('photo_touch_square'))
                             ->helperText('Every piece shows the same shape in the shop.'),
-                        Forms\Components\Select::make('touch_background')->label('Background')->options(\App\Support\PhotoStudio::BACKGROUNDS)
-                            ->default(fn () => \App\Support\Settings::get('photo_touch_background', 'keep'))->formatStateUsing(fn ($state) => $state ?? \App\Support\Settings::get('photo_touch_background', 'keep'))->selectablePlaceholder(false)
-                            ->disabled(fn () => \App\Support\PhotoStudio::removeBgKey() === '')
-                            ->helperText(fn () => \App\Support\PhotoStudio::removeBgKey() === '' ? 'Needs a remove.bg key (Settings → Photos) to cut the piece out.' : 'The piece is cut out and placed on this colour (uses 1 remove.bg credit per photo).'),
+                        Forms\Components\Placeholder::make('studio_hint')->label('White background')
+                            ->content(fn (?Product $record) => new \Illuminate\Support\HtmlString($record
+                                ? '<a href="'.e(route('admin.photo-studio', $record)).'" class="text-primary-600 underline">✨ Open the Photo studio</a> — cuts out the piece and puts it on white, free.'
+                                : 'Save the product first, then use "Photo studio — white background" at the top of the page.')),
                     ])->dehydrated(),
                     Forms\Components\FileUpload::make('video_path')->label('Product video (optional)')
                         ->disk('public')->directory('products/videos')->acceptedFileTypes(['video/mp4', 'video/quicktime', 'video/webm'])->maxSize(51200)
