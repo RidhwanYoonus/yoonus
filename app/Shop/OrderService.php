@@ -253,6 +253,23 @@ class OrderService
     }
 
     /** Idempotent: webhook retries and duplicate return-URL hits do nothing. */
+    /** Paid too late and the piece is no longer available: record the money, keep the order cancelled, ask staff to refund. */
+    private function paidButSold(Order $order, string $gateway, ?string $reference, array $payload, array $names): Order
+    {
+        Payment::firstOrCreate(
+            ['gateway' => $gateway, 'reference' => $reference ?? $order->number],
+            ['order_id' => $order->id, 'status' => 'captured', 'amount' => $order->amount_due, 'payload' => $payload],
+        );
+        $order->forceFill(['payment_status' => 'paid', 'payment_reference' => $reference, 'paid_at' => now(), 'status' => 'cancelled'])->save();
+        $this->history($order, 'cancelled', 'cancelled', null, 'REFUND NEEDED: paid via '.$gateway.' after the payment time ran out, but '
+            .implode(', ', $names).' was sold to another customer meanwhile. Nothing was sold twice; please refund the customer.');
+        DB::afterCommit(function () use ($order, $names) {
+            rescue(fn () => \App\Support\StaffAlerts::refundNeeded($order->fresh(), $names), null, false);
+        });
+
+        return $order;
+    }
+
     public function markPaid(Order $order, string $gateway, ?string $reference, array $payload = []): Order
     {
         return DB::transaction(function () use ($order, $gateway, $reference, $payload) {
@@ -263,9 +280,17 @@ class OrderService
             $late = $order->payment_status === 'expired';
             if ($late) {
                 // The bank paid after the time ran out (the customer was already on the payment page).
-                // Take the money at the price they were shown, reserve the stock again and tell staff.
-                foreach ($order->items()->with('product')->get() as $item) {
-                    $item->product?->decrement('stock_qty', $item->qty);
+                // If every piece is still here: take the order at the price they were shown and reserve the stock again.
+                // If a piece was sold to someone else meanwhile: never sell it twice — the order stays cancelled and
+                // staff are told to refund the payment.
+                $items = $order->items()->get();
+                $stock = Product::whereIn('id', $items->pluck('product_id')->filter())->lockForUpdate()->get()->keyBy('id');
+                $gone = $items->filter(fn ($i) => $i->product_id && ($stock[$i->product_id]->stock_qty ?? 0) < $i->qty);
+                if ($gone->isNotEmpty()) {
+                    return $this->paidButSold($order, $gateway, $reference, $payload, $gone->pluck('product_name')->all());
+                }
+                foreach ($items as $item) {
+                    $stock[$item->product_id]?->decrement('stock_qty', $item->qty);
                 }
                 $order->status = 'pending';
             }

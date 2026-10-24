@@ -25,7 +25,14 @@
 @endphp
 
 @section('content')
-<div class="container-x py-6 sm:py-10" x-data="checkout(@js(['form' => $form, 'quote' => $initial, 'url' => route('checkout.quote'), 'csrf' => csrf_token()]))">
+<div class="container-x py-6 sm:py-10" x-data="checkout(@js(['form' => $form, 'quote' => $initial, 'url' => route('checkout.quote'), 'csrf' => csrf_token(), 'stockNotes' => $stockNotes]))">
+    {{-- A piece sold to someone else while this customer was checking out: taken out of the bag and said here. --}}
+    <template x-if="stockNotes.length">
+        <div class="sticky top-2 z-30 mt-4 rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-800 shadow-sm" role="alert">
+            <template x-for="n in stockNotes"><p class="font-medium" x-text="n"></p></template>
+            <p class="mt-1 text-xs">{{ __('shop.checkout.check_total') }}</p>
+        </div>
+    </template>
     <h1 class="font-display text-3xl sm:text-4xl">{{ __('shop.checkout.title') }}</h1>
 
     @unless ($deliveryEnabled)

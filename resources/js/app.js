@@ -76,9 +76,12 @@ Alpine.data('phoneVerify', (cfg) => ({
 }));
 
 Alpine.data('checkout', (cfg) => ({
-    form: cfg.form, q: cfg.quote, loading: false, timer: null,
+    form: cfg.form, q: cfg.quote, loading: false, timer: null, stockNotes: cfg.stockNotes || [],
     init() {
         this.$watch('form', () => { clearTimeout(this.timer); this.timer = setTimeout(() => this.requote(), 350); });
+        // Every minute (and when the customer comes back to the page): is everything in the bag still available?
+        setInterval(() => { if (! this.loading && ! document.hidden) this.requote(); }, 60000);
+        document.addEventListener('visibilitychange', () => { if (! document.hidden) this.requote(); });
     },
     async requote() {
         this.loading = true;
@@ -89,7 +92,10 @@ Alpine.data('checkout', (cfg) => ({
                 body: JSON.stringify(this.form),
             });
             if (r.ok) {
-                this.q = await r.json();
+                const data = await r.json();
+                if (data.stock_notes?.length) this.stockNotes = data.stock_notes;
+                if (data.empty) { location.href = data.cart; return; }
+                this.q = data;
                 if (!this.q.methods[this.form.payment_method]) this.form.payment_method = Object.keys(this.q.methods)[0];
             }
         } finally { this.loading = false; }

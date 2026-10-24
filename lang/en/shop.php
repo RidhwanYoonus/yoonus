@@ -138,6 +138,8 @@ return [
     ],
 
     'checkout' => [
+        'check_total' => 'The total below is updated. Please check it before placing your order.',
+        'sold_out_removed' => 'Sorry, :name has just been sold and was taken out of your bag.', 'qty_reduced' => 'Only :count of :name left — your bag was updated.',
         'keep_signed_in' => 'Keep me signed in on this phone', 'keep_signed_in_note' => 'We make a free account with your email, so your next order needs no sign-in and you can follow your orders.',
         'press_again' => 'Please check the new total and press Place order again.',
         'title' => 'Checkout', 'delivery_paused' => 'Paused at the moment', 'no_fulfilment' => 'Delivery and pickup are both unavailable right now — please contact us to order.', 'contact' => 'Contact details', 'guest_note' => 'Checking out as a guest. Have an account?',

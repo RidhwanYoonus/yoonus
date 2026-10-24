@@ -80,6 +80,40 @@ class CartService
         $this->update($productId, 0);
     }
 
+    /**
+     * Last-moment stock check: pieces sold (or hidden) since they were put in the bag are taken out, and
+     * quantities above what is left are lowered. Returns a message for each change (empty when all is fine).
+     */
+    public function dropUnavailable(): array
+    {
+        $cart = $this->model();
+        if (! $cart || empty($cart->items)) {
+            return [];
+        }
+        $products = Product::active()->whereIn('id', collect($cart->items)->pluck('product_id'))->get()->keyBy('id');
+        $notes = [];
+        $items = [];
+        foreach ($cart->items as $i) {
+            $p = $products[$i['product_id']] ?? null;
+            if (! $p || $p->stock_qty <= 0) {
+                $name = $p?->localized('name') ?? Product::find($i['product_id'])?->localized('name') ?? '';
+                $notes[] = __('shop.checkout.sold_out_removed', ['name' => $name]);
+
+                continue;
+            }
+            if ((int) $i['qty'] > $p->stock_qty) {
+                $i['qty'] = $p->stock_qty;
+                $notes[] = __('shop.checkout.qty_reduced', ['name' => $p->localized('name'), 'count' => $p->stock_qty]);
+            }
+            $items[] = $i;
+        }
+        if ($notes) {
+            $this->save($items);
+        }
+
+        return $notes;
+    }
+
     public function count(): int
     {
         return (int) collect($this->model()?->items ?? [])->sum('qty');

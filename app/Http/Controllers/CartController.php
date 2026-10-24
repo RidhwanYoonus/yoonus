@@ -14,6 +14,11 @@ class CartController extends Controller
 
     public function show()
     {
+        // A piece in the bag was sold to someone else meanwhile: take it out and say so.
+        if ($notes = $this->cart->dropUnavailable()) {
+            return redirect()->route('cart.show')->withErrors(['cart' => implode(' ', $notes)]);
+        }
+
         return view('shop.cart', [
             'seo' => Seo::page(__('shop.nav.cart')),
             'lines' => $this->cart->lines(),

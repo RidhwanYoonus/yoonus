@@ -31,7 +31,11 @@ class CheckoutController extends Controller
 
     public function show(Request $request)
     {
+        $stockNotes = $this->cart->dropUnavailable();
         $lines = $this->cart->lines();
+        if (! $lines && $stockNotes) {
+            return redirect()->route('cart.show')->withErrors(['cart' => implode(' ', $stockNotes)]);
+        }
         if (! $lines) {
             return redirect()->route('cart.show');
         }
@@ -51,6 +55,7 @@ class CheckoutController extends Controller
         }
 
         return view('shop.checkout', [
+            'stockNotes' => $stockNotes,
             'seo' => Seo::page(__('shop.checkout.title')),
             'quote' => $quote,
             'changes' => $changes,
@@ -71,9 +76,14 @@ class CheckoutController extends Controller
     /** Live totals while the shopper edits the checkout form. */
     public function quote(Request $request)
     {
+        // Asked again every minute while the customer is on the page: a piece sold meanwhile is shown at once.
+        $notes = $this->cart->dropUnavailable();
+        if (! $this->cart->lines()) {
+            return response()->json(['empty' => true, 'cart' => route('cart.show'), 'stock_notes' => $notes]);
+        }
         $quote = $this->buildFrom($request);
 
-        return response()->json($this->present($quote));
+        return response()->json($this->present($quote) + ['stock_notes' => $notes]);
     }
 
     public function place(Request $request)
@@ -115,6 +125,13 @@ class CheckoutController extends Controller
         }
         if (\App\Shop\PhoneVerification::enabled() && ! \App\Shop\PhoneVerification::isVerified($request, $data['phone'])) {
             return back()->withInput()->withErrors(['phone_verification' => __('shop.verify.required')]);
+        }
+
+        // Last moment before the order: a piece sold since it went in the bag is taken out, and the customer is told.
+        if ($notes = $this->cart->dropUnavailable()) {
+            return $this->cart->lines()
+                ? back()->withInput()->withErrors(['checkout' => implode(' ', $notes)])
+                : redirect()->route('cart.show')->withErrors(['cart' => implode(' ', $notes)]);
         }
 
         $this->cart->attachContact($data['email'], $data['phone']);
