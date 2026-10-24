@@ -264,6 +264,8 @@ class Settings extends Page implements HasForms
                     ]))->values()->all(),
                 ]),
                 Forms\Components\Tabs\Tab::make('Affiliates')->icon('heroicon-o-user-plus')->columns(2)->schema([
+                    Forms\Components\Toggle::make('affiliate_customer_contacts')->label('Affiliates see their customers\' phone and email')->inline(false)
+                        ->helperText('In the affiliate portal → "My customers": customers who signed up with their link or ordered through them. Off = phone and email are partly hidden (e.g. +97150 *** 567).'),
 
                     Forms\Components\TextInput::make('affiliate_cookie_days')->label('Customer stays linked to the affiliate for')->numeric()->minValue(1)->maxValue(365)->suffix('days')
                         ->helperText('After clicking an affiliate link, orders within this time earn that affiliate commission. The last link clicked wins.'),

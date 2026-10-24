@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Affiliate;
+use App\Pricing\Money;
 use App\Support\Seo;
 use Illuminate\Http\Request;
 
@@ -76,6 +77,65 @@ class AffiliateController extends Controller
             'team' => $affiliate->recruits()->with('user')->get(),
             'visits' => \App\Models\StoreVisit::where('affiliate_id', $affiliate->id)->latest()->limit(10)->get(),
         ]);
+    }
+
+    /** Full transaction list and the affiliate's customers, each downloadable as CSV (opens in Excel). */
+    public function report(Request $request)
+    {
+        $affiliate = $this->affiliate($request);
+        $f = $request->validate([
+            'tab' => 'nullable|in:transactions,customers', 'from' => 'nullable|date', 'to' => 'nullable|date',
+            'type' => 'nullable|in:commission,bonus,collected', 'download' => 'nullable|in:transactions,customers',
+        ]);
+        $report = new \App\Affiliates\AffiliateReport($affiliate);
+        $from = filled($f['from'] ?? null) ? \Illuminate\Support\Carbon::parse($f['from']) : null;
+        $to = filled($f['to'] ?? null) ? \Illuminate\Support\Carbon::parse($f['to']) : null;
+        $rows = $report->transactions($from, $to)->when($f['type'] ?? null, fn ($c, $t) => $c->where('type', $t)->values());
+        $customers = $report->customers();
+        $contacts = \App\Affiliates\AffiliateReport::showsContacts();
+        if (! $contacts) {
+            $customers = $customers->map(fn ($c) => ['phone' => \App\Affiliates\AffiliateReport::mask($c['phone']), 'email' => \App\Affiliates\AffiliateReport::mask($c['email'])] + $c);
+        }
+
+        if (($f['download'] ?? null) === 'transactions') {
+            return $this->csv('transactions-'.$affiliate->code.'.csv', ['Date', 'Type', 'Order', 'Customer', 'Item', 'How it is worked out', 'Status', 'Amount (AED)'],
+                $rows->map(fn ($r) => [$r['date']?->format('Y-m-d H:i'), __('shop.affiliate.report.type_'.$r['type']), $r['order'], $r['customer'], $r['item'], $r['details'],
+                    __('shop.affiliate.report.status_'.$r['status']), Money::toAed($r['amount'])]));
+        }
+        if (($f['download'] ?? null) === 'customers') {
+            return $this->csv('customers-'.$affiliate->code.'.csv', ['Name', 'Mobile', 'Email', 'Linked by', 'Since', 'Orders', 'Spent (AED)', 'Last order', 'Agreed to offers'],
+                $customers->map(fn ($c) => [$c['name'], $c['phone'], $c['email'], __('shop.affiliate.report.how_'.$c['how']), $c['joined']?->format('Y-m-d'),
+                    $c['orders'], Money::toAed($c['spent']), $c['last_order']?->format('Y-m-d'), $c['offers_ok'] ? 'Yes' : 'No']));
+        }
+
+        return view('shop.affiliate-report', [
+            'seo' => Seo::page(__('shop.affiliate.report.title')),
+            'affiliate' => $affiliate,
+            'tab' => $f['tab'] ?? 'transactions',
+            'filters' => $f,
+            'rows' => $rows,
+            'sums' => [
+                'commission' => $rows->where('type', 'commission')->where('status', '!=', 'void')->sum('amount'),
+                'bonus' => $rows->where('type', 'bonus')->where('status', '!=', 'void')->sum('amount'),
+                'collected' => -$rows->where('type', 'collected')->sum('amount'),
+            ],
+            'customers' => $customers,
+            'contacts' => $contacts,
+        ]);
+    }
+
+    private function csv(string $name, array $head, \Illuminate\Support\Collection $rows)
+    {
+        return response()->streamDownload(function () use ($head, $rows) {
+            $out = fopen('php://output', 'w');
+            fwrite($out, "\xEF\xBB\xBF");   // Excel reads Arabic names correctly
+            fputcsv($out, $head);
+            foreach ($rows as $r) {
+                // A leading = + - @ would run as a formula in Excel.
+                fputcsv($out, array_map(fn ($v) => is_string($v) && preg_match('/^[=+\-@]/', $v) && ! is_numeric($v) ? "'".$v : $v, $r));
+            }
+            fclose($out);
+        }, $name, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
 
     /** Every piece in stock, with search and filters, ready to share. */

@@ -10,6 +10,8 @@
         <div class="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert">{{ __('shop.affiliate.paused') }}</div>
     @endunless
 
+    <a href="{{ route('affiliate.report', ['tab' => 'customers']) }}" class="btn-gold mt-4 inline-flex h-10 px-5">{{ __('shop.affiliate.report.open') }}</a>
+
     <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div class="card p-5"><p class="label">{{ __('shop.affiliate.pending') }}</p><p class="price mt-1 text-2xl font-semibold">{{ $fmt($totals['pending']) }}</p><p class="text-xs text-muted">{{ __('shop.affiliate.pending_note') }}</p></div>
         <div class="card p-5"><p class="label">{{ __('shop.affiliate.earned') }}</p><p class="price mt-1 text-2xl font-semibold">{{ $fmt($totals['earned']) }}</p></div>
@@ -247,7 +249,10 @@
     </div>
 
     <section class="mt-10">
-        <h2 class="font-display text-2xl">{{ __('shop.affiliate.sales') }}</h2>
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <h2 class="font-display text-2xl">{{ __('shop.affiliate.sales') }}</h2>
+            <a href="{{ route('affiliate.report') }}" class="btn-outline h-10 px-4">{{ __('shop.affiliate.report.open') }}</a>
+        </div>
         <div class="card mt-4 overflow-x-auto">
             <table class="w-full text-sm">
                 <thead class="bg-sand/60 text-xs uppercase tracking-wider text-muted"><tr>
