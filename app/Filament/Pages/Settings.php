@@ -288,6 +288,8 @@ class Settings extends Page implements HasForms
                     ]))->values()->all(),
                 ]),
                 Forms\Components\Tabs\Tab::make('Affiliates')->icon('heroicon-o-user-plus')->columns(2)->schema([
+                    Forms\Components\Toggle::make('product_affiliate_commission')->label('Use the commission set on a product')->inline(false)
+                        ->helperText('On: a product\'s own affiliate commission (Products → edit, or "Set affiliate commission" on several products) replaces every affiliate\'s rate on that piece. Off: every affiliate always earns their own rate.'),
                     Forms\Components\Toggle::make('affiliate_customer_contacts')->label('Affiliates see their customers\' phone and email')->inline(false)
                         ->helperText('In the affiliate portal → "My customers": customers who signed up with their link or ordered through them. Off = phone and email are partly hidden (e.g. +97150 *** 567).'),
 

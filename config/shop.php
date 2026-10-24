@@ -101,6 +101,7 @@ return [
         'stripe_embedded' => true,              // card form on our own page when the publishable key is set
         'delivery_location' => 'optional',      // customer's map pin at checkout: optional / required / off
         'id_auto_read' => true,                 // fill ID number / expiry from the ID photo (OCR in the browser)
+        'product_affiliate_commission' => true, // a product's own affiliate commission replaces the affiliates' rates
         'affiliate_banner' => true,             // "You are shopping with …" bar on white-page visits
         'affiliate_customer_contacts' => true,  // affiliates see phone/email of customers linked to them
         'product_text_style' => true,           // title-case product names, sentence-case descriptions on save

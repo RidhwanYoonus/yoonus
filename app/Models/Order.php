@@ -43,6 +43,7 @@ class Order extends Model
             ->mapWithKeys(fn ($c) => [$c => 'decimal:2'])->all();
 
         return $money + [
+            'expected_at' => 'date',
             'shipping_address' => 'array',
             'paid_at' => 'datetime',
             'payment_expires_at' => 'datetime',

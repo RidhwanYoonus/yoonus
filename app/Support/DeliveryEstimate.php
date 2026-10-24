@@ -95,7 +95,16 @@ class DeliveryEstimate
     /** For an order already placed: the estimate from when it was placed (or paid). */
     public static function forOrder(\App\Models\Order $order): ?string
     {
-        if (! self::enabled() || in_array($order->status, ['delivered', 'cancelled', 'refunded'], true)) {
+        if (in_array($order->status, ['delivered', 'cancelled', 'refunded'], true)) {
+            return null;
+        }
+        // A date staff gave the customer (Update status) comes first.
+        if ($order->expected_at ?? null) {
+            $day = self::day($order->expected_at);
+
+            return $order->fulfilment === 'pickup' ? __('shop.eta.pickup_on', ['day' => $day]) : __('shop.eta.delivery_on', ['day' => $day]);
+        }
+        if (! self::enabled()) {
             return null;
         }
         $at = $order->paid_at ?? $order->created_at;

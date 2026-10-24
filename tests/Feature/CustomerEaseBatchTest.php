@@ -142,4 +142,30 @@ class CustomerEaseBatchTest extends TestCase
         $js = file_get_contents(resource_path('js/app.js'));
         $this->assertStringContainsString('d.length === 6', $js);
     }
+
+    public function test_product_commission_can_be_set_on_many_products_and_switched_off(): void
+    {
+        $a = Affiliate::create(['user_id' => User::factory()->create()->id, 'code' => 'AFF3', 'making_commission_percent' => 10]);
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+        Livewire::test(ListProducts::class)->callTableBulkAction('affiliateCommission', [$this->ring], ['type' => 'per_piece', 'value' => 25])->assertHasNoTableBulkActionErrors();
+        $this->assertSame(2500, app(AffiliateService::class)->earningsFor($a, $this->ring->fresh())['commission']);
+        Settings::set(['product_affiliate_commission' => false]);
+        $this->assertSame(300, app(AffiliateService::class)->earningsFor($a, $this->ring->fresh())['commission']);   // own 10% of making again
+    }
+
+    public function test_status_update_takes_a_date_and_an_expected_date_for_the_customer(): void
+    {
+        $order = $this->guestOrder('x@example.com', '0501112222');
+        app(\App\Shop\OrderService::class)->markPaid($order->fresh(), 'stripe', 'pi_1');
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+        $when = now()->subDay()->setTime(15, 30);
+        Livewire::test(\App\Filament\Resources\OrderResource\Pages\ViewOrder::class, ['record' => $order->getRouteKey()])
+            ->assertActionVisible('advance')->callAction('advance', ['status' => 'packed', 'happened_at' => $when->toDateTimeString(), 'expected_at' => now()->addDays(3)->toDateString()])
+            ->assertHasNoActionErrors()->assertNotified('Status updated');
+        $order->refresh();
+        $this->assertSame('packed', $order->status);
+        $this->assertSame($when->format('Y-m-d H:i'), $order->statusHistory()->where('to_status', 'packed')->first()->created_at->format('Y-m-d H:i'));
+        $this->assertSame(now()->addDays(3)->toDateString(), $order->expected_at->toDateString());
+        $this->assertStringContainsString(now()->addDays(3)->locale('en')->isoFormat('ddd D MMM'), \App\Support\DeliveryEstimate::forOrder($order));
+    }
 }

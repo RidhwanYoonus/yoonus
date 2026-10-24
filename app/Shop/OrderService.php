@@ -327,8 +327,10 @@ class OrderService
         });
     }
 
-    public function transition(Order $order, string $to, ?User $by = null, ?string $note = null): Order
+    /** $at: when it really happened (staff may enter a past date/time, e.g. delivered yesterday); now when empty. */
+    public function transition(Order $order, string $to, ?User $by = null, ?string $note = null, ?\Illuminate\Support\Carbon $at = null): Order
     {
+        $at = $at && $at->lessThan(now()) ? $at : null;
         if (! $order->canTransitionTo($to)) {
             throw new RuntimeException("Cannot move order from {$order->status} to {$to}.");
         }
@@ -339,10 +341,10 @@ class OrderService
             throw new RuntimeException('Enter the customer\'s handover code first (or override it with a reason).');
         }
 
-        return DB::transaction(function () use ($order, $to, $by, $note) {
+        return DB::transaction(function () use ($order, $to, $by, $note, $at) {
             $from = $order->status;
             $order->update(['status' => $to]);
-            $this->history($order, $from, $to, $by, $note);
+            $this->history($order, $from, $to, $by, $note, $at);
 
             if ($to === 'cancelled') {
                 $this->restock($order);
@@ -500,9 +502,13 @@ class OrderService
         }
     }
 
-    public function history(Order $order, ?string $from, string $to, ?User $by, ?string $note): void
+    public function history(Order $order, ?string $from, string $to, ?User $by, ?string $note, ?\Illuminate\Support\Carbon $at = null): void
     {
-        OrderStatusHistory::create(['order_id' => $order->id, 'from_status' => $from, 'to_status' => $to, 'changed_by' => $by?->id, 'note' => $note]);
+        $row = new OrderStatusHistory(['order_id' => $order->id, 'from_status' => $from, 'to_status' => $to, 'changed_by' => $by?->id, 'note' => $note]);
+        if ($at) {
+            $row->created_at = $at;
+        }
+        $row->save();
     }
 
     private static function hasColumn(string $column, string $table = 'orders'): bool

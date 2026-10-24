@@ -276,6 +276,9 @@ class ProductResource extends Resource
                 Tables\Columns\TextColumn::make('creator.name')->label('Created by')->placeholder('—')->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('editor.name')->label('Last edited by')->placeholder('—')->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('price_calculated_at')->label('Recalculated')->since()->sortable()->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('affiliate_commission_value')->label('Affiliate commission')->toggleable(isToggledHiddenByDefault: true)
+                    ->state(fn (Product $record) => ($c = $record->affiliateCommission()) ? ($c['type'] === 'per_piece' ? 'AED '.$c['value'].' / pc' : rtrim(rtrim($c['value'], '0'), '.').'% '.($c['type'] === 'making_percent' ? 'of making' : 'of price')) : null)
+                    ->placeholder('Affiliate\'s own rate'),
                 Tables\Columns\TextColumn::make('stock_qty')->label('Stock')->sortable()
                     ->description(fn (Product $record) => $record->hidden_after_sale ? 'Sold · hidden' : ($record->stock_qty <= 0 ? 'Sold · showing' : null))
                     ->color(fn (Product $record) => $record->isLowStock() ? 'danger' : null)->icon(fn (Product $record) => $record->isLowStock() ? 'heroicon-o-exclamation-triangle' : null),
@@ -309,6 +312,8 @@ class ProductResource extends Resource
                         'none' => $query->where(fn ($q) => $q->whereNull('stone_type')->orWhere('stone_type', '')),
                         default => $query->withStone($data['value']),
                     }),
+                Tables\Filters\TernaryFilter::make('own_commission')->label('Affiliate commission')->trueLabel('Set on the product')->falseLabel('Affiliate\'s own rate')
+                    ->queries(true: fn (Builder $q) => $q->whereNotNull('affiliate_commission_type'), false: fn (Builder $q) => $q->whereNull('affiliate_commission_type')),
                 Tables\Filters\SelectFilter::make('pricing_type')->label('Pricing')->options(['GOLD_RATE' => 'Gold rate', 'FIXED' => 'Fixed price per piece']),
                 Tables\Filters\SelectFilter::make('diamond_origin')->label('Diamond type')->options(\App\Models\Product::DIAMOND_ORIGINS),
                 Tables\Filters\TernaryFilter::make('is_featured')->label('Featured on homepage'),
@@ -369,6 +374,19 @@ class ProductResource extends Resource
                         ->action(fn ($records) => $records->each(fn (Product $p) => $p->update(['is_active' => false]))),
                     Tables\Actions\BulkAction::make('recalculate')->visible(fn () => \App\Support\StaffAccess::current('products', 'edit'))->icon('heroicon-o-arrow-path')
                         ->action(fn ($records) => $records->each(fn ($p) => app(PricingService::class)->refreshCachedPrice($p, null, 'manual'))),
+                    // Several pieces at once: one affiliate commission for all of them (or back to each affiliate's own rate).
+                    Tables\Actions\BulkAction::make('affiliateCommission')->label('Set affiliate commission')->icon('heroicon-o-user-group')
+                        ->visible(fn () => \App\Support\StaffAccess::current('products', 'edit'))
+                        ->form([
+                            Forms\Components\Select::make('type')->label('Commission')->options(Product::AFFILIATE_COMMISSION_TYPES)
+                                ->placeholder('Back to each affiliate\'s own rate')->live(),
+                            Forms\Components\TextInput::make('value')->label(fn (Forms\Get $get) => $get('type') === 'per_piece' ? 'AED per piece' : 'Percent')->numeric()->minValue(0)
+                                ->required(fn (Forms\Get $get) => filled($get('type')))->visible(fn (Forms\Get $get) => filled($get('type'))),
+                        ])
+                        ->action(function (\Illuminate\Support\Collection $records, array $data) {
+                            $records->each(fn (Product $p) => $p->forceFill(['affiliate_commission_type' => $data['type'] ?: null, 'affiliate_commission_value' => $data['type'] ? $data['value'] : null])->save());
+                            \Filament\Notifications\Notification::make()->success()->title('Affiliate commission set on '.$records->count().' products')->send();
+                        })->deselectRecordsAfterCompletion(),
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);

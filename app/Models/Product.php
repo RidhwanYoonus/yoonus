@@ -62,6 +62,9 @@ class Product extends Model
     public function affiliateCommission(): ?array
     {
         $type = $this->affiliate_commission_type ?? null;
+        if (! Settings::bool('product_affiliate_commission', true)) {
+            return null;   // switched off for the whole shop (Settings → Affiliates)
+        }
 
         return isset(self::AFFILIATE_COMMISSION_TYPES[$type]) && $this->affiliate_commission_value !== null && $this->affiliate_commission_value !== ''
             ? ['type' => $type, 'value' => (string) $this->affiliate_commission_value] : null;

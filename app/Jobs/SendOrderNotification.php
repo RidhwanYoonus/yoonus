@@ -36,6 +36,10 @@ class SendOrderNotification implements ShouldQueue
             $event = $order->isPickup() && $this->event === 'delivered' ? 'collected' : $this->event;
             $subject = __("shop.notify.{$event}.subject", $vars);
             $body = __("shop.notify.{$event}.body", $vars);
+            // The date staff promised (Update status → expected date) goes with the message.
+            if (($order->expected_at ?? null) && ! in_array($event, ['delivered', 'collected', 'cancelled', 'refunded'], true)) {
+                $body .= "\n".\App\Support\DeliveryEstimate::forOrder($order);
+            }
             if ($subject === "shop.notify.{$event}.subject") {
                 return;   // no template for this status
             }

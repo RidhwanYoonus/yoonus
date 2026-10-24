@@ -76,6 +76,13 @@ class ViewOrder extends ViewRecord
                     ...OrderResource::handoverFields($record, fn (Forms\Get $get) => $get('status') === 'delivered'),
                     Forms\Components\TextInput::make('tracking_carrier')->default($record->tracking_carrier)->visible(! $record->isPickup()),
                     Forms\Components\TextInput::make('tracking_number')->default($record->tracking_number)->visible(! $record->isPickup()),
+                    Forms\Components\DateTimePicker::make('happened_at')->label('Date and time')->seconds(false)->native(false)
+                        ->default(now())->maxDate(now()->addMinutes(5))->displayFormat('d M Y, H:i')
+                        ->helperText('When it happened — change it if you are entering it later (e.g. delivered yesterday). Shown in the order history.'),
+                    Forms\Components\DatePicker::make('expected_at')->label(fn (Forms\Get $get) => $record->isPickup() ? 'Ready to collect on (shown to the customer)' : 'Expected delivery date (shown to the customer)')
+                        ->native(false)->displayFormat('D d M Y')->default($record->expected_at ?? null)->minDate(today())
+                        ->visible(fn (Forms\Get $get) => ! in_array($get('status'), ['delivered', 'cancelled', 'refunded'], true))
+                        ->helperText('Optional. Replaces the automatic estimate on the customer\'s order page and in the status message.'),
                     Forms\Components\TextInput::make('note')->maxLength(255),
                 ])
                 ->action(function (Order $record, array $data) {
@@ -84,7 +91,11 @@ class ViewOrder extends ViewRecord
                             OrderResource::verifyHandover($record, $data);
                         }
                         $record->update(array_filter(['tracking_carrier' => $data['tracking_carrier'] ?? null, 'tracking_number' => $data['tracking_number'] ?? null]));
-                        app(OrderService::class)->transition($record, $data['status'], Auth::user(), $data['note'] ?? null);
+                        if (array_key_exists('expected_at', $data) && \Illuminate\Support\Facades\Schema::hasColumn('orders', 'expected_at')) {
+                            $record->forceFill(['expected_at' => $data['expected_at'] ?: null])->save();
+                        }
+                        $at = filled($data['happened_at'] ?? null) ? \Illuminate\Support\Carbon::parse($data['happened_at']) : null;
+                        app(OrderService::class)->transition($record, $data['status'], Auth::user(), $data['note'] ?? null, $at);
                         Notification::make()->success()->title('Status updated')->send();
                         $this->refreshFormData([]);
                     } catch (Throwable $e) {
