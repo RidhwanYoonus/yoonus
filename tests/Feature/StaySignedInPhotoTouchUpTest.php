@@ -156,7 +156,7 @@ class StaySignedInPhotoTouchUpTest extends TestCase
 
         $this->actingAs(User::factory()->create())->get(route('admin.photo-studio', $product))->assertForbidden();
         $this->actingAs(User::factory()->create(['is_admin' => true]));
-        $this->get(route('admin.photo-studio', $product))->assertOk()->assertSee('Royal blue velvet')->assertSee('Do this photo')->assertSee('BiRefNet_lite-ONNX', false)->assertSee($orig, false);
+        $this->get(route('admin.photo-studio', $product))->assertOk()->assertSee('Royal blue velvet')->assertSee('Make it beautiful')->assertSee('Compare')->assertSee('BiRefNet_lite-ONNX', false)->assertSee($orig, false);
 
         $white = \Illuminate\Http\UploadedFile::fake()->image('studio.jpg', 1600, 1600);
         $new = $this->post(route('admin.photo-studio.save', $product), ['index' => 0, 'path' => $orig, 'file' => $white])->assertOk()->json('path');
@@ -167,6 +167,11 @@ class StaySignedInPhotoTouchUpTest extends TestCase
 
         // Stale page (photos changed meanwhile) is refused.
         $this->post(route('admin.photo-studio.save', $product), ['index' => 0, 'path' => $orig, 'file' => $white])->assertStatus(409);
+
+        // Opens inside the product page (modal), and the form picks up the saved photo.
+        Livewire::test(EditProduct::class, ['record' => $product->getRouteKey()])
+            ->mountAction('studio')->assertSee('embed=1', false)
+            ->call('studioSaved')->assertSet('data.images', fn ($v) => in_array($new, array_values((array) $v), true));
 
         $this->postJson(route('admin.photo-studio.restore', $product), ['index' => 0, 'path' => $new])->assertOk();
         $product->refresh();

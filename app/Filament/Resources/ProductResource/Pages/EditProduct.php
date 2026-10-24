@@ -16,11 +16,22 @@ class EditProduct extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\Action::make('studio')->label('Photo studio — white background')->icon('heroicon-o-sparkles')->color('warning')
-                ->url(fn () => route('admin.photo-studio', $this->record)),
+            // Opens over this product page (no new tab), so phones stay on the same screen; saved photos show up here.
+            Actions\Action::make('studio')->label('Photo studio')->icon('heroicon-o-sparkles')->color('warning')
+                ->modalHeading('Photo studio — beautiful backgrounds')->modalWidth(\Filament\Support\Enums\MaxWidth::Screen)
+                ->modalContent(fn () => view('filament.photo-studio-modal', ['url' => route('admin.photo-studio', ['product' => $this->record, 'embed' => 1])]))
+                ->modalSubmitAction(false)->modalCancelActionLabel('Close')
+                ->after(fn () => $this->studioSaved()),
             Actions\Action::make('view')->url(fn () => route('product.show', $this->record))->openUrlInNewTab()->color('gray'),
             Actions\DeleteAction::make(),
         ];
+    }
+
+    /** Photos were changed in the Photo studio: show them in the form without losing other unsaved edits. */
+    public function studioSaved(): void
+    {
+        $this->record->refresh();
+        $this->refreshFormData(['images']);
     }
 
     protected function mutateFormDataBeforeSave(array $data): array

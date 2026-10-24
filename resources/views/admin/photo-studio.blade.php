@@ -2,109 +2,178 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <meta name="robots" content="noindex">
 <title>Photo studio · {{ $product->name }}</title>
+@php($embed = request()->boolean('embed'))
+@php($icon = fn ($d) => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'.$d.'</svg>')
+@php($sparkle = $icon('<path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>'))
 <style>
-    :root { --gold: #9a7a2c; --ink: #1c1917; --muted: #78716c; --line: #e7e5e4; --bg: #fafaf9; }
+    :root { --gold: #a07f2f; --gold2: #d9bf7d; --ink: #1c1917; --muted: #78716c; --line: #ebe7e1; --bg: #f7f5f1; --card: #fff; }
     * { box-sizing: border-box; }
-    body { margin: 0; font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; color: var(--ink); background: var(--bg); }
-    .wrap { max-width: 1200px; margin: 0 auto; padding: 20px 16px 60px; }
-    a { color: var(--gold); }
-    h1 { font-size: 24px; margin: 6px 0 4px; }
+    body { margin: 0; font: 15px/1.5 "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased; }
+    a { color: var(--gold); text-decoration: none; }
+    .top { position: sticky; top: 0; z-index: 5; background: rgba(255,255,255,.92); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+    .top-in { max-width: 1180px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 12px; }
+    .thumb { width: 42px; height: 42px; border-radius: 10px; object-fit: cover; border: 1px solid var(--line); background: #eee; }
+    .title { min-width: 0; flex: 1; }
+    .title b { display: block; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .title span { font-size: 12px; color: var(--muted); }
+    .wrap { max-width: 1180px; margin: 0 auto; padding: 18px 16px 110px; }
     .muted { color: var(--muted); font-size: 13px; }
-    .box { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
-    .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 16px 0; }
-    button { font: inherit; border-radius: 10px; border: 1px solid var(--line); background: #fff; padding: 9px 14px; cursor: pointer; }
-    button.gold { background: linear-gradient(135deg, #b8963e, #e3cf9a); border-color: #b8963e; font-weight: 600; }
-    button.dark { background: var(--ink); color: #fff; border-color: var(--ink); }
-    button.on { outline: 2px solid var(--gold); }
-    button:disabled { opacity: .5; cursor: default; }
-    .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
-    .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .pair > div { aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: #f5f5f4; display: flex; align-items: center; justify-content: center; position: relative; }
-    .pair img, .pair canvas { width: 100%; height: 100%; object-fit: contain; }
-    .tag { position: absolute; top: 6px; left: 6px; font-size: 11px; background: rgba(0,0,0,.6); color: #fff; border-radius: 6px; padding: 1px 6px; }
-    .actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-    .status { font-size: 13px; margin-top: 6px; min-height: 20px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px; box-shadow: 0 1px 2px rgba(28,25,23,.04); }
+    .step { display: flex; align-items: center; gap: 10px; font-weight: 600; margin: 0 0 12px; }
+    .step i { font-style: normal; width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; background: linear-gradient(135deg, var(--gold), var(--gold2)); color: #fff; }
+    .row { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: center; }
+    button, .btn { font: inherit; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border-radius: 12px; border: 1px solid var(--line); background: #fff; color: var(--ink); padding: 10px 16px; cursor: pointer; transition: transform .05s, box-shadow .15s; }
+    button:active { transform: scale(.98); }
+    .gold { background: linear-gradient(135deg, #b8943a, #e6d08f); border-color: #b8943a; font-weight: 600; color: #231a06; box-shadow: 0 6px 16px -8px rgba(160,127,47,.8); }
+    .dark { background: var(--ink); color: #fff; border-color: var(--ink); }
+    .ghost { background: transparent; }
+    button:disabled { opacity: .45; cursor: default; box-shadow: none; }
+    .layout { display: grid; gap: 16px; grid-template-columns: 1fr; }
+    .layout main { order: -1; }   /* phones: the photos first, the settings below */
+    @media (min-width: 900px) { .layout { grid-template-columns: 340px 1fr; align-items: start; } .layout main { order: 0; } .side { position: sticky; top: 80px; } }
+    .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 10px; }
+    .sw { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0; border: 0; background: none; font-size: 11px; color: var(--muted); cursor: pointer; text-align: center; line-height: 1.2; }
+    .sw .dot { width: 54px; height: 54px; border-radius: 14px; border: 1px solid var(--line); background-size: cover; background-position: center; position: relative; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(0,0,0,.03); }
+    .sw.on .dot { outline: 3px solid var(--gold); outline-offset: 2px; }
+    .sw.on { color: var(--ink); font-weight: 600; }
+    .sw input[type=color] { position: absolute; inset: -10px; width: 80px; height: 80px; border: 0; padding: 0; cursor: pointer; opacity: 0; }
+    .sw .x { position: absolute; top: 0; right: 0; background: rgba(0,0,0,.65); color: #fff; font-size: 11px; line-height: 1; padding: 3px 5px; border-radius: 0 0 0 8px; }
+    .sw .plus { display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--gold); border-style: dashed; }
+    .switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 14px; }
+    .switch:first-of-type { border-top: 0; }
+    input[type=range] { accent-color: var(--gold); width: 150px; }
+    input[type=checkbox] { accent-color: var(--gold); width: 18px; height: 18px; }
+    .model { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: var(--bg); font-size: 13px; color: var(--muted); }
+    .progress { flex: 0 0 90px; height: 6px; background: #e7e2d9; border-radius: 9px; overflow: hidden; }
+    .progress > div { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold2)); width: 0; transition: width .2s; }
+    .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+    .photo { padding: 12px; }
+    .stage { position: relative; aspect-ratio: 1; border-radius: 14px; overflow: hidden; background: repeating-conic-gradient(#f1eee8 0% 25%, #fbfaf8 0% 50%) 50% / 22px 22px; cursor: zoom-in; }
+    .stage img, .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+    .stage canvas { display: none; }
+    .stage.has-new canvas { display: block; }
+    .stage.has-new img.main { display: none; }
+    .before { position: absolute; left: 10px; bottom: 10px; width: 30%; aspect-ratio: 1; border-radius: 10px; border: 2px solid #fff; box-shadow: 0 4px 14px rgba(0,0,0,.25); overflow: hidden; background: #eee; display: none; }
+    .before img { width: 100%; height: 100%; object-fit: cover; }
+    .stage.has-new .before { display: block; }
+    .tag { position: absolute; top: 10px; left: 10px; font-size: 11px; font-weight: 600; letter-spacing: .02em; background: rgba(28,25,23,.72); color: #fff; border-radius: 999px; padding: 3px 10px; }
+    .tag.new { background: linear-gradient(135deg, #b8943a, #e6d08f); color: #231a06; }
+    .zoom { position: absolute; top: 8px; right: 8px; width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,.9); border: 0; padding: 0; box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+    .status { font-size: 13px; margin: 10px 2px 0; min-height: 20px; }
     .ok { color: #15803d; } .err { color: #b91c1c; }
-    .progress { height: 8px; background: #eee; border-radius: 9px; overflow: hidden; width: 260px; }
-    .progress > div { height: 100%; background: var(--gold); width: 0; transition: width .2s; }
-    .editor { position: fixed; inset: 0; background: rgba(0,0,0,.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 10; padding: 12px; }
+    .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+    .actions .wide { grid-column: 1 / -1; }
+    .mobile-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); background: rgba(255,255,255,.95); border-top: 1px solid var(--line); display: flex; gap: 10px; }
+    .mobile-bar button { flex: 1; }
+    @media (min-width: 900px) { .mobile-bar { display: none; } }
+    .desk-only { display: none; } @media (min-width: 900px) { .desk-only { display: inline-flex; } }
+    /* Big viewer: before / after / compare */
+    .viewer { position: fixed; inset: 0; z-index: 20; background: rgba(12,10,8,.94); display: none; flex-direction: column; }
+    .viewer.open { display: flex; }
+    .v-top { display: flex; align-items: center; gap: 8px; padding: 12px 14px; color: #fff; }
+    .tabs { display: inline-flex; background: rgba(255,255,255,.1); border-radius: 999px; padding: 3px; margin: 0 auto; }
+    .tabs button { border: 0; background: none; color: #ddd; border-radius: 999px; padding: 7px 16px; font-size: 14px; }
+    .tabs button.on { background: #fff; color: var(--ink); font-weight: 600; }
+    .v-close { background: rgba(255,255,255,.12); color: #fff; border: 0; width: 40px; height: 40px; border-radius: 50%; padding: 0; font-size: 20px; }
+    .v-body { flex: 1; display: flex; align-items: center; justify-content: center; padding: 0 12px 16px; min-height: 0; }
+    .v-frame { position: relative; height: min(100%, 92vw); aspect-ratio: 1; max-width: 100%; border-radius: 14px; overflow: hidden; background: #222; touch-action: none; }
+    .v-frame img, .v-frame canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+    .v-frame .after { clip-path: inset(0 0 0 var(--cut, 50%)); }
+    .v-line { position: absolute; top: 0; bottom: 0; left: var(--cut, 50%); width: 2px; background: #fff; transform: translateX(-1px); pointer-events: none; }
+    .v-line::after { content: '⇆'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 38px; height: 38px; border-radius: 50%; background: #fff; color: var(--ink); display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 2px 10px rgba(0,0,0,.4); }
+    .v-label { position: absolute; bottom: 10px; font-size: 12px; font-weight: 600; color: #fff; background: rgba(0,0,0,.55); border-radius: 999px; padding: 3px 10px; }
+    .editor { position: fixed; inset: 0; background: rgba(12,10,8,.94); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 21; padding: 12px; }
     .editor.open { display: flex; }
-    .editor canvas { max-width: 96vw; max-height: 72vh; background: repeating-conic-gradient(#ddd 0% 25%, #fff 0% 50%) 50% / 24px 24px; touch-action: none; border-radius: 8px; }
-    .editor .tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 12px; color: #fff; }
-    label.opt { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; }
-    .swatches { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-    .sw { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--line); padding: 0; position: relative; overflow: hidden; background-size: cover; background-position: center; }
-    .sw.on { outline: 3px solid var(--gold); outline-offset: 2px; }
-    .sw input[type=color] { position: absolute; inset: -8px; width: 60px; height: 60px; border: 0; padding: 0; cursor: pointer; }
-    .sw .x { position: absolute; top: 0; right: 0; background: rgba(0,0,0,.6); color: #fff; font-size: 11px; line-height: 1; padding: 2px 4px; border-radius: 0 0 0 6px; }
+    .editor canvas { max-width: 96vw; max-height: 68vh; background: repeating-conic-gradient(#ddd 0% 25%, #fff 0% 50%) 50% / 24px 24px; touch-action: none; border-radius: 12px; }
+    .editor .tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; margin-top: 12px; color: #fff; }
+    .editor .tools button.on { outline: 2px solid var(--gold2); }
 </style>
 </head>
 <body>
+<header class="top">
+    <div class="top-in">
+        @unless ($embed)<a href="{{ $back }}" class="btn ghost" style="padding:8px 10px" title="Back to the product">←</a>@endunless
+        @if ($photos)<img class="thumb" src="{{ $photos[0]['url'] }}" alt="">@endif
+        <div class="title"><b>{{ $product->name }}</b><span>Photo studio · {{ count($photos) }} {{ count($photos) === 1 ? 'photo' : 'photos' }}</span></div>
+        <button class="gold desk-only" data-all>{!! $sparkle !!} Do all photos</button>
+    </div>
+</header>
+
 <div class="wrap">
-    <a href="{{ $back }}">← Back to the product</a>
-    <h1>Photo studio — {{ $product->name }}</h1>
-    <p class="muted">The piece is cut out and placed on a clean background (white, colours, velvet, or a photo of your store) with a soft shadow, light evened out, all photos the same square size.
-        It runs in this browser with a free AI model, so there's no cost and the photos are not sent to any other company.
-        The first time, the browser downloads the model (about 45–115 MB) once; after that it is quick. Works best in Chrome or Edge on a computer.</p>
-
-    <div class="box">
-        <div class="bar" style="margin:0">
-            <button class="gold" id="all">✨ Do all photos</button>
-            <label class="opt"><input type="checkbox" id="optShadow" checked> Soft shadow</label>
-            <label class="opt"><input type="checkbox" id="optLight" checked> Even out light</label>
-            <label class="opt">Size <input type="range" id="optSize" min="55" max="92" value="74"> <span id="sizeVal">74%</span></label>
-        </div>
-        <div style="margin-top:14px">
-            <div class="muted" style="margin-bottom:6px">Background <span id="bgName" style="color:var(--ink)"></span></div>
-            <div class="swatches" id="swatches">
-                @foreach ([['white', 'White', '#ffffff'], ['ivory', 'Ivory', '#f7f1e6'], ['grey', 'Soft grey', '#e9e9e7'], ['champagne', 'Champagne glow', 'radial-gradient(circle at 50% 40%, #fffaf0, #ead9b4)'],
-                    ['blush', 'Blush', 'radial-gradient(circle at 50% 40%, #fff6f4, #f1d3cf)'], ['sky', 'Pearl blue', 'radial-gradient(circle at 50% 40%, #f7fbff, #d6e2ee)'],
-                    ['emerald', 'Emerald velvet', 'radial-gradient(circle at 50% 40%, #1f5a4a, #0b2a22)'], ['navy', 'Royal blue velvet', 'radial-gradient(circle at 50% 40%, #29467e, #0d1b3a)'],
-                    ['black', 'Black velvet', 'radial-gradient(circle at 50% 40%, #3a3a3a, #0c0c0c)']] as [$k, $label, $css])
-                    <button type="button" class="sw" data-bg="{{ $k }}" title="{{ $label }}" aria-label="{{ $label }}" style="background: {{ $css }}"></button>
-                @endforeach
-                <label class="sw" title="Any colour" aria-label="Any colour" style="background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red)"><input type="color" id="bgColour" value="#f3e9d8"></label>
-                @foreach ($backgrounds as $b)
-                    <button type="button" class="sw" data-photo="{{ $b['url'] }}" title="{{ $b['label'] }}" aria-label="{{ $b['label'] }}" style="background-image: url('{{ $b['url'] }}')">
-                        @if ($b['path'])<span class="x" data-remove="{{ $b['path'] }}" title="Remove this background">✕</span>@endif</button>
-                @endforeach
-                <label class="sw" title="Add your store photo" aria-label="Add your store photo" style="display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer">+<input type="file" id="bgUpload" accept="image/*" hidden></label>
-            </div>
-            <div class="bar" id="photoOpts" style="margin:8px 0 0; display:none">
-                <label class="opt">Blur the store photo <input type="range" id="bgBlur" min="0" max="24" value="10"></label>
-                <label class="opt">Brighter <input type="range" id="bgLight" min="-30" max="40" value="10"></label>
-            </div>
-            <p class="muted" style="margin:6px 0 0">The "+" adds a photo of your shop or showroom as a background (kept for next time). A little blur makes the piece stand out.</p>
-        </div>
-        <div class="bar" style="margin:10px 0 0">
-            <div class="progress"><div id="prog"></div></div>
-            <span class="muted" id="modelStatus">The model loads when you start.</span>
-        </div>
-    </div>
-
-    <div class="grid" style="margin-top:16px" id="grid">
-        @forelse ($photos as $p)
-            <div class="box" data-index="{{ $p['index'] }}" data-path="{{ $p['path'] }}" data-url="{{ $p['url'] }}" data-original="{{ $p['original'] }}">
-                <div class="pair">
-                    <div><span class="tag">Now in the shop</span><img src="{{ $p['url'] }}" alt="" data-now></div>
-                    <div><span class="tag">New</span><canvas data-out width="10" height="10"></canvas></div>
+    <div class="layout">
+        <aside class="side" style="display:grid;gap:16px">
+            <div class="card">
+                <p class="step"><i>1</i> Choose a background <span id="bgName" class="muted" style="font-weight:400"></span></p>
+                <div class="swatches" id="swatches">
+                    @foreach ([['white', 'White', '#ffffff'], ['ivory', 'Ivory', '#f7f1e6'], ['grey', 'Soft grey', '#e9e9e7'], ['champagne', 'Champagne', 'radial-gradient(circle at 50% 40%, #fffaf0, #ead9b4)'],
+                        ['blush', 'Blush', 'radial-gradient(circle at 50% 40%, #fff6f4, #f1d3cf)'], ['sky', 'Pearl blue', 'radial-gradient(circle at 50% 40%, #f7fbff, #d6e2ee)'],
+                        ['emerald', 'Emerald velvet', 'radial-gradient(circle at 50% 40%, #1f5a4a, #0b2a22)'], ['navy', 'Blue velvet', 'radial-gradient(circle at 50% 40%, #29467e, #0d1b3a)'],
+                        ['black', 'Black velvet', 'radial-gradient(circle at 50% 40%, #3a3a3a, #0c0c0c)']] as [$k, $label, $css])
+                        <button type="button" class="sw" data-bg="{{ $k }}" aria-label="{{ $label }}"><span class="dot" style="background: {{ $css }}"></span>{{ $label }}</button>
+                    @endforeach
+                    <label class="sw" aria-label="Any colour"><span class="dot" id="colourDot" style="background: conic-gradient(#e25555, #e9c46a, #6bbf59, #4fb3d9, #5a6fe0, #c25ad1, #e25555)"><input type="color" id="bgColour" value="#f3e9d8"></span>Any colour</label>
+                    @foreach ($backgrounds as $b)
+                        <button type="button" class="sw" data-photo="{{ $b['url'] }}" aria-label="{{ $b['label'] }}"><span class="dot" style="background-image: url('{{ $b['url'] }}')">@if ($b['path'])<span class="x" data-remove="{{ $b['path'] }}" title="Remove this background">✕</span>@endif</span>{{ $b['path'] ? 'Store photo' : 'Showroom' }}</button>
+                    @endforeach
+                    <label class="sw" aria-label="Add your store photo"><span class="dot plus">+</span>Your store<input type="file" id="bgUpload" accept="image/*" hidden></label>
                 </div>
-                <div class="status muted" data-status>{{ $p['original'] ? 'Already done in the studio. You can redo it or put the original back.' : 'Not done yet.' }}</div>
-                <div class="actions">
-                    <button data-run>✨ Do this photo</button>
-                    <button data-edit disabled>🖌 Fix edges</button>
-                    <button class="dark" data-save disabled>Save to shop</button>
-                    <button data-restore @unless ($p['original']) style="display:none" @endunless>↩ Put original back</button>
+                <div id="photoOpts" style="display:none;margin-top:12px">
+                    <div class="switch"><span>Blur the store</span><input type="range" id="bgBlur" min="0" max="24" value="10"></div>
+                    <div class="switch"><span>Brighter</span><input type="range" id="bgLight" min="-30" max="40" value="10"></div>
                 </div>
             </div>
-        @empty
-            <p class="muted">This product has no photos yet. Add photos on the product page first, save, then come back here.</p>
-        @endforelse
+            <div class="card">
+                <p class="step"><i>2</i> Finishing</p>
+                <label class="switch"><span>Soft shadow under the piece</span><input type="checkbox" id="optShadow" checked></label>
+                <label class="switch"><span>Even out the light</span><input type="checkbox" id="optLight" checked></label>
+                <div class="switch"><span>Size of the piece <b id="sizeVal">74%</b></span><input type="range" id="optSize" min="55" max="92" value="74"></div>
+                <div class="model"><div class="progress"><div id="prog"></div></div><span id="modelStatus">The AI model loads when you start (first time about 45–115 MB, then quick).</span></div>
+            </div>
+            <p class="muted" style="margin:0 4px">Free AI in your own browser — nothing is sent to another company. Works best in Chrome or Edge on a computer. Tap any photo to see it big.</p>
+        </aside>
+
+        <main>
+            <p class="step" style="margin-left:4px"><i>3</i> Your photos <span class="muted" style="font-weight:400">— check, then Save to shop</span></p>
+            <div class="grid" id="grid">
+                @forelse ($photos as $p)
+                    <div class="card photo" data-index="{{ $p['index'] }}" data-path="{{ $p['path'] }}" data-url="{{ $p['url'] }}" data-original="{{ $p['original'] }}">
+                        <div class="stage" data-stage>
+                            <img class="main" src="{{ $p['url'] }}" alt="" data-now>
+                            <canvas data-out width="10" height="10"></canvas>
+                            <div class="before"><img src="{{ $p['url'] }}" alt="" data-before></div>
+                            <span class="tag" data-tag>{{ $p['original'] ? 'In the shop (studio)' : 'In the shop' }}</span>
+                            <button type="button" class="zoom" data-zoom aria-label="View big">{!! $icon('<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M11 8v6M8 11h6"/>') !!}</button>
+                        </div>
+                        <div class="status muted" data-status>{{ $p['original'] ? 'Done in the studio before. Redo it or put the original back.' : 'Not done yet.' }}</div>
+                        <div class="actions">
+                            <button class="gold wide" data-run>{!! $sparkle !!} <span>Make it beautiful</span></button>
+                            <button data-edit disabled>{!! $icon('<path d="M4 20c2 0 4-1 4-3.5S6 13 6 13l8.5-8.5a2.1 2.1 0 013 3L9 16"/>') !!} Fix edges</button>
+                            <button class="dark" data-save disabled>{!! $icon('<path d="M5 12l4 4L19 6"/>') !!} Save to shop</button>
+                            <button class="ghost wide" data-restore @unless ($p['original']) style="display:none" @endunless>{!! $icon('<path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 010 10h-3"/>') !!} Put original back</button>
+                        </div>
+                    </div>
+                @empty
+                    <div class="card"><p class="muted" style="margin:0">This product has no photos yet. Add photos on the product page, save, then open the studio again.</p></div>
+                @endforelse
+            </div>
+        </main>
     </div>
+</div>
+
+<div class="mobile-bar"><button class="gold" data-all>{!! $sparkle !!} Do all photos</button></div>
+
+<div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="Photo">
+    <div class="v-top">
+        <div class="tabs" id="vTabs">
+            <button data-mode="before">Before</button><button data-mode="after">After</button><button data-mode="compare">Compare</button>
+        </div>
+        <button class="v-close" id="vClose" aria-label="Close">✕</button>
+    </div>
+    <div class="v-body"><div class="v-frame" id="vFrame"></div></div>
 </div>
 
 <div class="editor" id="editor">
@@ -112,10 +181,10 @@
     <div class="tools">
         <button id="edErase" class="on">Erase (remove background)</button>
         <button id="edKeep">Restore (keep part of the piece)</button>
-        <label class="opt">Brush <input type="range" id="edSize" min="4" max="120" value="30"></label>
+        <label style="display:inline-flex;gap:6px;align-items:center">Brush <input type="range" id="edSize" min="4" max="120" value="30"></label>
         <button class="gold" id="edDone">Done</button>
     </div>
-    <p class="muted" style="color:#ccc;margin-top:8px">Paint over anything that should not be in the photo (hand, tray, table). Faded parts will be removed.</p>
+    <p class="muted" style="color:#ccc;margin-top:8px;text-align:center">Paint over anything that should not be in the photo (hand, tray, table). Faded parts will be removed.</p>
 </div>
 
 <script type="module">
@@ -143,8 +212,8 @@ function remember() { try { localStorage.setItem('studioBg', JSON.stringify({ ke
 function markBg() {
     document.querySelectorAll('.sw').forEach(b => b.classList.toggle('on', !! ((bg.key && b.dataset.bg === bg.key) || (bg.photo && b.dataset.photo === bg.photo) || (bg.colour && b.contains($('#bgColour'))))));
     $('#photoOpts').style.display = bg.photo ? '' : 'none';
-    $('#bgName').textContent = bg.photo ? '— store photo' : bg.colour ? '— ' + bg.colour : '— ' + BG[bg.key][0];
-    $('#all').textContent = '✨ Do all photos';
+    $('#bgName').textContent = bg.photo ? '· store photo' : bg.colour ? '· ' + bg.colour : '· ' + BG[bg.key][0];
+    if (bg.colour) $('#colourDot').style.background = bg.colour;
 }
 function isDark() {
     if (bg.photo) return +$('#bgLight').value < -10;
@@ -205,7 +274,9 @@ $('#bgUpload').addEventListener('change', async e => {
     if (! r.ok) { alert('Could not add this photo.'); return; }
     const j = await r.json();
     const b = Object.assign(document.createElement('button'), { type: 'button', className: 'sw', title: 'Store photo' });
-    b.dataset.photo = j.url; b.style.backgroundImage = `url('${j.url}')`;
+    b.dataset.photo = j.url;
+    const dot = Object.assign(document.createElement('span'), { className: 'dot' }); dot.style.backgroundImage = `url('${j.url}')`;
+    b.append(dot, 'Store photo');
     e.target.closest('.sw').before(b); bindPhoto(b);
     bg = { photo: j.url }; markBg(); rerender();
 });
@@ -288,7 +359,9 @@ async function run(it) {
     } finally { setBusy(it, false); }
 }
 
-function setBusy(it, b) { $('[data-run]', it.el).disabled = b; }
+function setBusy(it, b) { $('[data-run]', it.el).disabled = b; $('[data-run] span', it.el).textContent = b ? 'Working…' : (it.done ? 'Do it again' : 'Make it beautiful'); }
+// Tell the product page (when the studio is open inside it) to show the new photos.
+const tellProduct = () => { try { window.parent !== window && window.parent.postMessage({ type: 'studio-saved' }, location.origin); } catch (e) {} };
 
 // Light: brightness to a pleasant middle (measured on the piece only), a touch of contrast and colour. Gold stays gold.
 function lut(meanLum) {
@@ -315,6 +388,9 @@ async function render(it) {
     out.width = OUT; out.height = OUT;
     out.getContext('2d').drawImage(draft, 0, 0);
     it.done = true;
+    $('[data-stage]', it.el).classList.add('has-new');
+    const tag = $('[data-tag]', it.el); tag.textContent = 'New — not saved yet'; tag.classList.add('new');
+    if (viewer.it === it) showViewer();
 }
 
 // The piece cut out with the light evened (kept until the mask or the light option changes).
@@ -357,7 +433,9 @@ async function save(it) {
         it.path = j.path; it.url = j.url; it.el.dataset.path = j.path;
         $('[data-now]', it.el).src = j.url;
         $('[data-restore]', it.el).style.display = '';
+        const tag = $('[data-tag]', it.el); tag.textContent = '✓ Saved in the shop'; tag.classList.add('new');
         status(it, '✓ Saved — this photo is now in the shop.', 'ok');
+        tellProduct();
     } catch (e) { status(it, e.message, 'err'); btn.disabled = false; }
 }
 
@@ -367,8 +445,11 @@ async function restore(it) {
     if (! r.ok) return status(it, 'Could not put the original back. Reload the page and try again.', 'err');
     const j = await r.json();
     it.path = j.path; it.url = j.url; it.el.dataset.path = j.path; it.src = null; it.mask = null; it.cut = null;
-    $('[data-now]', it.el).src = j.url;
+    $('[data-now]', it.el).src = j.url; $('[data-before]', it.el).src = j.url;
+    $('[data-stage]', it.el).classList.remove('has-new'); it.done = false;
+    const tag = $('[data-tag]', it.el); tag.textContent = 'In the shop'; tag.classList.remove('new');
     $('[data-restore]', it.el).style.display = 'none';
+    tellProduct();
     $('[data-edit]', it.el).disabled = true; $('[data-save]', it.el).disabled = true;
     status(it, 'Original photo is back in the shop.', 'ok');
 }
@@ -399,18 +480,49 @@ $('#edErase').onclick = () => { ed.mode = 'erase'; $('#edErase').classList.add('
 $('#edKeep').onclick = () => { ed.mode = 'keep'; $('#edKeep').classList.add('on'); $('#edErase').classList.remove('on'); };
 $('#edDone').onclick = () => { ed.el.classList.remove('open'); ed.it.cut = null; render(ed.it); $('[data-save]', ed.it.el).disabled = false; };
 
+// ---- Big viewer: before, after, or both with a slider. ----
+const viewer = { el: $('#viewer'), frame: $('#vFrame'), it: null, mode: 'after', cut: 50 };
+function showViewer() {
+    const { it, frame } = viewer;
+    const hasNew = !! it.done;
+    let mode = hasNew ? viewer.mode : 'before';
+    document.querySelectorAll('#vTabs button').forEach(b => { b.classList.toggle('on', b.dataset.mode === mode); b.disabled = ! hasNew && b.dataset.mode !== 'before'; });
+    frame.innerHTML = '';
+    const before = Object.assign(document.createElement('img'), { src: hasNew ? $('[data-before]', it.el).src : $('[data-now]', it.el).src, alt: '' });
+    const label = (t, side) => Object.assign(document.createElement('span'), { className: 'v-label', textContent: t, style: side + ':10px' });
+    if (mode === 'before' || ! hasNew) { frame.append(before, label(hasNew ? 'Before' : 'In the shop', 'left')); return; }
+    const after = canvas(OUT, OUT); after.getContext('2d').drawImage($('[data-out]', it.el), 0, 0); after.className = 'after';
+    if (mode === 'after') { after.className = ''; frame.append(after, label('After', 'right')); return; }
+    frame.style.setProperty('--cut', viewer.cut + '%');
+    frame.append(before, after, Object.assign(document.createElement('div'), { className: 'v-line' }), label('Before', 'left'), label('After', 'right'));
+}
+function openViewer(it) { viewer.it = it; viewer.mode = it.done ? 'compare' : 'before'; showViewer(); viewer.el.classList.add('open'); }
+document.querySelectorAll('#vTabs button').forEach(b => b.onclick = () => { viewer.mode = b.dataset.mode; showViewer(); });
+$('#vClose').onclick = () => { viewer.el.classList.remove('open'); viewer.it = null; };
+document.addEventListener('keydown', e => { if (e.key === 'Escape') $('#vClose').click(); });
+const slide = e => {
+    if (viewer.mode !== 'compare') return;
+    const r = viewer.frame.getBoundingClientRect();
+    viewer.cut = Math.max(0, Math.min(100, (e.clientX - r.left) / r.width * 100));
+    viewer.frame.style.setProperty('--cut', viewer.cut + '%');
+};
+viewer.frame.addEventListener('pointerdown', e => { viewer.frame.setPointerCapture(e.pointerId); viewer.drag = true; slide(e); });
+viewer.frame.addEventListener('pointermove', e => viewer.drag && slide(e));
+viewer.frame.addEventListener('pointerup', () => viewer.drag = false);
+
 items.forEach(it => {
+    $('[data-stage]', it.el).onclick = () => openViewer(it);
     $('[data-run]', it.el).onclick = () => run(it);
     $('[data-save]', it.el).onclick = () => save(it);
     $('[data-restore]', it.el).onclick = () => restore(it);
     $('[data-edit]', it.el).onclick = () => { ed.it = it; ed.c.width = it.src.width; ed.c.height = it.src.height; edDraw(); ed.el.classList.add('open'); };
 });
 markBg();
-$('#all').onclick = async () => {
-    $('#all').disabled = true;
+document.querySelectorAll('[data-all]').forEach(btn => btn.onclick = async () => {
+    document.querySelectorAll('[data-all]').forEach(b => b.disabled = true);
     for (const it of items) await run(it);
-    $('#all').disabled = false;
-};
+    document.querySelectorAll('[data-all]').forEach(b => b.disabled = false);
+});
 </script>
 </body>
 </html>
