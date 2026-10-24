@@ -63,6 +63,8 @@ class VideoCallRequestResource extends Resource
                 Tables\Columns\TextColumn::make('product.name')->label('Product')->description(fn (VideoCallRequest $record) => $record->product?->sku)
                     ->url(fn (VideoCallRequest $record) => $record->product ? route('product.show', $record->product) : null, true),
                 Tables\Columns\TextColumn::make('locale')->label('Lang')->badge()->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('platform')->label('App')->badge()->color('info')->placeholder('—')
+                    ->formatStateUsing(fn (?string $state) => VideoCallRequest::PLATFORMS[$state] ?? $state),
                 Tables\Columns\TextColumn::make('status')->badge()->formatStateUsing(fn (string $state) => VideoCallRequest::STATUSES[$state] ?? $state)
                     ->color(fn (string $state) => ['waiting' => 'danger', 'answered' => 'success', 'done' => 'gray', 'missed' => 'warning'][$state] ?? 'gray'),
                 Tables\Columns\TextColumn::make('staff.name')->label('Answered by')->placeholder('—'),

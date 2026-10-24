@@ -34,6 +34,39 @@ class Product extends Model
         ]));
     }
 
+    public const GOLD_COLOURS = ['yellow' => 'Yellow gold', 'white' => 'White gold', 'rose' => 'Rose gold', 'two_tone' => 'Two-tone gold'];
+
+    /** Sizes the customer chooses from (ring / bangle / chain length…), [] when the piece has one size. */
+    public function sizeList(): array
+    {
+        return array_values(array_filter(array_map(fn ($s) => trim((string) $s), (array) ($this->sizes ?? [])), 'strlen'));
+    }
+
+    /** Gold colours the customer chooses from (keys of GOLD_COLOURS), [] when there is no choice. */
+    public function colourList(): array
+    {
+        return array_values(array_intersect(array_keys(self::GOLD_COLOURS), (array) ($this->gold_colours ?? [])));
+    }
+
+    public function needsOptions(): bool
+    {
+        return $this->sizeList() !== [] || $this->colourList() !== [];
+    }
+
+    public static function colourLabel(string $key): string
+    {
+        return isset(self::GOLD_COLOURS[$key]) ? __('shop.product.colour_'.$key) : $key;
+    }
+
+    /** ['size' => '16', 'colour' => 'rose'] → "Size 16 · Rose gold". */
+    public static function optionsText(array $options): string
+    {
+        return implode(' · ', array_filter([
+            filled($options['size'] ?? null) ? __('shop.product.size').' '.$options['size'] : null,
+            filled($options['colour'] ?? null) ? self::colourLabel($options['colour']) : null,
+        ]));
+    }
+
     /** A diamond piece: diamond type chosen, carat entered, or "Diamond" among its stones. */
     public function hasDiamond(): bool
     {
@@ -50,6 +83,8 @@ class Product extends Model
     {
         return [
             'images' => 'array',
+            'sizes' => 'array',
+            'gold_colours' => 'array',
             'weight_grams' => 'decimal:3',
             'manufacturer_charge_value' => 'decimal:2',
             'stone_value' => 'decimal:2',
@@ -189,6 +224,15 @@ class Product extends Model
                 }
                 if ($p->isDirty() || ! $p->exists) {
                     $p->updated_by = $by->id;
+                }
+            }
+            // Neat capitals in the English name and description (Settings → Store & tax → Tidy product text).
+            if (\App\Support\TextStyle::enabled()) {
+                if ($p->isDirty('name')) {
+                    $p->name = \App\Support\TextStyle::name($p->name);
+                }
+                if ($p->isDirty('description')) {
+                    $p->description = \App\Support\TextStyle::description($p->description);
                 }
             }
             // Empty SEO boxes are written from the product's details (Settings → Store & tax → Write SEO automatically).

@@ -17,7 +17,14 @@ final class CartLine
         public readonly int $qty,
         public readonly PriceBreakdown $unit,
         public readonly ?int $priceSeen = null,
+        public readonly array $options = [],
     ) {}
+
+    /** "Size 16 · Rose gold", '' when nothing was chosen. */
+    public function optionsText(): string
+    {
+        return Product::optionsText($this->options);
+    }
 
     public function subtotal(): int
     {

@@ -117,6 +117,7 @@ class OrderService
                     'product_id' => $line->product->id,
                     'product_name' => $line->product->name,
                     'product_name_ar' => $line->product->name_ar,
+                    'options' => $line->options ?: null,
                     'sku' => $line->product->sku,
                     'karat' => $line->product->goldCategory?->name ?? ($line->product->isFixedPrice() ? 'Fixed price' : '—'),
                     'weight_grams' => $line->product->weight_grams,
@@ -174,7 +175,10 @@ class OrderService
             if ($quote->amountDue === 0) {
                 DB::afterCommit(fn () => $this->markPaid($order->fresh(), 'giftcard', 'GC-'.$order->number));
             } elseif ($data['payment_method'] === 'cod') {
-                DB::afterCommit(fn () => SendOrderNotification::dispatch($order->id, 'placed'));
+                DB::afterCommit(function () use ($order) {
+                    SendOrderNotification::dispatch($order->id, 'placed');
+                    rescue(fn () => \App\Support\StaffAlerts::newOrder($order->fresh(), 'cash on delivery'), null, false);
+                });
             }
             // Online payments: no "order placed" message — the customer hears from us once it is paid.
 
@@ -287,8 +291,9 @@ class OrderService
             $this->loyalty->earn($order);
             $this->referrals->rewardFor($order);
 
-            DB::afterCommit(function () use ($order) {
+            DB::afterCommit(function () use ($order, $gateway) {
                 SendOrderNotification::dispatch($order->id, 'paid');
+                rescue(fn () => \App\Support\StaffAlerts::newOrder($order->fresh(), 'paid · '.$gateway), null, false);
                 SendServerSideConversion::dispatch($order->id);
             });
 

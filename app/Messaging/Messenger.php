@@ -22,6 +22,12 @@ class Messenger
             return false;
         }
         try {
+            // Over the daily email limit (Settings → Email): ordinary emails wait for tomorrow.
+            if (EmailQueue::shouldHold($template)) {
+                EmailQueue::hold($to, $message, $template);
+
+                return true;
+            }
             Mail::to($to)->send($message);
             // With the "log" mailer (e.g. a test PC) the email only lands in storage/logs, so don't count it as sent.
             $status = config('mail.default') === 'log' ? 'logged' : 'sent';

@@ -19,6 +19,7 @@ class VideoCallController extends Controller
         $data = $request->validate([
             'name' => 'required|string|max:120',
             'phone' => ['required', 'string', 'max:32', 'regex:/^[+0-9 ()-]{7,}$/'],
+            'platform' => ['nullable', \Illuminate\Validation\Rule::in(array_keys(VideoCallRequest::PLATFORMS))],
         ]);
 
         $call = VideoCallRequest::create($data + [
@@ -28,9 +29,14 @@ class VideoCallController extends Controller
         ]);
 
         $to = Settings::get('video_call_notify_email') ?: Settings::get('store_email');
+        $line = $call->name.' ('.$call->phone.') wants a '.$call->platformName().' video call about '.$product->name.' ('.$product->sku.').';
+        // Staff WhatsApp numbers (Settings → Video calls), so someone picks it up quickly.
+        foreach (\App\Support\StaffAlerts::numbers('video_call_staff_whatsapp') as $number) {
+            $messenger->whatsapp($number, "📹 {$line}\n".url('/admin/video-call-requests'), 'video_call_staff');
+        }
         $messenger->email($to, new ShopMessage(
             'Live video call request: '.$product->name,
-            [$call->name.' ('.$call->phone.') is waiting for a video call about '.$product->name.' ('.$product->sku.').', 'Open the admin and press "Join call".'],
+            [$line, 'Call them on '.$call->platformName().', or open the admin to send a meeting link.'],
             'Open video calls',
             url('/admin/video-call-requests'),
         ), 'video_call_staff');
@@ -53,6 +59,6 @@ class VideoCallController extends Controller
     public function status(VideoCallRequest $call)
     {
         // The join link too: staff may have sent a new meeting link for this call.
-        return response()->json(['status' => $call->status, 'join' => $call->joinUrl($call->name)]);
+        return response()->json(['status' => $call->status, 'join' => $call->customerJoinUrl()]);
     }
 }

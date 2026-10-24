@@ -13,7 +13,7 @@
         'grand_total' => $f($quote->grandTotal), 'grand_total_raw' => Money::toAed($quote->grandTotal),
         'gift_card' => null, 'loyalty' => null, 'amount_due' => $f($quote->amountDue),
         'coupons' => $quote->couponCodes(), 'messages' => $quote->messages, 'methods' => $methods,
-        'lines' => collect($quote->lines)->map(fn ($l, $i) => ['name' => $l->product->localized('name'), 'qty' => $l->qty, 'subtotal' => $f($l->subtotal()), 'discount' => $l->discount ? $f($l->discount) : null, 'total' => $f($quote->lineTaxable($i))])->all(),
+        'lines' => collect($quote->lines)->map(fn ($l, $i) => ['name' => $l->product->localized('name'), 'options' => $l->optionsText(), 'qty' => $l->qty, 'subtotal' => $f($l->subtotal()), 'discount' => $l->discount ? $f($l->discount) : null, 'total' => $f($quote->lineTaxable($i))])->all(),
     ];
     $form = [
         'email' => old('email', $user?->email), 'phone' => old('phone', $user?->phone), 'name' => old('name', $user?->name),
@@ -219,7 +219,7 @@
             <div class="card p-4 sm:p-6" :class="loading && 'opacity-60'">
                 <h2 class="font-display text-2xl">{{ __('shop.checkout.summary') }}</h2>
                 <ul class="mt-4 space-y-3 text-sm">
-                    <template x-for="l in q.lines"><li class="flex justify-between gap-3"><span><span x-text="l.name"></span> <span class="text-muted" x-text="'× ' + l.qty"></span><span class="block text-xs text-gold-700" x-show="l.discount" x-text="'− ' + l.discount"></span></span><span class="price" x-text="l.total"></span></li></template>
+                    <template x-for="l in q.lines"><li class="flex justify-between gap-3"><span><span x-text="l.name"></span> <span class="text-muted" x-text="'× ' + l.qty"></span><span class="block text-xs text-muted" x-show="l.options" x-text="l.options"></span><span class="block text-xs text-gold-700" x-show="l.discount" x-text="'− ' + l.discount"></span></span><span class="price" x-text="l.total"></span></li></template>
                 </ul>
 
                 <div class="mt-5 space-y-2 border-t border-line pt-4">

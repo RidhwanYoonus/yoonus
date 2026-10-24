@@ -30,6 +30,7 @@
                         <img src="{{ $line->product->primaryImage() }}" alt="" class="h-20 w-20 rounded-xl border border-line object-cover sm:h-24 sm:w-24">
                         <div class="min-w-0">
                             <a href="{{ route('product.show', $line->product) }}" class="font-medium hover:text-gold-700">{{ $line->product->localized('name') }}</a>
+                            @if ($line->optionsText())<p class="text-sm text-gold-700">{{ $line->optionsText() }}</p>@endif
                             <p class="price font-semibold sm:hidden">{{ Money::format($line->subtotal()) }}</p>
                             <p class="text-xs text-muted">{{ $line->product->specLine() }} · {{ Money::format($line->unit->taxable) }} {{ __('shop.cart.each') }}</p>
                             <div class="mt-3 flex items-center gap-3">

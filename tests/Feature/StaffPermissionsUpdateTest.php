@@ -25,7 +25,7 @@ class StaffPermissionsUpdateTest extends TestCase
     public function test_existing_staff_keep_their_access_after_the_split(): void
     {
         $old = $this->staff(['affiliates' => ['view', 'edit'], 'products' => ['view'], 'orders' => ['view', 'edit']]);
-        Artisan::call('migrate:rollback', ['--step' => 9, '--force' => true]);   // commission stop, video meeting link, stone mark-up, stone commission + last login, affiliate sign-up switch, affiliate sign-up link, tourist flag, stone types + the permission split
+        Artisan::call('migrate:rollback', ['--step' => 10, '--force' => true]);   // staff alerts + sizes + email queue, commission stop, video meeting link, stone mark-up, stone commission + last login, affiliate sign-up switch, affiliate sign-up link, tourist flag, stone types + the permission split
         Artisan::call('migrate', ['--force' => true]);
 
         $perms = $old->fresh()->permissions;

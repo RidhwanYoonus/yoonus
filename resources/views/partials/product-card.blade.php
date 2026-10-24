@@ -29,7 +29,10 @@
                 <svg class="h-4 w-4 {{ $wished ? 'text-[#7a5a14]' : '' }}" fill="{{ $wished ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/></svg>
             </button>
         </form>
-        @if ($product->inStock())
+        @if ($product->inStock() && $product->needsOptions())
+            {{-- Pieces with sizes / colours: choose them on the product page first. --}}
+            <a href="{{ route('product.show', $product) }}" class="absolute inset-x-3 bottom-3 z-[3] hidden translate-y-2 rounded-md bg-gold-silver py-2.5 text-center text-xs font-semibold uppercase tracking-[0.15em] text-zinc-900 opacity-0 shadow-md transition duration-300 hover:bg-onyx group-hover:translate-y-0 group-hover:opacity-100 lg:block">{{ __('shop.product.choose_options') }}</a>
+        @elseif ($product->inStock())
             <form method="POST" action="{{ route('cart.add', $product) }}" data-add-to-bag class="absolute inset-x-3 bottom-3 z-[3] hidden translate-y-2 opacity-0 transition duration-300 group-hover:translate-y-0 group-hover:opacity-100 lg:block">
                 @csrf
                 <button class="w-full rounded-md bg-gold-silver py-2.5 text-xs font-semibold uppercase tracking-[0.15em] text-zinc-900 shadow-md hover:bg-onyx">{{ __('shop.product.add_to_cart') }}</button>

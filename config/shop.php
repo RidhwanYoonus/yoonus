@@ -87,6 +87,7 @@ return [
         'tax_free_enabled' => true,             // checkout asks tourists if they want a tax-free invoice
         'tax_free_min' => 250,
         'affiliate_rate_backgrounds' => [],      // photos behind the affiliates' gold-rate picture
+        'product_text_style' => true,           // title-case product names, sentence-case descriptions on save
         'seo_auto_fill' => true,                // empty SEO boxes are written from the product / category details              // shop lists start with "Available only" ticked
         'activity_log_enabled' => true,          // Customers → Activity log / Live visitors
         'activity_log_days' => 90,               // 0 = keep for ever
@@ -144,6 +145,7 @@ return [
         'meta_wa_invoice_template' => null,     // approved template with a Document header + body {{1}}
         'meta_wa_template_lang' => 'en',
         'whatsapp_send_invoice' => true,
+        'email_daily_limit' => 95,              // ordinary emails above this wait for the next day; order/invoice emails and codes never wait
         'mail_mailer' => null,                  // resend (API) or smtp to send real email; empty = use the .env setting
         'resend_api_key' => null,
         'mail_host' => null,

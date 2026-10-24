@@ -14,4 +14,6 @@ Schedule::command('queue:prune-batches --hours=72')->daily();
 if (config('queue.default') !== 'sync') {
     Schedule::command('queue:work --stop-when-empty --tries=3 --max-time=50')->everyMinute()->withoutOverlapping()->runInBackground();
 }
+// Emails held back by the daily limit go out as soon as the new day allows.
+Schedule::call(fn () => \App\Messaging\EmailQueue::flush())->everyFifteenMinutes()->name('queued-emails')->withoutOverlapping();
 Schedule::command('shop:prune-activity')->dailyAt('03:17')->withoutOverlapping();

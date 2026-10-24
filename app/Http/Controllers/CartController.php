@@ -27,7 +27,23 @@ class CartController extends Controller
         if (! $product->inStock()) {
             return back()->withErrors(['cart' => __('shop.product.out_of_stock')]);
         }
-        $this->cart->add($product, (int) $request->input('qty', 1));
+        // Size / gold colour: required when the piece offers them, and only from its own list.
+        $options = [];
+        foreach (['size' => $product->sizeList(), 'colour' => $product->colourList()] as $key => $allowed) {
+            if (! $allowed) {
+                continue;
+            }
+            $value = (string) $request->input($key, '');
+            if (! in_array($value, $allowed, true)) {
+                if ($request->wantsJson()) {
+                    return response()->json(['message' => __('shop.product.choose_'.$key)], 422);
+                }
+
+                return redirect()->route('product.show', $product)->withErrors(['cart' => __('shop.product.choose_'.$key)]);
+            }
+            $options[$key] = $value;
+        }
+        $this->cart->add($product, (int) $request->input('qty', 1), $options);
 
         if ($request->wantsJson()) {
             return response()->json(['count' => $this->cart->count()]);

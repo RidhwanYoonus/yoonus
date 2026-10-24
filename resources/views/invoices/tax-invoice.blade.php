@@ -84,7 +84,7 @@
         @foreach ($order->items as $i => $item)
             <tr>
                 <td>{{ $i + 1 }}</td>
-                <td>{{ $item->product_name }}@if ($item->product_name_ar)<br>{{ $ar($item->product_name_ar) }}@endif<br><span class="muted">{{ $item->sku }} · {{ $item->karat }} · {{ $item->weight_grams }} g</span></td>
+                <td>{{ $item->product_name }}@if ($item->product_name_ar)<br>{{ $ar($item->product_name_ar) }}@endif@if ($item->optionsText())<br>{{ $item->optionsText() }}@endif<br><span class="muted">{{ $item->sku }} · {{ $item->karat }} · {{ $item->weight_grams }} g</span></td>
                 <td class="num">{{ $item->qty }}</td>
                 <td class="num">{{ $m($item->gold_rate_snapshot) }}</td>
                 <td class="num">{{ $m($item->gold_value) }}</td>

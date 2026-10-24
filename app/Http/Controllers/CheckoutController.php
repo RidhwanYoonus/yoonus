@@ -260,7 +260,7 @@ class CheckoutController extends Controller
 
         return [
             'lines' => collect($q->lines)->map(fn ($l, $i) => [
-                'name' => $l->product->localized('name'), 'qty' => $l->qty,
+                'name' => $l->product->localized('name'), 'options' => $l->optionsText(), 'qty' => $l->qty,
                 'subtotal' => $f($l->subtotal()), 'discount' => $l->discount ? $f($l->discount) : null, 'total' => $f($q->lineTaxable($i)),
             ])->all(),
             'items_subtotal' => $f($q->itemsSubtotal),

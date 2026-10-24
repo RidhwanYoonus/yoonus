@@ -21,7 +21,7 @@ class ItemsRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table->columns([
-            Tables\Columns\TextColumn::make('product_name')->description(fn (OrderItem $record) => "{$record->sku} · {$record->karat} · {$record->weight_grams} g"),
+            Tables\Columns\TextColumn::make('product_name')->description(fn (OrderItem $record) => trim(($record->optionsText() ? $record->optionsText().' — ' : '')."{$record->sku} · {$record->karat} · {$record->weight_grams} g")),
             Tables\Columns\TextColumn::make('qty'),
             Tables\Columns\TextColumn::make('gold_rate_snapshot')->label('Rate / g')->money('AED'),
             Tables\Columns\TextColumn::make('gold_value')->money('AED'),

@@ -56,6 +56,8 @@ class Settings extends Page implements HasForms
                     Forms\Components\Toggle::make('making_badge')->label('Show making-charge badge on products')->inline(false),
                     Forms\Components\Toggle::make('seo_auto_fill')->label('Write SEO automatically')->inline(false)
                         ->helperText('When a product or category is saved with empty SEO boxes, they are written from its details (name, karat, weight, diamond, lab…) in English and Arabic. Text you type is never changed.'),
+                    Forms\Components\Toggle::make('product_text_style')->label('Tidy product names and descriptions')->inline(false)
+                        ->helperText('On save, English names get title case ("GOLD RING WITH diamond 18k" → "Gold Ring with Diamond 18K") and descriptions get a capital at the start of each sentence. GIA, IGI, VVS1, CZ… stay in capitals.'),
                     Forms\Components\Toggle::make('shop_hide_sold')->label('Hide sold pieces in shop lists')->inline(false)
                         ->helperText('Shop and category pages start with "Available only" ticked; customers can untick it to see sold pieces too.'),
                     Forms\Components\TextInput::make('making_badge_highlight_below')->label('Highlight as "Only X% making" at or below')->numeric()->suffix('%'),
@@ -293,11 +295,21 @@ class Settings extends Page implements HasForms
                             Forms\Components\TextInput::make('extra_percent')->label('Extra commission')->numeric()->minValue(0)->maxValue(200)->suffix('%')->required(),
                         ])->addActionLabel('Add level'),
                 ]),
+                Forms\Components\Tabs\Tab::make('Staff alerts')->icon('heroicon-o-bell-alert')->columns(2)->schema([
+                    Forms\Components\Toggle::make('staff_order_alerts')->label('Tell staff about every new order')->inline(false)->columnSpanFull()
+                        ->helperText('Sent when a cash-on-delivery order is placed and when an online order is paid: order number, customer, pieces, total and a link to the order.'),
+                    Forms\Components\Textarea::make('staff_order_whatsapp')->label('Staff WhatsApp numbers')->rows(3)->placeholder("971501234567\n971559876543")
+                        ->helperText('One per line, international format.'),
+                    Forms\Components\Textarea::make('staff_order_emails')->label('Staff emails')->rows(3)->placeholder("sales@example.com\nmanager@example.com")
+                        ->helperText('One per line.'),
+                ]),
                 Forms\Components\Tabs\Tab::make('Video calls')->icon('heroicon-o-video-camera')->columns(2)->schema([
                     Forms\Components\Toggle::make('video_call_enabled')->label('Live video call button on products')->inline(false)
                         ->helperText('Can also be switched off per product (Products → edit → Stock & visibility).'),
                     $text('video_call_hours', 'Hours shown to customers')->placeholder('Daily 10:00 – 22:00'),
                     $text('video_call_notify_email', 'Email staff about new calls')->email()->placeholder('Store email is used when empty'),
+                    Forms\Components\Textarea::make('video_call_staff_whatsapp')->label('WhatsApp staff about new calls')->rows(2)->placeholder("971501234567\n971559876543")
+                        ->helperText('One number per line (international format). Each gets the customer\'s name, phone and chosen app (Botim, Google Meet, Zoom, Teams).'),
                     $text('video_call_base_url', 'Video service address')->url()
                         ->helperText('In the UAE, Jitsi (meet.jit.si) is often blocked by internet providers — use a Google Meet, Zoom or Microsoft Teams meeting link instead. Every customer then joins that meeting and staff let them in. Staff can also send a fresh link per call (Live video calls → Send meeting link).'),
                     Forms\Components\Toggle::make('store_visit_button')->label('"Book a store visit to see this piece" button on products')->inline(false)
@@ -378,6 +390,8 @@ class Settings extends Page implements HasForms
                             $text('mail_username', 'Username')->placeholder('orders@yourshop.ae'),
                             $secret('mail_password', 'Password / app password'),
                         ]),
+                    Forms\Components\TextInput::make('email_daily_limit')->label('Daily email limit')->numeric()->minValue(0)->suffix('emails a day')
+                        ->helperText(fn () => 'Most hosting plans allow about 100 emails a day. Above this number, ordinary emails (offers, reminders, alerts) wait and go out the next day. Order emails with the invoice and verification codes are always sent at once. 0 = no limit. Sent today: '.\App\Messaging\EmailQueue::sentToday().' · waiting: '.\App\Messaging\EmailQueue::waiting().'.'),
                     Forms\Components\Placeholder::make('mail_hint')->label('')->columnSpanFull()
                         ->content('Sent automatically: order confirmation and status emails (the tax invoice PDF is attached when paid), handover codes, newsletter confirmation, abandoned-cart reminders and gold-drop alerts.'),
                     $secret('mailchimp_api_key', 'Mailchimp API key (optional)'), $text('mailchimp_list_id', 'Mailchimp audience ID'),

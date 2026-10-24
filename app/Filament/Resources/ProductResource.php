@@ -66,6 +66,10 @@ class ProductResource extends Resource
                         ->createOptionForm([Forms\Components\TextInput::make('name')->required(), Forms\Components\TextInput::make('name_ar')->label('Name (Arabic)')->extraInputAttributes(['dir' => 'rtl'])->hintAction(\App\Filament\Support\ArabicField::translate('name', 'name_ar')), Forms\Components\TextInput::make('slug')->required()]),
                     Forms\Components\TextInput::make('hallmark_ref')->label('UAE hallmark reference')->maxLength(64),
                     Forms\Components\Textarea::make('description')->label('Description (English)')->rows(4),
+                    Forms\Components\TagsInput::make('sizes')->label('Sizes the customer can choose')->placeholder('Type a size and press Enter, e.g. 14, 16, 18')
+                        ->helperText('Ring, bangle or chain sizes. Leave empty for one size. The customer must pick one before adding to the bag.')->splitKeys([',', 'Tab']),
+                    Forms\Components\CheckboxList::make('gold_colours')->label('Gold colours the customer can choose')->options(Product::GOLD_COLOURS)->columns(2)
+                        ->helperText('Tick the colours this piece is made in. None ticked = no choice shown.'),
                     Forms\Components\Textarea::make('description_ar')->label('Description (Arabic)')->rows(4)->extraInputAttributes(['dir' => 'rtl'])->hintAction(\App\Filament\Support\ArabicField::translate('description', 'description_ar')),
                 ]),
                 Forms\Components\Section::make('Pricing')->columns(3)->schema([

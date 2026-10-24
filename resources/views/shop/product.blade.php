@@ -87,8 +87,21 @@
             @endif
 
             @if ($product->inStock())
-                <form id="add-to-bag" method="POST" action="{{ route('cart.add', $product) }}" data-add-to-bag class="mt-6 flex gap-3">
+                <form id="add-to-bag" method="POST" action="{{ route('cart.add', $product) }}" data-add-to-bag class="mt-6 flex flex-wrap gap-3">
                     @csrf
+                    {{-- Size / gold colour the customer picks (set per product in the admin). --}}
+                    @if ($product->sizeList())
+                        <div class="w-full sm:flex-1"><label class="label" for="opt-size">{{ __('shop.product.size') }}</label>
+                            <select id="opt-size" name="size" required class="input"><option value="">{{ __('shop.product.choose') }}</option>
+                                @foreach ($product->sizeList() as $s)<option value="{{ $s }}" @selected(old('size') === $s)>{{ $s }}</option>@endforeach</select></div>
+                    @endif
+                    @if ($product->colourList())
+                        <div class="w-full sm:flex-1"><label class="label" for="opt-colour">{{ __('shop.product.gold_colour') }}</label>
+                            <select id="opt-colour" name="colour" required class="input">
+                                @if (count($product->colourList()) > 1)<option value="">{{ __('shop.product.choose') }}</option>@endif
+                                @foreach ($product->colourList() as $c)<option value="{{ $c }}" @selected(old('colour') === $c)>{{ \App\Models\Product::colourLabel($c) }}</option>@endforeach</select></div>
+                    @endif
+                    @if ($product->needsOptions())<div class="basis-full h-0"></div>@endif
                     <label class="sr-only" for="qty">{{ __('shop.cart.qty') }}</label>
                     <input id="qty" type="number" name="qty" value="1" min="1" max="{{ $product->stock_qty }}" class="input w-20 text-center">
                     <button class="btn-gold h-11 flex-1">{{ __('shop.product.add_to_cart') }}</button>
@@ -176,6 +189,13 @@
                             </div>
                             <div><label class="label" for="vc_name">{{ __('shop.checkout.name') }}</label><input id="vc_name" name="name" value="{{ old('name', auth()->user()?->name) }}" required class="input" autocomplete="name">@error('name')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror</div>
                             <div><label class="label" for="vc_phone">{{ __('shop.checkout.phone') }}</label><input id="vc_phone" name="phone" value="{{ old('phone', auth()->user()?->phone) }}" required class="input" dir="ltr" placeholder="+971 50 000 0000" autocomplete="tel">@error('phone')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror</div>
+                            <fieldset><legend class="label">{{ __('shop.video.platform') }}</legend>
+                                <div class="grid grid-cols-2 gap-2 text-sm">
+                                    @foreach (\App\Models\VideoCallRequest::PLATFORMS as $key => $label)
+                                        <label class="flex cursor-pointer items-center gap-2 rounded-lg border border-line px-3 py-2 has-[:checked]:border-gold-500 has-[:checked]:bg-gold-300/15">
+                                            <input type="radio" name="platform" value="{{ $key }}" @checked(old('platform', 'botim') === $key) required class="accent-gold-600"> {{ $label }}</label>
+                                    @endforeach
+                                </div>@error('platform')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror</fieldset>
                             <p class="text-xs text-muted">{{ __('shop.video.privacy') }}</p>
                             <button class="btn-dark w-full">{{ __('shop.video.start') }}</button>
                         </form>

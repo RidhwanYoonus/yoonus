@@ -44,16 +44,18 @@ class CartService
         return $this->cart;
     }
 
-    public function add(Product $product, int $qty = 1): void
+    /** @param array{size?:string,colour?:string} $options size / gold colour the customer chose (the latest choice wins) */
+    public function add(Product $product, int $qty = 1, array $options = []): void
     {
         $cart = $this->model(true);
         $items = collect($cart->items)->keyBy('product_id');
         $current = $items->get($product->id)['qty'] ?? 0;
-        $items[$product->id] = [
+        $items[$product->id] = array_filter([
             'product_id' => $product->id,
             'qty' => min($current + max(1, $qty), max(1, $product->stock_qty)),
             'price_seen' => $this->pricing->displayPriceFor($product)->total,
-        ];
+            'options' => $options ?: ($items->get($product->id)['options'] ?? null),
+        ], fn ($v) => $v !== null);
         $this->save($items->values()->all());
     }
 
@@ -96,7 +98,7 @@ class CartService
             ->map(function ($i) use ($products) {
                 $p = $products[$i['product_id']];
 
-                return new CartLine($p, min((int) $i['qty'], max(0, $p->stock_qty)), $this->pricing->forProduct($p), $i['price_seen'] ?? null);
+                return new CartLine($p, min((int) $i['qty'], max(0, $p->stock_qty)), $this->pricing->forProduct($p), $i['price_seen'] ?? null, (array) ($i['options'] ?? []));
             })
             ->filter(fn (CartLine $l) => $l->qty > 0)
             ->values()->all();

@@ -57,6 +57,9 @@ return [
     ],
 
     'product' => [
+        'size' => 'Size', 'gold_colour' => 'Gold colour', 'choose' => 'Choose…',
+        'choose_size' => 'Please choose a size.', 'choose_colour' => 'Please choose a gold colour.', 'choose_options' => 'Choose size / colour',
+        'colour_yellow' => 'Yellow gold', 'colour_white' => 'White gold', 'colour_rose' => 'Rose gold', 'colour_two_tone' => 'Two-tone gold',
         'stones' => 'Stones',
         'g' => 'g', 'gold' => 'Gold', 'price' => 'Price', 'weight' => 'Weight', 'purity' => 'Purity', 'hallmark' => 'Hallmark',
         'incl_vat' => 'Includes :vat% VAT',
@@ -446,6 +449,7 @@ return [
     ],
 
     'video' => [
+        'platform' => 'Which app do you prefer?', 'we_call' => 'Thank you! Our team will call you on :app at :phone in a few minutes. If they send a meeting link, a Join button appears here.',
         'link_message' => ':store: your live video call is ready. Tap to join: :link', 'link_subject' => ':store — join your video call',
         'cta' => 'Live video call with our staff', 'hint' => 'See this piece live on camera · :hours',
         'title' => 'Live video call', 'eyebrow' => 'See it live',

@@ -11,6 +11,36 @@ class VideoCallRequest extends Model
 {
     public const STATUSES = ['waiting' => 'Waiting', 'answered' => 'Answered', 'done' => 'Done', 'missed' => 'Missed'];
 
+    /** Apps the customer can choose for the call (all work in the UAE). */
+    public const PLATFORMS = ['botim' => 'Botim', 'google_meet' => 'Google Meet', 'zoom' => 'Zoom', 'teams' => 'Microsoft Teams'];
+
+    public function platformName(): string
+    {
+        return self::PLATFORMS[$this->platform] ?? 'online';
+    }
+
+    /**
+     * Link the customer can open themselves: one staff sent for this call, or the shop's own meeting link
+     * when it is for the app the customer chose. Botim calls come from staff, so there is no link.
+     */
+    public function customerJoinUrl(): ?string
+    {
+        if (filled($this->meeting_url ?? null)) {
+            return $this->joinUrl($this->name);
+        }
+        $base = (string) Settings::get('video_call_base_url', 'https://meet.jit.si');
+        $host = strtolower((string) parse_url($base, PHP_URL_HOST));
+        $matches = match ($this->platform) {
+            null, '' => true,   // older requests (before the app choice): as before
+            'google_meet' => $host === 'meet.google.com',
+            'zoom' => str_ends_with($host, 'zoom.us'),
+            'teams' => str_contains($host, 'teams.'),
+            default => false,
+        };
+
+        return $matches ? $this->joinUrl($this->name) : null;
+    }
+
     protected $guarded = ['id'];
 
     protected function casts(): array
