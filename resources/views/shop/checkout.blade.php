@@ -55,7 +55,8 @@
         <div class="space-y-8">
             <section class="card p-4 sm:p-6">
                 <h2 class="font-display text-2xl">{{ __('shop.checkout.contact') }}</h2>
-                @guest<p class="mt-1 text-sm text-muted">{{ __('shop.checkout.guest_note') }} <a href="{{ route('login') }}" class="text-gold-700 underline">{{ __('shop.auth.login') }}</a></p>
+                @guest<p class="mt-1 text-sm text-muted">{{ __('shop.checkout.guest_note') }} <a href="{{ route('login') }}" class="text-gold-700 underline">{{ __('shop.auth.login') }}</a>
+                    · <a href="{{ route('login.code') }}" class="text-gold-700 underline">{{ __('shop.code_login.short') }}</a></p>
                     @if (\App\Support\Settings::bool('checkout_auto_account', true))
                         <label class="mt-3 flex items-start gap-2 rounded-xl bg-sand/60 px-3 py-2 text-sm"><input type="checkbox" name="keep_signed_in" value="1" @checked(old('keep_signed_in', '1')) class="mt-0.5 accent-gold-600">
                             <span>{{ __('shop.checkout.keep_signed_in') }}<span class="block text-xs text-muted">{{ __('shop.checkout.keep_signed_in_note') }}</span></span></label>
@@ -73,12 +74,12 @@
                 <h2 class="font-display text-2xl">{{ __('shop.checkout.delivery') }}</h2>
                 <div class="mt-4 grid grid-cols-2 gap-3">
                     @if ($deliveryEnabled)
-                        <label class="card flex cursor-pointer items-center gap-3 p-4" :class="form.fulfilment === 'delivery' && 'border-gold-500 ring-1 ring-gold-500'"><input type="radio" name="fulfilment" value="delivery" x-model="form.fulfilment" class="accent-gold-600"> {{ __('shop.checkout.home_delivery') }}</label>
+                        <label class="card flex cursor-pointer items-center gap-3 p-4" :class="form.fulfilment === 'delivery' && 'border-gold-500 ring-1 ring-gold-500'"><input type="radio" name="fulfilment" value="delivery" x-model="form.fulfilment" class="accent-gold-600"> <span>{{ __('shop.checkout.home_delivery') }}@if (\App\Support\DeliveryEstimate::enabled())<span class="block text-xs text-muted">{{ \App\Support\DeliveryEstimate::deliveryText() }}</span>@endif</span></label>
                     @else
                         <div class="card flex items-center gap-3 p-4 text-muted opacity-60"><input type="radio" disabled> <span>{{ __('shop.checkout.home_delivery') }} <span class="block text-xs">{{ __('shop.checkout.delivery_paused') }}</span></span></div>
                     @endif
                     @if ($branches->isNotEmpty())
-                        <label class="card flex cursor-pointer items-center gap-3 p-4" :class="form.fulfilment === 'pickup' && 'border-gold-500 ring-1 ring-gold-500'"><input type="radio" name="fulfilment" value="pickup" x-model="form.fulfilment" class="accent-gold-600"> {{ __('shop.checkout.store_pickup') }}</label>
+                        <label class="card flex cursor-pointer items-center gap-3 p-4" :class="form.fulfilment === 'pickup' && 'border-gold-500 ring-1 ring-gold-500'"><input type="radio" name="fulfilment" value="pickup" x-model="form.fulfilment" class="accent-gold-600"> <span>{{ __('shop.checkout.store_pickup') }}@if (\App\Support\DeliveryEstimate::enabled())<span class="block text-xs text-muted">{{ \App\Support\DeliveryEstimate::pickupText() }}</span>@endif</span></label>
                     @endif
                 </div>
                 @if ($deliveryEnabled)

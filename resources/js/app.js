@@ -49,6 +49,15 @@ Alpine.data('themeToggle', () => ({
 Alpine.data('phoneVerify', (cfg) => ({
     phone: '', code: '', sent: false, busy: false, message: '', error: false, testCode: '', verified: cfg.verified || [],
     channel: 'whatsapp', email: cfg.email || '',
+    // The 6th digit typed (or a pasted code): confirmed straight away, no button to find.
+    init() {
+        this.$watch('code', v => {
+            const d = String(v || '').replace(/\D/g, '');
+            if (d !== v) { this.code = d; return; }
+            if (d.length === 6 && ! this.busy && d !== this.lastTried) { this.lastTried = d; this.check(); }
+        });
+    },
+    lastTried: '',
     // Email for "send by email": the page's own email box when there is one (sign-up, checkout), else the account's.
     currentEmail() { const i = cfg.emailInput && document.querySelector(cfg.emailInput); return (i && i.value) || this.email; },
     norm(p) {
@@ -70,7 +79,12 @@ Alpine.data('phoneVerify', (cfg) => ({
     },
     async check() {
         this.busy = true; this.error = false;
-        try { const j = await this.post(cfg.check, { phone: this.phone, code: this.code }); this.verified.push(j.phone); this.message = j.message; this.testCode = ''; this.$dispatch('phone-verified', j.phone); }
+        try {
+            const j = await this.post(cfg.check, { phone: this.phone, code: this.code });
+            this.verified.push(j.phone); this.message = j.message; this.testCode = ''; this.$dispatch('phone-verified', j.phone);
+            // The checkout's "verify first" check clears at once.
+            this.$nextTick(() => this.$root.querySelectorAll('[data-verify-guard]').forEach(g => g.dispatchEvent(new Event('change', { bubbles: true }))));
+        }
         catch (e) { this.error = true; this.message = e.message; } finally { this.busy = false; }
     },
 }));

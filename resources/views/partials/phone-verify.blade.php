@@ -35,7 +35,7 @@
             </button>
             <template x-if="sent">
                 <span class="flex items-center gap-2">
-                    <input x-model="code" inputmode="numeric" maxlength="6" placeholder="••••••" aria-label="{{ __('shop.verify.code') }}" class="input w-32 text-center tracking-[0.3em]" @keydown.enter.prevent="check()">
+                    <input x-model="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••" aria-label="{{ __('shop.verify.code') }}" class="input w-32 text-center tracking-[0.3em]" @keydown.enter.prevent="check()" x-init="$nextTick(() => $el.focus())">
                     <button type="button" class="btn-dark" @click="check()" :disabled="busy || code.length < 6">{{ __('shop.verify.confirm') }}</button>
                 </span>
             </template>

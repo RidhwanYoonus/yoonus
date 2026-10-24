@@ -87,11 +87,16 @@ class AffiliateController extends Controller
             'tab' => 'nullable|in:transactions,customers', 'from' => 'nullable|date', 'to' => 'nullable|date',
             'type' => 'nullable|in:commission,bonus,collected', 'download' => 'nullable|in:transactions,customers',
         ]);
+        // The admin may switch "My customers" off for an affiliate (Affiliates → edit).
+        $canSeeCustomers = $affiliate->can_see_customers ?? true;
+        if (! $canSeeCustomers && (($f['tab'] ?? null) === 'customers' || ($f['download'] ?? null) === 'customers')) {
+            abort(403);
+        }
         $report = new \App\Affiliates\AffiliateReport($affiliate);
         $from = filled($f['from'] ?? null) ? \Illuminate\Support\Carbon::parse($f['from']) : null;
         $to = filled($f['to'] ?? null) ? \Illuminate\Support\Carbon::parse($f['to']) : null;
         $rows = $report->transactions($from, $to)->when($f['type'] ?? null, fn ($c, $t) => $c->where('type', $t)->values());
-        $customers = $report->customers();
+        $customers = $canSeeCustomers ? $report->customers() : collect();
         $contacts = \App\Affiliates\AffiliateReport::showsContacts();
         if (! $contacts) {
             $customers = $customers->map(fn ($c) => ['phone' => \App\Affiliates\AffiliateReport::mask($c['phone']), 'email' => \App\Affiliates\AffiliateReport::mask($c['email'])] + $c);
@@ -121,6 +126,7 @@ class AffiliateController extends Controller
             ],
             'customers' => $customers,
             'contacts' => $contacts,
+            'canSeeCustomers' => $canSeeCustomers,
         ]);
     }
 

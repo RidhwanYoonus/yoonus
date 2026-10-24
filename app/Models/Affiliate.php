@@ -14,6 +14,7 @@ class Affiliate extends Model
     protected function casts(): array
     {
         return [
+            'can_see_customers' => 'boolean',
             'making_commission_percent' => 'decimal:2',
             'commission_per_gram' => 'decimal:2',
             'commission_per_piece' => 'decimal:2',

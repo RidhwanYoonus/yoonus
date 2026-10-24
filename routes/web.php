@@ -57,6 +57,10 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:login');
+    Route::get('/login/code', [\App\Http\Controllers\Auth\LoginCodeController::class, 'show'])->name('login.code');
+    Route::post('/login/code', [\App\Http\Controllers\Auth\LoginCodeController::class, 'send'])->middleware('throttle:6,10')->name('login.code.send');
+    Route::post('/login/code/verify', [\App\Http\Controllers\Auth\LoginCodeController::class, 'verify'])->middleware('throttle:10,10')->name('login.code.verify');
+    Route::post('/login/code/reset', fn (\Illuminate\Http\Request $r) => tap(redirect()->route('login.code'), fn () => $r->session()->forget(['login_code_target', 'login_code_test'])))->name('login.code.reset');
     Route::get('/forgot-password', [\App\Http\Controllers\Auth\PasswordResetController::class, 'request'])->name('password.request');
     Route::post('/forgot-password', [\App\Http\Controllers\Auth\PasswordResetController::class, 'send'])->middleware('throttle:5,10')->name('password.email');
     Route::get('/reset-password/{token}', [\App\Http\Controllers\Auth\PasswordResetController::class, 'form'])->name('password.reset');

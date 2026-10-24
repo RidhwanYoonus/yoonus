@@ -295,6 +295,27 @@ return [
         'done' => 'Your password is saved. You are signed in.', 'invalid' => 'This link has expired or was already used. Please ask for a new one.',
     ],
 
+    'eta' => [
+        'today' => 'today', 'tomorrow' => 'tomorrow',
+        'delivery_on' => 'Estimated delivery: :day', 'delivery_between' => 'Estimated delivery: :from – :to',
+        'pickup_on' => 'Ready to collect: :day', 'order_note' => 'Estimate when the order was placed — we message you as soon as it is on its way or ready.',
+    ],
+
+    'code_login' => [
+        'track_note' => 'See all your orders with your mobile number or email — no password.', 'short' => 'Ordered before? Sign in with a code',
+        'title' => 'Sign in with a code', 'button' => 'Sign in with a code (mobile or email)',
+        'intro' => 'No password needed. Enter the mobile number or email you used for your order — we send you a 6-digit code. Your earlier orders appear under My account.',
+        'login' => 'Mobile number or email', 'send' => 'Send me a code', 'confirm' => 'Sign in',
+        'enter' => 'Enter the 6-digit code we sent to :to.', 'other' => 'Use another number or email', 'with_password' => 'Sign in with password instead',
+        'invalid' => 'Please enter a mobile number (e.g. 050 123 4567) or an email address.',
+        'sent_whatsapp' => 'Code sent on WhatsApp.', 'sent_sms' => 'Code sent by SMS.', 'sent_email' => 'Code sent by email.',
+        'message' => 'Your :store sign-in code is :code. It works for 10 minutes. Never share it with anyone.',
+        'subject' => ':code is your :store sign-in code',
+        'none' => 'We found no account or order with this. Create your account here (it takes a minute).',
+        'use_email' => 'This mobile belongs to an account that signs in with email. Please sign in with your email (or "Forgot password?").',
+        'staff' => 'Staff accounts sign in with email and password.', 'welcome' => 'Welcome back! You are signed in.',
+    ],
+
     'form' => [
         'required' => 'Please fill in this box.', 'email' => 'Please enter a full email address, e.g. name@gmail.com.',
         'check' => 'Please check this box.', 'photo' => 'Please add this photo.',
@@ -327,6 +348,7 @@ return [
 
     'affiliate' => [
         'report' => [
+            'open_sales' => '📊 Full sales report',
             'title' => 'Report & customers', 'intro' => 'Every commission, bonus and collection in detail, and the customers who came through you.',
             'open' => '📊 Full report & my customers',
             'tab_transactions' => 'Transactions', 'tab_customers' => 'My customers',
@@ -350,6 +372,7 @@ return [
         'your_rates' => 'Commission the shop pays you', 'your_markup' => 'Your white-page mark-up',
         'stone_label' => 'stones +:pct% of the stone value',
         'how' => [
+            'product_rate' => 'This piece has its own commission set by the shop.',
             'button' => 'How is this calculated?', 'title_price' => 'Shop price (today)', 'title_commission' => 'Your commission', 'title_markup' => 'Your white-page mark-up',
             'gold' => 'Gold: :weight × :rate = :amount', 'making' => 'Making charge: :amount', 'stone' => 'Stone value: :amount', 'wastage' => 'Wastage: :amount',
             'shop_price' => 'Shop price (excl. VAT): :amount', 'fixed_price' => 'Fixed price (excl. VAT): :amount',

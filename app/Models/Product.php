@@ -56,6 +56,17 @@ class Product extends Model
         return null;
     }
 
+    public const AFFILIATE_COMMISSION_TYPES = ['per_piece' => 'AED per piece', 'making_percent' => '% of the making charge', 'price_percent' => '% of the item price'];
+
+    /** This piece's own affiliate commission (replaces every affiliate's rate), or null to use theirs. */
+    public function affiliateCommission(): ?array
+    {
+        $type = $this->affiliate_commission_type ?? null;
+
+        return isset(self::AFFILIATE_COMMISSION_TYPES[$type]) && $this->affiliate_commission_value !== null && $this->affiliate_commission_value !== ''
+            ? ['type' => $type, 'value' => (string) $this->affiliate_commission_value] : null;
+    }
+
     public const GOLD_COLOURS = ['yellow' => 'Yellow gold', 'white' => 'White gold', 'rose' => 'Rose gold', 'two_tone' => 'Two-tone gold'];
 
     /** Sizes the customer chooses from (ring / bangle / chain length…), [] when the piece has one size. */
@@ -326,6 +337,21 @@ class Product extends Model
         $low = $value <= (float) Settings::get('making_badge_highlight_below', 5);
 
         return ['text' => __($value <= 0 ? 'shop.product.making_zero' : ($low ? 'shop.product.making_low' : 'shop.product.making_pct'), ['pct' => $pct]), 'highlight' => $low];
+    }
+
+    /** "Only 3% making" stamped across the photo of an in-stock piece below the limit (Settings), or null. */
+    public function makingWatermark(): ?string
+    {
+        if (! Settings::bool('making_watermark') || ! $this->inStock() || $this->isFixedPrice() || $this->manufacturer_charge_type === self::PER_PIECE
+            || app(\App\Pricing\PricingService::class)->markup()->isActive()) {
+            return null;
+        }
+        $value = (float) $this->manufacturer_charge_value;
+        if ($value >= (float) Settings::get('making_watermark_below', 5)) {
+            return null;
+        }
+
+        return __($value <= 0 ? 'shop.product.making_zero' : 'shop.product.making_low', ['pct' => rtrim(rtrim(number_format($value, 2), '0'), '.')]);
     }
 
     public function inStock(): bool

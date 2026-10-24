@@ -21,7 +21,7 @@ class EmailQueue
     public static function urgent(string $template): bool
     {
         return str_starts_with($template, 'order_')
-            || in_array($template, ['handover_otp', 'phone_verification', 'admin_two_factor', 'admin_new_device', 'video_call_link', 'password_reset', 'account_created'], true);
+            || in_array($template, ['handover_otp', 'phone_verification', 'admin_two_factor', 'admin_new_device', 'video_call_link', 'password_reset', 'account_created', 'login_code'], true);
     }
 
     public static function limit(): int

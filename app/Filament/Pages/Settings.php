@@ -60,6 +60,9 @@ class Settings extends Page implements HasForms
                         ->helperText('On save, English names get title case ("GOLD RING WITH diamond 18k" → "Gold Ring with Diamond 18K") and descriptions get a capital at the start of each sentence. GIA, IGI, VVS1, CZ… stay in capitals.'),
                     Forms\Components\Toggle::make('shop_hide_sold')->label('Hide sold pieces in shop lists')->inline(false)
                         ->helperText('Shop and category pages start with "Available only" ticked; customers can untick it to see sold pieces too.'),
+                    Forms\Components\Toggle::make('making_watermark')->label('Stamp low making charge across the photo')->inline(false)
+                        ->helperText('A soft gold stamp such as "ONLY 3% MAKING" over the photo of pieces in stock below the limit. Sold pieces show "Sold" instead.'),
+                    Forms\Components\TextInput::make('making_watermark_below')->label('Stamp when the making charge is below')->numeric()->suffix('%')->placeholder('5'),
                     Forms\Components\TextInput::make('making_badge_highlight_below')->label('Highlight as "Only X% making" at or below')->numeric()->suffix('%'),
                     $text('whatsapp_number', 'WhatsApp number')->helperText('International format, e.g. 971501234567'),
                     Forms\Components\Toggle::make('whatsapp_button')->label('Floating WhatsApp button')->inline(false),
@@ -215,6 +218,16 @@ class Settings extends Page implements HasForms
                         ->helperText('Checkout asks "Do you need a tax-free invoice?". Tourists who say yes must give a passport; you issue the tax-free tag (e.g. Planet) when the piece is handed over.'),
                     Forms\Components\TextInput::make('tax_free_min')->label('Minimum purchase for tax-free')->numeric()->minValue(0)->prefix('AED')
                         ->visible(fn (Forms\Get $get) => (bool) $get('tax_free_enabled'))->helperText('UAE rule: AED 250 including VAT.'),
+                    Forms\Components\Fieldset::make('Estimated delivery / ready date (shown to customers)')->columns(3)->schema([
+                        Forms\Components\Toggle::make('delivery_estimate')->label('Show the estimate')->inline(false)->columnSpanFull()
+                            ->helperText('On the product page, bag, checkout and the customer\'s order page, e.g. "Estimated delivery: tomorrow – Thu 30 Oct" and "Ready to collect: today".'),
+                        Forms\Components\TextInput::make('delivery_days_min')->label('Delivery: from (working days)')->numeric()->minValue(0)->maxValue(30),
+                        Forms\Components\TextInput::make('delivery_days_max')->label('Delivery: up to (working days)')->numeric()->minValue(0)->maxValue(60),
+                        Forms\Components\TextInput::make('pickup_ready_days')->label('Ready to collect after (working days)')->numeric()->minValue(0)->maxValue(30)->helperText('0 = same day'),
+                        Forms\Components\TextInput::make('order_cutoff')->label('Orders after this time count from the next day')->placeholder('17:00')->regex('/^([01]\d|2[0-3]):[0-5]\d$/'),
+                        Forms\Components\CheckboxList::make('working_days')->label('Working days')->columns(4)->columnSpan(2)
+                            ->options([1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday', 7 => 'Sunday']),
+                    ]),
                     Forms\Components\Toggle::make('checkout_auto_account')->label('Guests: "Keep me signed in" at checkout')->inline(false)
                         ->helperText('Ticked by default for guests. A free account is made with the order\'s email, the customer stays signed in on that phone and gets an email to choose a password.'),
                     Forms\Components\Select::make('delivery_location')->label('Customer\'s map location (delivery)')

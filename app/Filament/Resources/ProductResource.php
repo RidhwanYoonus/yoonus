@@ -182,6 +182,15 @@ class ProductResource extends Resource
                     Forms\Components\Placeholder::make('price_calculated_at')->label('Last recalculated')
                         ->content(fn (?Product $record) => $record?->price_calculated_at?->diffForHumans() ?? '—'),
                 ]),
+                Forms\Components\Section::make('Affiliate commission for this piece (optional)')->columns(2)->collapsible()
+                    ->collapsed(fn (?Product $record) => blank($record?->affiliate_commission_type))
+                    ->description('Fill in to pay every affiliate the same commission on this piece, instead of their own rate (Affiliates / Settings). Their white-page mark-up stays as it is. Leave empty to use their rate.')
+                    ->schema([
+                        Forms\Components\Select::make('affiliate_commission_type')->label('Commission')->options(Product::AFFILIATE_COMMISSION_TYPES)->placeholder('Use each affiliate\'s own rate')->live(),
+                        Forms\Components\TextInput::make('affiliate_commission_value')->label(fn (Forms\Get $get) => $get('affiliate_commission_type') === 'per_piece' ? 'AED per piece' : 'Percent')
+                            ->numeric()->minValue(0)->suffix(fn (Forms\Get $get) => $get('affiliate_commission_type') === 'per_piece' ? 'AED' : '%')
+                            ->required(fn (Forms\Get $get) => filled($get('affiliate_commission_type')))->visible(fn (Forms\Get $get) => filled($get('affiliate_commission_type'))),
+                    ]),
                 Forms\Components\Section::make('Stock & visibility')->schema([
                     Forms\Components\TextInput::make('stock_qty')->label('Stock')->numeric()->required()->default(1)->minValue(0)
                         ->helperText(fn (?Product $record) => $record?->hidden_after_sale
@@ -278,13 +287,20 @@ class ProductResource extends Resource
             ->filters([
                 Tables\Filters\TernaryFilter::make('is_active')->label('In shop')->trueLabel('Shown in shop')->falseLabel('Hidden'),
                 Tables\Filters\SelectFilter::make('stock')->label('Stock')
-                    ->options(['in' => 'In stock', 'low' => 'Low stock', 'sold' => 'Sold out (0)'])
+                    ->options(['in' => 'In stock', 'one' => 'Only 1 left', 'two' => '2 or less left', 'five' => '5 or less left', 'low' => 'Low stock (each piece\'s own limit)', 'sold' => 'Sold out (0)'])
                     ->query(fn (Builder $query, array $data) => match ($data['value'] ?? null) {
                         'in' => $query->where('stock_qty', '>', 0),
+                        'one' => $query->where('stock_qty', 1),
+                        'two' => $query->where('stock_qty', '>', 0)->where('stock_qty', '<=', 2),
+                        'five' => $query->where('stock_qty', '>', 0)->where('stock_qty', '<=', 5),
                         'low' => $query->where('stock_qty', '>', 0)->whereColumn('stock_qty', '<=', 'low_stock_threshold'),
                         'sold' => $query->where('stock_qty', '<=', 0),
                         default => $query,
                     }),
+                // Any number: "stock up to 3" lists every piece with 1, 2 or 3 left.
+                Tables\Filters\Filter::make('stock_max')->form([Forms\Components\TextInput::make('max')->label('Stock up to')->numeric()->minValue(0)->placeholder('e.g. 2')])
+                    ->query(fn (Builder $query, array $data) => filled($data['max'] ?? null) ? $query->where('stock_qty', '<=', (int) $data['max']) : $query)
+                    ->indicateUsing(fn (array $data) => filled($data['max'] ?? null) ? 'Stock up to '.(int) $data['max'] : null),
                 Tables\Filters\SelectFilter::make('category_id')->label('Category')->relationship('category', 'name')->multiple()->preload(),
                 Tables\Filters\SelectFilter::make('gold_category_id')->label('Karat')->relationship('goldCategory', 'name')->multiple()->preload(),
                 Tables\Filters\SelectFilter::make('stone')->label('Stone')->options(fn () => ['none' => 'Plain gold (no stone)'] + \App\Models\StoneType::options())

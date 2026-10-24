@@ -8,7 +8,7 @@
     <p class="mt-2 text-sm text-muted">{{ __($r.'intro') }}</p>
 
     <nav class="mt-6 flex gap-2" aria-label="{{ __($r.'title') }}">
-        @foreach (['transactions', 'customers'] as $t)
+        @foreach ($canSeeCustomers ? ['transactions', 'customers'] : ['transactions'] as $t)
             <a href="{{ route('affiliate.report', ['tab' => $t]) }}" @class(['rounded-full px-4 py-2 text-sm font-medium', 'bg-gold-silver text-zinc-900' => $tab === $t, 'bg-sand text-muted hover:text-ink' => $tab !== $t])>
                 {{ __($r.'tab_'.$t) }}@if ($t === 'customers') ({{ $customers->count() }})@endif</a>
         @endforeach

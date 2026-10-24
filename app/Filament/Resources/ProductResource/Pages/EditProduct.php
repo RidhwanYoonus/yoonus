@@ -16,6 +16,8 @@ class EditProduct extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            // Save at the top too, so a long product form needs no scrolling.
+            Actions\Action::make('saveTop')->label('Save changes')->icon('heroicon-o-check')->color('primary')->action(fn () => $this->save()),
             // Opens over this product page (no new tab), so phones stay on the same screen; saved photos show up here.
             Actions\Action::make('studio')->label('Photo studio')->icon('heroicon-o-sparkles')->color('warning')
                 ->modalHeading('Photo studio — beautiful backgrounds')->modalWidth(\Filament\Support\Enums\MaxWidth::Screen)

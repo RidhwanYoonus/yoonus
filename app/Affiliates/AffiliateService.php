@@ -53,7 +53,7 @@ class AffiliateService
             // Commission is worked out on the shop's own price: the making / price without the mark-up,
             // the stone value without the stone mark-up.
             $calc->stone_value = Money::toAed(max(0, Money::toFils($item->stone_value ?? 0) - $stoneMarkup));
-            [$basis, $baseShown, $rateShown, $commission] = $this->line($affiliate, $calc, $fixed, $markup - $stoneMarkup);
+            [$basis, $baseShown, $rateShown, $commission] = $this->line($affiliate, $calc, $fixed, $markup - $stoneMarkup, $item->product);
             [$bonus, $bonusNote] = $this->extras($commission, $level, $boosters, $item->product, $fixed);
             $deduction = min($share, $commission + $bonus + $markup);
             if ($commission + $bonus + $markup <= 0) {
@@ -251,7 +251,7 @@ class AffiliateService
             'discount_amount' => '0',
         ];
 
-        return $this->line($affiliate, $item, $line->product->isFixedPrice(), 0)[3];
+        return $this->line($affiliate, $item, $line->product->isFixedPrice(), 0, $line->product)[3];
     }
 
     /**
@@ -268,7 +268,7 @@ class AffiliateService
             'qty' => 1, 'weight_grams' => (string) $product->weight_grams, 'making_fee' => Money::toAed($base->makingFee),
             'subtotal' => Money::toAed($base->subtotal), 'stone_value' => Money::toAed($base->stoneValue), 'discount_amount' => '0',
         ];
-        $commission = $this->line($affiliate, $item, $product->isFixedPrice(), 0)[3];
+        $commission = $this->line($affiliate, $item, $product->isFixedPrice(), 0, $product)[3];
         $markup = 0;
         $rule = $affiliate->effectiveMarkup();
         if ($rule->isActive()) {
@@ -309,7 +309,12 @@ class AffiliateService
             ]));
 
         $perPiece = $a->commission_mode === 'per_piece' ? $a->commission_per_piece : ($fixed && $a->fixed_commission_type === 'per_piece' ? $a->fixed_commission_amount : null);
+        $own = $p->affiliateCommission();
         $comm = match (true) {
+            $own !== null => [$own['type'] === 'per_piece'
+                ? $t('per_piece', ['rate' => $f(Money::toFils($own['value'])), 'amount' => $f($commission)])
+                : $t($own['type'] === 'making_percent' && ! $fixed ? 'of_making' : 'of_price', ['base' => $f($own['type'] === 'making_percent' && ! $fixed ? $base->makingFee : $base->subtotal), 'pct' => $pct($own['value']), 'amount' => $f($commission)]),
+                $t('product_rate')],
             $perPiece !== null => [$t('per_piece', ['rate' => $f(Money::toFils($perPiece)), 'amount' => $f($commission)])],
             $fixed => [$t('of_price', ['base' => $f($base->subtotal), 'pct' => $pct($a->fixed_commission_percent), 'amount' => $f($commission)])],
             $a->making_commission_type === 'per_gram' => array_values(array_filter([
@@ -347,8 +352,25 @@ class AffiliateService
      *   making : base = AED making charge (without mark-up), rate = %
      *   total  : base = AED item price (after discount, without mark-up), rate = %
      */
-    private function line(Affiliate $a, $item, bool $fixed, int $markup): array
+    private function line(Affiliate $a, $item, bool $fixed, int $markup, ?\App\Models\Product $product = null): array
     {
+        // This piece has its own affiliate commission (Products → edit): it replaces every affiliate's rate.
+        if ($own = $product?->affiliateCommission()) {
+            if ($own['type'] === 'per_piece') {
+                $rate = Money::toFils($own['value']);
+
+                return ['piece', (string) $item->qty, Money::toAed($rate), $rate * $item->qty];
+            }
+            $rate = Money::scaled($own['value'], 2);
+            if ($own['type'] === 'making_percent' && ! $fixed) {
+                $base = max(0, Money::toFils($item->making_fee) - $markup);
+
+                return ['making', Money::toAed($base), Money::toAed($rate), Money::percentOf($base, $rate)];
+            }
+            $base = max(0, Money::toFils($item->subtotal) - Money::toFils($item->discount_amount) - $markup);
+
+            return ['total', Money::toAed($base), Money::toAed($rate), Money::percentOf($base, $rate)];
+        }
         $perPiece = $a->commission_mode === 'per_piece' ? $a->commission_per_piece
             : ($fixed && $a->fixed_commission_type === 'per_piece' ? $a->fixed_commission_amount : null);
         if ($perPiece !== null) {

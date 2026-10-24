@@ -10,7 +10,7 @@
         <div class="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800" role="alert">{{ __('shop.affiliate.paused') }}</div>
     @endunless
 
-    <a href="{{ route('affiliate.report', ['tab' => 'customers']) }}" class="btn-gold mt-4 inline-flex h-10 px-5">{{ __('shop.affiliate.report.open') }}</a>
+    <a href="{{ route('affiliate.report', ($affiliate->can_see_customers ?? true) ? ['tab' => 'customers'] : []) }}" class="btn-gold mt-4 inline-flex h-10 px-5">{{ ($affiliate->can_see_customers ?? true) ? __('shop.affiliate.report.open') : __('shop.affiliate.report.open_sales') }}</a>
 
     <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div class="card p-5"><p class="label">{{ __('shop.affiliate.pending') }}</p><p class="price mt-1 text-2xl font-semibold">{{ $fmt($totals['pending']) }}</p><p class="text-xs text-muted">{{ __('shop.affiliate.pending_note') }}</p></div>

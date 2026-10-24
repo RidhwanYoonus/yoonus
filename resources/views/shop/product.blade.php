@@ -31,9 +31,11 @@
                 @elseif ($video && $video['type'] === 'youtube')
                     <template x-if="active === {{ $videoAt }}"><iframe src="{{ $video['url'] }}&autoplay=1" title="{{ $name }}" class="aspect-square w-full" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></template>
                 @endif
-                @unless ($product->inStock())
+                @if ($product->inStock())
+                    <div x-show="active < {{ $videoAt }}">@include('partials.making-watermark', ['large' => true])</div>
+                @else
                     @include('partials.sold-watermark', ['large' => true])
-                @endunless
+                @endif
                 @include('partials.diamond-specs', ['large' => true])
                 @if ($video && $video['type'] !== 'link')
                     <button type="button" x-show="active !== {{ $videoAt }}" @click="active = {{ $videoAt }}" class="absolute bottom-3 end-3 z-[4] inline-flex items-center gap-1.5 rounded-full bg-black/70 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur hover:bg-black">
@@ -128,6 +130,12 @@
                 </form>
                 <p class="mt-2 text-xs text-muted">🔒 <a href="{{ route('policy.show', 'refund-policy') }}" class="underline decoration-dotted">{{ __('shop.policy.note') }}</a></p>
                 @unless ($deliveryEnabled)<p class="mt-2 text-xs text-gold-700">{{ __('shop.pickup.only_pickup') }}</p>@endunless
+                @if (\App\Support\DeliveryEstimate::enabled())
+                    <div class="mt-3 grid gap-1 rounded-xl bg-sand/60 px-4 py-3 text-sm">
+                        @if ($deliveryEnabled)<p>🚚 {{ \App\Support\DeliveryEstimate::deliveryText() }}</p>@endif
+                        <p>🏬 {{ \App\Support\DeliveryEstimate::pickupText() }}</p>
+                    </div>
+                @endif
                 @if ($product->isLowStock())<p class="mt-2 text-xs text-red-700">{{ trans_choice('shop.product.only_left', $product->stock_qty, ['count' => $product->stock_qty]) }}</p>@endif
             @else
                 <p class="mt-6 rounded-xl bg-sand px-4 py-3 text-sm">{{ __('shop.product.out_of_stock') }}</p>

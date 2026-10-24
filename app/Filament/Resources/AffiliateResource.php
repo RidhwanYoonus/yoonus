@@ -100,6 +100,8 @@ class AffiliateResource extends Resource
             Forms\Components\Section::make('Growth tools')->columnSpanFull()->columns(3)->schema([
                 Forms\Components\TextInput::make('coupon_discount_percent')->label('Customer discount with their code (% of their commission)')->numeric()->minValue(0)->maxValue(100)->suffix('%')->default(0)
                     ->helperText('0 = off. The customer gets this % of the affiliate\'s commission on their cart as a discount — e.g. commission AED 100 × 10% = AED 10 off — and it is taken from that commission (shown in the commission report and on the order). The order counts for the affiliate.'),
+                Forms\Components\Toggle::make('can_see_customers')->label('Can see "My customers" (names, mobile, email)')->inline(false)->default(true)
+                    ->helperText('Off: the affiliate still sees their sales and commission, but not the list of their customers or their contact details.'),
                 Forms\Components\Toggle::make('can_lock_price')->label('Can send price-lock links')->inline(false)
                     ->helperText(fn () => 'The affiliate can hold today\'s price of a piece for a customer for '.\App\Affiliates\PriceLocks::hours().' hours (Settings → Affiliates). Watch the gold rate when allowing this.'),
                 Forms\Components\Select::make('recruited_by_id')->label('Recruited by (team leader)')->searchable()->visible(fn () => Affiliate::teamEnabled())

@@ -12,6 +12,11 @@ class CreateProduct extends CreateRecord
 
     protected static string $resource = ProductResource::class;
 
+    protected function getHeaderActions(): array
+    {
+        return [\Filament\Actions\Action::make('createTop')->label('Create')->icon('heroicon-o-check')->color('primary')->action(fn () => $this->create())];
+    }
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         $images = [...array_values($data['images'] ?? []), ...array_values($data['camera_photos'] ?? [])];

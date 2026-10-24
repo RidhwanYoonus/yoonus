@@ -89,6 +89,14 @@ return [
         'affiliate_rate_backgrounds' => [],      // photos behind the affiliates' gold-rate picture
         'photo_touch_light' => false,           // product form: photo touch-up ticked by default
         'photo_touch_square' => false,
+        'making_watermark' => true,             // stamp "Only X% making" on photos below the limit (in stock only)
+        'making_watermark_below' => 5,
+        'delivery_estimate' => true,            // estimated delivery / ready-to-collect date for customers
+        'delivery_days_min' => 1,
+        'delivery_days_max' => 3,
+        'pickup_ready_days' => 0,
+        'order_cutoff' => '17:00',
+        'working_days' => [1, 2, 3, 4, 5, 6],
         'checkout_auto_account' => true,        // guest checkout makes an account and keeps the customer signed in
         'stripe_embedded' => true,              // card form on our own page when the publishable key is set
         'delivery_location' => 'optional',      // customer's map pin at checkout: optional / required / off

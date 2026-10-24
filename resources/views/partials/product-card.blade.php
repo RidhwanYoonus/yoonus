@@ -6,9 +6,11 @@
             <img src="{{ $product->primaryImage() }}" alt="{{ $product->localized('name') }}" loading="lazy" decoding="async" width="600" height="600"
                  class="aspect-square w-full object-cover transition duration-700 group-hover:scale-105 {{ $product->inStock() ? '' : 'grayscale-[35%]' }}">
         </a>
-        @unless ($product->inStock())
+        @if ($product->inStock())
+            @include('partials.making-watermark')
+        @else
             @include('partials.sold-watermark')
-        @endunless
+        @endif
         @include('partials.diamond-specs')
         {{-- Phones: karat and making % on the photo (the card is small); diamond details are listed under the photo. --}}
         <div class="pointer-events-none absolute inset-x-2 top-2 z-[3] flex items-start justify-between sm:inset-x-3 sm:top-3">

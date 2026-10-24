@@ -65,6 +65,12 @@
                 </dl>
                 <p class="mt-2 text-xs text-muted">{{ __('shop.cart.shipping_next') }}</p>
                 <a href="{{ route('checkout.show') }}" class="btn-gold mt-6 h-11 w-full">{{ __('shop.cart.checkout') }}</a>
+                @if (\App\Support\DeliveryEstimate::enabled())
+                    <div class="mt-3 space-y-1 text-xs text-muted">
+                        @if (\App\Http\Controllers\CheckoutController::deliveryEnabled())<p>🚚 {{ \App\Support\DeliveryEstimate::deliveryText() }}</p>@endif
+                        <p>🏬 {{ \App\Support\DeliveryEstimate::pickupText() }}</p>
+                    </div>
+                @endif
                 @if (\App\Support\HomeContent::payLaterOn())<p class="mt-3 text-center text-xs text-muted">{{ __('shop.cart.bnpl_hint') }}</p>@endif
             </aside>
         </div>
