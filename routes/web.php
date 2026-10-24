@@ -106,6 +106,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/studio/products/{product}/save', [\App\Http\Controllers\Admin\PhotoStudioController::class, 'save'])->name('admin.photo-studio.save');
     Route::post('/studio/backgrounds', [\App\Http\Controllers\Admin\PhotoStudioController::class, 'addBackground'])->name('admin.photo-studio.bg.add');
     Route::post('/studio/backgrounds/remove', [\App\Http\Controllers\Admin\PhotoStudioController::class, 'removeBackground'])->name('admin.photo-studio.bg.remove');
+    Route::post('/studio/models', [\App\Http\Controllers\Admin\PhotoStudioController::class, 'addModel'])->name('admin.photo-studio.model.add');
+    Route::post('/studio/models/remove', [\App\Http\Controllers\Admin\PhotoStudioController::class, 'removeModel'])->name('admin.photo-studio.model.remove');
+    Route::post('/studio/products/{product}/add', [\App\Http\Controllers\Admin\PhotoStudioController::class, 'addPhoto'])->name('admin.photo-studio.add');
     Route::post('/studio/products/{product}/restore', [\App\Http\Controllers\Admin\PhotoStudioController::class, 'restore'])->name('admin.photo-studio.restore');
 });
 Route::get('/admin/video-calls/{id}/join', \App\Http\Controllers\Admin\VideoCallJoinController::class)

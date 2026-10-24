@@ -35,7 +35,46 @@ class PhotoStudioController extends Controller
             ])->all(),
             'back' => \App\Filament\Resources\ProductResource::getUrl('edit', ['record' => $product]),
             'backgrounds' => self::backgrounds(),
+            'models' => array_map(fn ($p) => ['path' => $p, 'url' => Storage::disk('public')->url($p)], self::added('studio_models')),
         ]);
+    }
+
+    /** "On a model": the finished picture is added as an extra photo of the product (the others stay). */
+    public function addPhoto(Request $request, Product $product)
+    {
+        $product = $this->product($request, $product);
+        $request->validate(['file' => 'required|file|mimes:jpg,jpeg,png,webp|max:15360']);
+        $images = array_values((array) ($product->images ?? []));
+        abort_if(count($images) >= 12, 422, 'This product already has 12 photos. Remove one first.');
+        $new = Images::storeWebp($request->file('file'), 'products', 2000, 88);
+        $images[] = $new;
+        $product->forceFill(['images' => $images])->save();
+
+        return response()->json(['path' => $new, 'url' => Storage::disk('public')->url($new), 'index' => count($images) - 1]);
+    }
+
+    /** Model photos (a neck, an ear, a hand…) kept for the "On a model" pictures. */
+    public function addModel(Request $request)
+    {
+        abort_unless(StaffAccess::can($request->user(), 'products', 'edit'), 403);
+        $request->validate(['file' => 'required|file|mimes:jpg,jpeg,png,webp,heic|max:15360']);
+        $path = Images::storeWebp($request->file('file'), 'branding/models', 2000, 88);
+        \App\Support\Settings::set(['studio_models' => array_slice([...self::added('studio_models'), $path], -24)]);
+
+        return response()->json(['path' => $path, 'url' => Storage::disk('public')->url($path)]);
+    }
+
+    public function removeModel(Request $request)
+    {
+        abort_unless(StaffAccess::can($request->user(), 'products', 'edit'), 403);
+        $path = (string) $request->validate(['path' => 'required|string'])['path'];
+        $list = self::added('studio_models');
+        if (in_array($path, $list, true)) {
+            Storage::disk('public')->delete($path);
+            \App\Support\Settings::set(['studio_models' => array_values(array_diff($list, [$path]))]);
+        }
+
+        return response()->json(['ok' => true]);
     }
 
     /** Store photos to use as a background: the showroom / home photos from Settings, plus the ones added here. */
@@ -54,9 +93,9 @@ class PhotoStudioController extends Controller
         return $list;
     }
 
-    private static function added(): array
+    private static function added(string $key = 'studio_backgrounds'): array
     {
-        $v = \App\Support\Settings::get('studio_backgrounds', []);
+        $v = \App\Support\Settings::get($key, []);
 
         return array_values(array_filter(is_string($v) ? (json_decode($v, true) ?: []) : (array) $v, 'is_string'));
     }

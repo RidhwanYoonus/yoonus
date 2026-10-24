@@ -86,6 +86,20 @@
     .v-line { position: absolute; top: 0; bottom: 0; left: var(--cut, 50%); width: 2px; background: #fff; transform: translateX(-1px); pointer-events: none; }
     .v-line::after { content: '⇆'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 38px; height: 38px; border-radius: 50%; background: #fff; color: var(--ink); display: flex; align-items: center; justify-content: center; font-size: 18px; box-shadow: 0 2px 10px rgba(0,0,0,.4); }
     .v-label { position: absolute; bottom: 10px; font-size: 12px; font-weight: 600; color: #fff; background: rgba(0,0,0,.55); border-radius: 999px; padding: 3px 10px; }
+    /* On a model */
+    .model-ed { position: fixed; inset: 0; z-index: 22; background: #f7f5f1; display: none; flex-direction: column; }
+    .model-ed.open { display: flex; }
+    .me-top { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #fff; border-bottom: 1px solid var(--line); }
+    .me-top b { flex: 1; }
+    .me-body { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr; gap: 12px; padding: 12px; overflow: auto; }
+    @media (min-width: 900px) { .me-body { grid-template-columns: 1fr 320px; } }
+    .me-stage { display: flex; align-items: center; justify-content: center; min-height: 0; }
+    .me-stage canvas { width: min(100%, 72vh); aspect-ratio: 1; border-radius: 14px; background: #e9e5de; touch-action: none; cursor: grab; box-shadow: 0 10px 30px -12px rgba(0,0,0,.3); }
+    .models { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px; }
+    .models .sw .dot { width: 64px; height: 64px; }
+    .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+    .seg button { border: 0; border-radius: 0; padding: 8px 12px; }
+    .seg button.on { background: var(--ink); color: #fff; }
     .editor { position: fixed; inset: 0; background: rgba(12,10,8,.94); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 21; padding: 12px; }
     .editor.open { display: flex; }
     .editor canvas { max-width: 96vw; max-height: 68vh; background: repeating-conic-gradient(#ddd 0% 25%, #fff 0% 50%) 50% / 24px 24px; touch-action: none; border-radius: 12px; }
@@ -153,6 +167,7 @@
                             <button class="gold wide" data-run>{!! $sparkle !!} <span>Make it beautiful</span></button>
                             <button data-edit disabled>{!! $icon('<path d="M4 20c2 0 4-1 4-3.5S6 13 6 13l8.5-8.5a2.1 2.1 0 013 3L9 16"/>') !!} Fix edges</button>
                             <button class="dark" data-save disabled>{!! $icon('<path d="M5 12l4 4L19 6"/>') !!} Save to shop</button>
+                            <button class="wide" data-model>{!! $icon('<circle cx="12" cy="7" r="4"/><path d="M5 21c1-4 4-6 7-6s6 2 7 6"/>') !!} On a model</button>
                             <button class="ghost wide" data-restore @unless ($p['original']) style="display:none" @endunless>{!! $icon('<path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 010 10h-3"/>') !!} Put original back</button>
                         </div>
                     </div>
@@ -176,6 +191,35 @@
     <div class="v-body"><div class="v-frame" id="vFrame"></div></div>
 </div>
 
+<div class="model-ed" id="modelEd" role="dialog" aria-modal="true" aria-label="On a model">
+    <div class="me-top"><b>On a model</b><button class="ghost" id="meClose">Close</button><button class="dark" id="meSave">{!! $icon('<path d="M12 5v14M5 12h14"/>') !!} Add to product photos</button></div>
+    <div class="me-body">
+        <div class="me-stage"><canvas id="meCanvas" width="1600" height="1600"></canvas></div>
+        <div style="display:grid;gap:12px;align-content:start">
+            <div class="card">
+                <p class="step" style="margin-bottom:8px">Model photo</p>
+                <div class="models" id="meModels">
+                    @foreach ($models as $m)
+                        <button type="button" class="sw" data-model-photo="{{ $m['url'] }}"><span class="dot" style="background-image:url('{{ $m['url'] }}')"><span class="x" data-model-remove="{{ $m['path'] }}" title="Remove">✕</span></span></button>
+                    @endforeach
+                    <label class="sw" aria-label="Add a model photo"><span class="dot plus">+</span>Add<input type="file" id="meUpload" accept="image/*" hidden></label>
+                </div>
+                <p class="muted" style="margin:8px 0 0">Use your own model photos, or free ones that allow shop use (e.g. <a href="https://www.pexels.com/search/woman%20neck%20portrait/" target="_blank" rel="noopener">Pexels</a>). A plain neck, ear, hand or wrist works best.</p>
+            </div>
+            <div class="card">
+                <div class="seg" style="margin-bottom:6px"><button id="meMovePiece" class="on">Move the piece</button><button id="meMovePhoto">Move the photo</button></div>
+                <div class="switch"><span>Size of the piece</span><input type="range" id="meSize" min="5" max="90" value="28"></div>
+                <div class="switch"><span>Turn</span><input type="range" id="meRot" min="-180" max="180" value="0"></div>
+                <div class="switch"><span>Zoom the photo</span><input type="range" id="meZoom" min="100" max="300" value="100"></div>
+                <label class="switch"><span>Mirror the piece</span><input type="checkbox" id="meFlip"></label>
+                <label class="switch"><span>Shadow on the skin</span><input type="checkbox" id="meShadow" checked></label>
+                <p class="muted" style="margin:6px 0 0">Drag on the picture to place it. On a phone, pinch with two fingers to make it bigger or smaller.</p>
+            </div>
+            <p class="status" id="meStatus"></p>
+        </div>
+    </div>
+</div>
+
 <div class="editor" id="editor">
     <canvas id="edCanvas"></canvas>
     <div class="tools">
@@ -191,7 +235,8 @@
 const TF = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1';
 const csrf = document.querySelector('meta[name=csrf-token]').content;
 const routes = { save: @js(route('admin.photo-studio.save', $product)), restore: @js(route('admin.photo-studio.restore', $product)),
-    bgAdd: @js(route('admin.photo-studio.bg.add')), bgRemove: @js(route('admin.photo-studio.bg.remove')) };
+    bgAdd: @js(route('admin.photo-studio.bg.add')), bgRemove: @js(route('admin.photo-studio.bg.remove')),
+    add: @js(route('admin.photo-studio.add', $product)), modelAdd: @js(route('admin.photo-studio.model.add')), modelRemove: @js(route('admin.photo-studio.model.remove')) };
 const $ = (s, el = document) => el.querySelector(s);
 const prog = $('#prog'), modelStatus = $('#modelStatus');
 const opt = { shadow: () => $('#optShadow').checked, light: () => $('#optLight').checked, size: () => +$('#optSize').value / 100 };
@@ -510,7 +555,110 @@ viewer.frame.addEventListener('pointerdown', e => { viewer.frame.setPointerCaptu
 viewer.frame.addEventListener('pointermove', e => viewer.drag && slide(e));
 viewer.frame.addEventListener('pointerup', () => viewer.drag = false);
 
+// ---- On a model: the real cut-out piece placed on a model photo (neck, ear, hand, wrist). ----
+const me = { el: $('#modelEd'), c: $('#meCanvas'), it: null, model: null, x: OUT / 2, y: OUT * 0.55, mx: 0, my: 0, mode: 'piece', pts: new Map() };
+const meVal = id => +$(id).value;
+async function meOpen(it) {
+    if (! it.mask) { await run(it); if (! it.mask) return; }
+    if (! it.cut) buildCut(it);
+    me.it = it; me.x = OUT / 2; me.y = OUT * 0.55;
+    $('#meStatus').textContent = ''; me.el.classList.add('open');
+    if (! me.model) { const first = $('[data-model-photo]'); if (first) await meChoose(first.dataset.modelPhoto); }
+    meDraw();
+}
+async function meChoose(url) {
+    me.model = await photoBitmap(url); me.mx = 0; me.my = 0;
+    document.querySelectorAll('[data-model-photo]').forEach(b => b.classList.toggle('on', b.dataset.modelPhoto === url));
+    meDraw();
+}
+function meDraw() {
+    const o = me.c.getContext('2d');
+    o.fillStyle = '#e9e5de'; o.fillRect(0, 0, OUT, OUT);
+    if (me.model) {
+        const z = meVal('#meZoom') / 100, s = Math.max(OUT / me.model.width, OUT / me.model.height) * z;
+        const w = me.model.width * s, h = me.model.height * s;
+        me.mx = Math.max(-(w - OUT) / 2, Math.min((w - OUT) / 2, me.mx));
+        me.my = Math.max(-(h - OUT) / 2, Math.min((h - OUT) / 2, me.my));
+        o.imageSmoothingQuality = 'high';
+        o.drawImage(me.model, (OUT - w) / 2 + me.mx, (OUT - h) / 2 + me.my, w, h);
+    } else {
+        o.fillStyle = '#8a8177'; o.font = '600 46px system-ui'; o.textAlign = 'center';
+        o.fillText('Add a model photo on the right (+)', OUT / 2, OUT / 2);
+    }
+    if (! me.it) return;
+    const { cut, x0, y0, bw, bh } = me.it.cut;
+    const size = OUT * meVal('#meSize') / 100, sc = size / Math.max(bw, bh);
+    o.save();
+    o.translate(me.x, me.y);
+    o.rotate(meVal('#meRot') * Math.PI / 180);
+    o.scale($('#meFlip').checked ? -sc : sc, sc);
+    if ($('#meShadow').checked) { o.shadowColor = 'rgba(40, 25, 10, 0.38)'; o.shadowBlur = 14; o.shadowOffsetY = 6; }
+    o.drawImage(cut, x0, y0, bw, bh, -bw / 2, -bh / 2, bw, bh);
+    o.restore();
+}
+const mePoint = e => { const r = me.c.getBoundingClientRect(); return [(e.clientX - r.left) * OUT / r.width, (e.clientY - r.top) * OUT / r.height]; };
+me.c.addEventListener('pointerdown', e => { me.c.setPointerCapture(e.pointerId); me.pts.set(e.pointerId, mePoint(e)); });
+me.c.addEventListener('pointermove', e => {
+    if (! me.pts.has(e.pointerId)) return;
+    const prev = me.pts.get(e.pointerId), now = mePoint(e);
+    if (me.pts.size === 2) {
+        // Two fingers: pinch to size the piece (or zoom the photo).
+        const [a, b] = [...me.pts.values()], other = a === prev ? b : a;
+        const d0 = Math.hypot(prev[0] - other[0], prev[1] - other[1]), d1 = Math.hypot(now[0] - other[0], now[1] - other[1]);
+        const id = me.mode === 'piece' ? '#meSize' : '#meZoom', el = $(id);
+        if (d0 > 0) el.value = Math.max(+el.min, Math.min(+el.max, +el.value * d1 / d0));
+    } else if (me.mode === 'piece') { me.x += now[0] - prev[0]; me.y += now[1] - prev[1]; }
+    else { me.mx += now[0] - prev[0]; me.my += now[1] - prev[1]; }
+    me.pts.set(e.pointerId, now);
+    meDraw();
+});
+['pointerup', 'pointercancel'].forEach(ev => me.c.addEventListener(ev, e => me.pts.delete(e.pointerId)));
+me.c.addEventListener('wheel', e => { e.preventDefault(); const el = me.mode === 'piece' ? $('#meSize') : $('#meZoom'); el.value = +el.value * (e.deltaY < 0 ? 1.06 : 0.94); meDraw(); }, { passive: false });
+['#meSize', '#meRot', '#meZoom', '#meFlip', '#meShadow'].forEach(id => $(id).addEventListener('input', meDraw));
+$('#meMovePiece').onclick = () => { me.mode = 'piece'; $('#meMovePiece').classList.add('on'); $('#meMovePhoto').classList.remove('on'); };
+$('#meMovePhoto').onclick = () => { me.mode = 'photo'; $('#meMovePhoto').classList.add('on'); $('#meMovePiece').classList.remove('on'); };
+$('#meClose').onclick = () => me.el.classList.remove('open');
+function bindModel(b) {
+    b.onclick = e => { if (e.target.dataset.modelRemove) return; meChoose(b.dataset.modelPhoto); };
+    const x = b.querySelector('[data-model-remove]');
+    if (x) x.onclick = async e => {
+        e.stopPropagation();
+        if (! confirm('Remove this model photo?')) return;
+        await fetch(routes.modelRemove, { method: 'POST', headers: { 'X-CSRF-TOKEN': csrf, 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ path: x.dataset.modelRemove }) });
+        b.remove(); me.model = null; meDraw();
+    };
+}
+document.querySelectorAll('[data-model-photo]').forEach(bindModel);
+$('#meUpload').addEventListener('change', async e => {
+    const f = e.target.files[0]; if (! f) return;
+    $('#meStatus').textContent = 'Adding the photo…';
+    const body = new FormData(); body.append('file', f);
+    const r = await fetch(routes.modelAdd, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': csrf, Accept: 'application/json' } });
+    if (! r.ok) { $('#meStatus').textContent = 'Could not add this photo.'; return; }
+    const j = await r.json();
+    const b = Object.assign(document.createElement('button'), { type: 'button', className: 'sw' });
+    b.dataset.modelPhoto = j.url;
+    b.innerHTML = `<span class="dot" style="background-image:url('${j.url}')"><span class="x" data-model-remove="${j.path}" title="Remove">✕</span></span>`;
+    e.target.closest('.sw').before(b); bindModel(b);
+    $('#meStatus').textContent = '';
+    await meChoose(j.url);
+});
+$('#meSave').onclick = async () => {
+    if (! me.model) { $('#meStatus').textContent = 'Choose or add a model photo first.'; $('#meStatus').className = 'status err'; return; }
+    $('#meSave').disabled = true; $('#meStatus').className = 'status muted'; $('#meStatus').textContent = 'Saving…';
+    try {
+        const blob = await new Promise(r => me.c.toBlob(r, 'image/jpeg', 0.92));
+        const body = new FormData(); body.append('file', blob, 'model.jpg');
+        const r = await fetch(routes.add, { method: 'POST', body, headers: { 'X-CSRF-TOKEN': csrf, Accept: 'application/json' } });
+        if (! r.ok) throw new Error((await r.json().catch(() => ({}))).message || 'Could not save (HTTP ' + r.status + ').');
+        $('#meStatus').className = 'status ok'; $('#meStatus').textContent = '✓ Added to the product photos. Place it on another model, or close.';
+        tellProduct();
+    } catch (e) { $('#meStatus').className = 'status err'; $('#meStatus').textContent = e.message; }
+    $('#meSave').disabled = false;
+};
+
 items.forEach(it => {
+    $('[data-model]', it.el).onclick = () => meOpen(it);
     $('[data-stage]', it.el).onclick = () => openViewer(it);
     $('[data-run]', it.el).onclick = () => run(it);
     $('[data-save]', it.el).onclick = () => save(it);

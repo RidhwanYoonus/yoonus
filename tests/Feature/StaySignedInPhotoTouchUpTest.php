@@ -195,4 +195,24 @@ class StaySignedInPhotoTouchUpTest extends TestCase
         $this->assertSame([], Settings::get('studio_backgrounds'));
         $this->postJson(route('admin.photo-studio.bg.remove'), ['path' => 'products/someone-else.jpg'])->assertOk();   // only its own list is touched
     }
+
+    public function test_on_a_model_pictures_are_added_and_model_photos_are_kept(): void
+    {
+        Storage::fake('public');
+        $product = Product::sole();
+        $product->update(['images' => [$this->photo(300, 300, 90)]]);
+        $this->actingAs(User::factory()->create())->post(route('admin.photo-studio.model.add'), ['file' => \Illuminate\Http\UploadedFile::fake()->image('neck.jpg', 900, 1200)])->assertForbidden();
+        $this->actingAs(User::factory()->create(['is_admin' => true]));
+
+        $model = $this->post(route('admin.photo-studio.model.add'), ['file' => \Illuminate\Http\UploadedFile::fake()->image('neck.jpg', 900, 1200)])->assertOk()->json('path');
+        $this->get(route('admin.photo-studio', $product))->assertSee('On a model')->assertSee($model, false);
+
+        $new = $this->post(route('admin.photo-studio.add', $product), ['file' => \Illuminate\Http\UploadedFile::fake()->image('model.jpg', 1600, 1600)])->assertOk()->json('path');
+        $this->assertCount(2, $product->fresh()->images);
+        $this->assertSame($new, $product->fresh()->images[1]);   // added after the existing photo
+
+        $this->postJson(route('admin.photo-studio.model.remove'), ['path' => $model])->assertOk();
+        Storage::disk('public')->assertMissing($model);
+        $this->assertSame([], Settings::get('studio_models'));
+    }
 }
