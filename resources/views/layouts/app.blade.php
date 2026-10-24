@@ -90,6 +90,7 @@
         @include('partials.mobile-nav')
     @endunless
     @include('partials.fly-to-bag')
+    @include('partials.live-validate')
     @stack('scripts')
 </body>
 </html>

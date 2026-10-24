@@ -91,6 +91,10 @@ class CheckoutController extends Controller
             'line1' => 'required_if:fulfilment,delivery|nullable|string|max:191',
             'line2' => 'nullable|string|max:191',
             'city' => 'required_if:fulfilment,delivery|nullable|string|max:64',
+            // Map location (Settings → Delivery & pickup → Customer's map location).
+            'delivery_lat' => ['nullable', 'numeric', 'between:-90,90', Rule::requiredIf(fn () => $request->input('fulfilment') === 'delivery' && self::locationMode() === 'required' && ! filled($request->input('map_link')))],
+            'delivery_lng' => ['nullable', 'numeric', 'between:-180,180', 'required_with:delivery_lat'],
+            'map_link' => ['nullable', 'string', 'max:255', 'regex:~^https://(www\.)?(google\.[a-z.]+/maps|maps\.google\.[a-z.]+|maps\.app\.goo\.gl|goo\.gl/maps)~'],
             'pickup_branch_id' => 'required_if:fulfilment,pickup|nullable|exists:branches,id',
             'payment_method' => ['required', Rule::in(['applepay', 'googlepay', 'card', 'tabby', 'tamara', 'cod', 'giftcard'])],
             'expected_total' => 'required|numeric',
@@ -135,7 +139,11 @@ class CheckoutController extends Controller
         $address = $data['fulfilment'] === 'delivery' ? [
             'name' => $data['name'], 'phone' => $data['phone'], 'line1' => $data['line1'], 'line2' => $data['line2'] ?? null,
             'city' => $data['city'], 'zone' => $quote->zone?->name, 'country' => 'AE',
+            'map_link' => $data['map_link'] ?? null,
         ] : null;
+        if ($address && self::locationMode() !== 'off' && filled($data['delivery_lat'] ?? null)) {
+            $data['location'] = [round((float) $data['delivery_lat'], 7), round((float) $data['delivery_lng'], 7)];
+        }
 
         // Ordering again from a bag whose earlier order was never paid: cancel that one first, so its
         // stock, coupon and gold price are released instead of being held twice.
@@ -302,6 +310,12 @@ class CheckoutController extends Controller
             'id_back' => [self::idPhotos() === 'required' && ! IdDocument::has($request, 'id_back') ? 'required' : 'nullable', ...$file],
             'save_id' => 'nullable|boolean',
         ];
+    }
+
+    /** Customer's map location for delivery: off | optional | required. */
+    public static function locationMode(): string
+    {
+        return in_array($v = (string) \App\Support\Settings::get('delivery_location', 'optional'), ['off', 'optional', 'required'], true) ? $v : 'optional';
     }
 
     /** optional | required | hidden */

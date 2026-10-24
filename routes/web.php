@@ -40,6 +40,9 @@ Route::get('/checkout/complete/{order}', [CheckoutController::class, 'complete']
 
 Route::get('/payments/mock/{order}', [PaymentController::class, 'mock'])->middleware('signed')->name('payments.mock');
 Route::post('/payments/mock/{order}', [PaymentController::class, 'mockApprove'])->middleware('signed')->name('payments.mock.approve');
+Route::get('/pay/{order}/card', [\App\Http\Controllers\StripeCardController::class, 'show'])->name('payments.card');
+Route::post('/pay/{order}/card/prepare', [\App\Http\Controllers\StripeCardController::class, 'prepare'])->middleware('throttle:20,1')->name('payments.card.prepare');
+Route::post('/pay/{order}/card/saved', [\App\Http\Controllers\StripeCardController::class, 'saved'])->middleware('throttle:10,1')->name('payments.card.saved');
 Route::get('/payments/{gateway}/return/{order}', [PaymentController::class, 'return'])->name('payments.return');
 Route::post('/webhooks/{gateway}', [PaymentController::class, 'webhook'])->name('payments.webhook');
 
@@ -68,6 +71,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/account', [AccountController::class, 'show'])->name('account');
     Route::post('/account/addresses', [AccountController::class, 'storeAddress'])->name('account.addresses.store');
     Route::delete('/account/addresses/{address}', [AccountController::class, 'deleteAddress'])->name('account.addresses.delete');
+    Route::delete('/account/cards/{card}', [AccountController::class, 'removeCard'])->name('account.cards.remove');
     Route::post('/account/id', [AccountController::class, 'storeId'])->middleware('throttle:10,10')->name('account.id.store');
     Route::delete('/account/id', [AccountController::class, 'forgetId'])->name('account.id.forget');
 });

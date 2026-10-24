@@ -18,7 +18,7 @@ class SecurityHeaders
         $h->set('X-Content-Type-Options', 'nosniff');
         $h->set('X-Frame-Options', 'SAMEORIGIN');
         $h->set('Referrer-Policy', 'strict-origin-when-cross-origin');
-        $h->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(self), usb=(), interest-cohort=()');
+        $h->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(self), payment=(self "https://js.stripe.com"), usb=(), interest-cohort=()');
         $h->set('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
         $h->set('X-Permitted-Cross-Domain-Policies', 'none');
         // Blocks clickjacking, <base> hijacking and plugin content without breaking maps, pixels or payment pages.

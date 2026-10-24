@@ -22,9 +22,29 @@ const yymmdd = (s, future) => {
     return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 };
 
-/** @returns {{type?: string, number?: string, expiry?: string, country?: string, name?: string}} */
+// Emirates ID numbers end in a Luhn check digit: a number that passes was read correctly.
+export const luhnOk = n => {
+    const d = String(n).replace(/\D/g, '');
+    if (d.length !== 15) return false;
+    let sum = 0;
+    for (let i = 0; i < d.length; i++) {
+        let x = +d[d.length - 1 - i];
+        if (i % 2) { x *= 2; if (x > 9) x -= 9; }
+        sum += x;
+    }
+    return sum % 10 === 0;
+};
+
+// Passport / ID machine-readable lines carry check digits (weights 7, 3, 1).
+const mrzCheck = (field, digit) => {
+    const v = c => c === '<' ? 0 : /\d/.test(c) ? +c : c.charCodeAt(0) - 55;
+    const sum = [...field].reduce((t, c, i) => t + v(c) * [7, 3, 1][i % 3], 0);
+    return String(sum % 10) === digits(String(digit));
+};
+
+/** @returns {{type?: string, number?: string, expiry?: string, country?: string, name?: string, sure?: string[]}} */
 export function parseIdText(text) {
-    const out = {};
+    const out = { sure: [] };   // sure: details confirmed by a check digit (they may replace what was typed)
     const raw = String(text || '').toUpperCase();
     const lines = raw.split(/\n+/).map(l => l.replace(/\s+/g, '').replace(/[«‹(]/g, '<')).filter(l => l.length >= 25 && (l.match(/</g) || []).length >= 2);
 
@@ -36,10 +56,11 @@ export function parseIdText(text) {
         if (/^[A-Z0-9]{6,9}$/.test(number)) {
             out.type = 'passport';
             out.number = number;
+            if (mrzCheck(l2.slice(0, 9), l2[9])) out.sure.push('number');
             const nat = l2.slice(10, 13).replace(/</g, '');
             if (ISO3[nat]) out.country = ISO3[nat];
             const exp = yymmdd(l2.slice(21, 27), true);
-            if (exp) out.expiry = exp;
+            if (exp) { out.expiry = exp; if (mrzCheck(digits(l2.slice(21, 27)), l2[27])) out.sure.push('expiry'); }
             const [sur, given] = lines[p1].slice(5).split('<<');
             out.name = [given, sur].filter(Boolean).map(n => n.replace(/</g, ' ').trim()).join(' ').replace(/\s+/g, ' ');
         }
@@ -53,7 +74,7 @@ export function parseIdText(text) {
         const l2 = lines[e1 + 1];
         if (l2) {
             const exp = yymmdd(l2.slice(8, 14), true);
-            if (exp) out.expiry = exp;
+            if (exp) { out.expiry = exp; if (mrzCheck(digits(l2.slice(8, 14)), l2[14])) out.sure.push('expiry'); }
         }
         if (lines[e1 + 2]) {
             const [sur, given] = lines[e1 + 2].split('<<');
@@ -69,6 +90,7 @@ export function parseIdText(text) {
     }
     if (out.number && out.type === 'emirates_id' && /^784\d{12}$/.test(out.number)) {
         const n = out.number;
+        if (luhnOk(n)) out.sure.push('number');
         out.number = `${n.slice(0, 3)}-${n.slice(3, 7)}-${n.slice(7, 14)}-${n.slice(14)}`;
     }
     if (! out.expiry) {
@@ -103,19 +125,22 @@ export async function readIdPhoto(file) {
 export function fillIdForm(form, found) {
     if (! form || ! found) return [];
     const filled = [];
-    const set = (name, value) => {
+    const set = (name, value, sure = false) => {
         const el = form.querySelector(`[name="${name}"]`);
         if (! el || el.disabled || ! value) return;
         if (el.tagName === 'SELECT' && ! [...el.options].some(o => o.value === value && ! o.disabled)) return;
-        if (el.tagName !== 'SELECT' && el.value.trim() !== '') return;   // never overwrite what the customer typed
+        // What the customer typed stays, unless the photo's own check digit proves the typed value wrong.
+        const same = el.value.replace(/[\s-]/g, '').toUpperCase() === String(value).replace(/[\s-]/g, '').toUpperCase();
+        if (el.tagName !== 'SELECT' && el.value.trim() !== '' && (same || ! sure)) return;
         el.value = value;
         el.dispatchEvent(new Event('input', { bubbles: true }));
         el.dispatchEvent(new Event('change', { bubbles: true }));
         filled.push(name);
     };
+    const sure = found.sure || [];
     set('id_type', found.type);
-    set('id_number', found.number);
-    if (found.expiry && found.expiry > new Date().toISOString().slice(0, 10)) set('id_expiry', found.expiry);
+    set('id_number', found.number, sure.includes('number'));
+    if (found.expiry && found.expiry > new Date().toISOString().slice(0, 10)) set('id_expiry', found.expiry, sure.includes('expiry'));
     set('id_country', found.country);
 
     return filled;

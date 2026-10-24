@@ -15,7 +15,7 @@
             } catch (e) { return null; }
         };
     </script>
-    <form method="POST" action="{{ route('register') }}" enctype="multipart/form-data" class="card mt-6 space-y-4 p-6">
+    <form method="POST" action="{{ route('register') }}" enctype="multipart/form-data" class="card mt-6 space-y-4 p-6" data-live-validate>
         @include('partials.google-button', ['ref' => $ref])
         @csrf
         <div><label class="label" for="name">{{ __('shop.checkout.name') }}</label><input id="name" name="name" value="{{ old('name') }}" required class="input" autocomplete="name"></div>

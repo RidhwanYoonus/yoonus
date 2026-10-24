@@ -19,7 +19,7 @@
                 <p class="mt-4 rounded-xl bg-green-50 px-4 py-3 text-sm text-green-800">✓ {{ __('shop.cart_id.saved', ['id' => \App\Support\IdDocument::masked($u->id_type, $u->id_last4)]) }}
                     <a href="{{ route('account') }}#id" class="ms-2 underline">{{ __('shop.cart_id.change') }}</a></p>
             @else
-                <form method="POST" action="{{ route('account.id.store') }}" enctype="multipart/form-data" class="mt-4"
+                <form method="POST" action="{{ route('account.id.store') }}" enctype="multipart/form-data" class="mt-4" data-live-validate
                       x-data="{ tourist: @js((bool) old('is_tourist', $u->is_tourist)), type: @js(old('id_type', $u->is_tourist ? 'passport' : 'emirates_id')) }" x-effect="if (tourist) type = 'passport'">
                     @csrf
                     <input type="hidden" name="back" value="cart">

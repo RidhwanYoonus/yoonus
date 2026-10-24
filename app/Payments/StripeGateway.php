@@ -26,6 +26,91 @@ class StripeGateway implements PaymentGateway
         return trim((string) (Settings::get('stripe_webhook_secret') ?: config('services.stripe.webhook_secret')));
     }
 
+    public static function publishableKey(): string
+    {
+        return trim((string) Settings::get('stripe_publishable_key'));
+    }
+
+    /** Card form on the shop's own payment page (Stripe Elements) instead of Stripe's page. Needs the publishable key. */
+    public static function embedded(): bool
+    {
+        return Settings::bool('stripe_embedded', true) && str_starts_with(self::publishableKey(), 'pk_') && self::secretKey() !== '';
+    }
+
+    /** One call to the Stripe API; returns the JSON or throws with Stripe's own message. */
+    public static function api(string $method, string $path, array $params = []): array
+    {
+        $res = SecureHttp::send(fn ($http) => $http->asForm()->withToken(self::secretKey())->{$method}('https://api.stripe.com/v1/'.$path, $params));
+        if (! $res->successful()) {
+            throw new RuntimeException('Stripe: '.($res->json('error.message') ?? 'HTTP '.$res->status()));
+        }
+
+        return $res->json() ?? [];
+    }
+
+    /** The customer's record at Stripe (holds their saved cards); created the first time. */
+    public static function customerFor(\App\Models\User $user): string
+    {
+        if (filled($user->stripe_customer_id)) {
+            return $user->stripe_customer_id;
+        }
+        $customer = self::api('post', 'customers', ['email' => $user->email, 'name' => $user->name, 'metadata[user_id]' => $user->id]);
+        $user->forceFill(['stripe_customer_id' => $customer['id']])->save();
+
+        return $customer['id'];
+    }
+
+    /** Cards saved at Stripe for this customer: [['id','brand','last4','exp']]. */
+    public static function savedCards(?\App\Models\User $user): array
+    {
+        if (! $user || blank($user->stripe_customer_id ?? null) || self::secretKey() === '') {
+            return [];
+        }
+        try {
+            $list = self::api('get', 'customers/'.$user->stripe_customer_id.'/payment_methods', ['type' => 'card', 'limit' => 10]);
+        } catch (\Throwable) {
+            return [];
+        }
+
+        return array_map(fn ($pm) => ['id' => $pm['id'], 'brand' => ucfirst((string) ($pm['card']['brand'] ?? 'card')), 'last4' => $pm['card']['last4'] ?? '',
+            'exp' => sprintf('%02d/%02d', $pm['card']['exp_month'] ?? 0, ($pm['card']['exp_year'] ?? 0) % 100)], $list['data'] ?? []);
+    }
+
+    /** Forgets one saved card (only if it belongs to this customer). */
+    public static function removeCard(\App\Models\User $user, string $paymentMethod): bool
+    {
+        if (! collect(self::savedCards($user))->contains('id', $paymentMethod)) {
+            return false;
+        }
+        self::api('post', 'payment_methods/'.$paymentMethod.'/detach');
+
+        return true;
+    }
+
+    /** The PaymentIntent for this order: the open one is reused, otherwise a new one is made. */
+    public static function intentFor(Order $order, ?\App\Models\User $user): array
+    {
+        $amount = (int) round((float) $order->amount_due * 100);
+        if (str_starts_with((string) $order->payment_reference, 'pi_')) {
+            $pi = self::api('get', 'payment_intents/'.$order->payment_reference);
+            if ((int) $pi['amount'] === $amount && in_array($pi['status'], ['requires_payment_method', 'requires_confirmation', 'requires_action'], true)) {
+                return $pi;
+            }
+            if ($pi['status'] === 'succeeded' || $pi['status'] === 'processing') {
+                return $pi;
+            }
+        }
+        $pi = self::api('post', 'payment_intents', array_filter([
+            'amount' => $amount, 'currency' => 'aed', 'payment_method_types[0]' => 'card',
+            'description' => 'Order '.$order->number, 'receipt_email' => $order->email,
+            'metadata[order_number]' => $order->number,
+            'customer' => $user ? self::customerFor($user) : null,
+        ], fn ($v) => $v !== null));
+        $order->update(['payment_reference' => $pi['id']]);
+
+        return $pi;
+    }
+
     /** Checks the secret key with Stripe; returns 'test' or 'live'. */
     public static function testConnection(): string
     {
@@ -53,6 +138,10 @@ class StripeGateway implements PaymentGateway
     {
         if (self::secretKey() === '') {
             throw new RuntimeException('Stripe secret key is not set (Settings → Payments).');
+        }
+        // Card form on our own page (the customer never leaves the shop).
+        if (self::embedded()) {
+            return route('payments.card', $order->number);
         }
         $res = SecureHttp::send(fn ($http) => $http->asForm()->withToken(self::secretKey())
             ->post('https://api.stripe.com/v1/checkout/sessions', [
@@ -92,6 +181,9 @@ class StripeGateway implements PaymentGateway
             abort(400, 'Invalid signature');
         }
         $event = json_decode($payload, true);
+        if (($event['type'] ?? null) === 'payment_intent.succeeded') {
+            return $this->markPaidFromIntent($event['data']['object'] ?? [], ['event' => $event['id'] ?? null]);
+        }
         if (($event['type'] ?? null) !== 'checkout.session.completed' || ($event['data']['object']['payment_status'] ?? null) !== 'paid') {
             return null;
         }
@@ -102,6 +194,11 @@ class StripeGateway implements PaymentGateway
     /** Shopper is back from Stripe: ask Stripe directly whether that session is paid. */
     private function confirmReturn(Request $request): ?Order
     {
+        // Back from our own card page: ask Stripe about that PaymentIntent.
+        $pi = (string) $request->query('payment_intent');
+        if (preg_match('/^pi_[A-Za-z0-9_]+$/', $pi) && self::secretKey() !== '') {
+            return $this->markPaidFromIntent(self::api('get', 'payment_intents/'.$pi), ['intent' => $pi]);
+        }
         $id = (string) $request->query('session_id');
         if (! preg_match('/^cs_[A-Za-z0-9_]+$/', $id) || self::secretKey() === '') {
             return null;
@@ -113,6 +210,19 @@ class StripeGateway implements PaymentGateway
         }
 
         return $this->markPaidFrom($session, ['session' => $id]);
+    }
+
+    public function markPaidFromIntent(array $pi, array $payload): ?Order
+    {
+        if (($pi['status'] ?? null) !== 'succeeded') {
+            return null;
+        }
+        $order = Order::where('number', $pi['metadata']['order_number'] ?? '')->first();
+        if (! $order || (int) ($pi['amount_received'] ?? $pi['amount'] ?? 0) !== (int) round((float) $order->amount_due * 100)) {
+            return null;
+        }
+
+        return app(OrderService::class)->markPaid($order, 'stripe', $pi['id'], $payload);
     }
 
     private function markPaidFrom(array $session, array $payload): ?Order

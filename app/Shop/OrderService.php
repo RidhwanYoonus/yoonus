@@ -79,6 +79,7 @@ class OrderService
                 'fulfilment' => $quote->fulfilment,
                 'shipping_address' => $quote->fulfilment === 'delivery' ? ($data['address'] ?? null) : null,
                 'shipping_zone_id' => $quote->fulfilment === 'delivery' ? $quote->zone?->id : null,
+                ...(isset($data['location']) && \Illuminate\Support\Facades\Schema::hasColumn('orders', 'delivery_lat') ? ['delivery_lat' => $data['location'][0], 'delivery_lng' => $data['location'][1]] : []),
                 'pickup_branch_id' => $quote->fulfilment === 'pickup' ? ($data['pickup_branch_id'] ?? null) : null,
                 'items_subtotal' => Money::toAed($quote->itemsSubtotal),
                 'discount_total' => Money::toAed($quote->discountTotal),

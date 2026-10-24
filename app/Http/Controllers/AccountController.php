@@ -28,7 +28,22 @@ class AccountController extends Controller
             'coupons' => Coupon::currentlyValid()->where('issued_to_user_id', $user->id)->get(),
             'karats' => GoldCategory::where('is_active', true)->orderByDesc('karat')->get(),
             'referralLink' => route('register', ['ref' => $user->referral_code]),
+            'cards' => \App\Payments\StripeGateway::embedded() ? \App\Payments\StripeGateway::savedCards($user) : [],
+            'showCards' => \App\Payments\StripeGateway::embedded(),
         ]);
+    }
+
+    /** Removes a card saved at Stripe (My account → Saved cards). */
+    public function removeCard(Request $request, string $card)
+    {
+        abort_unless(preg_match('/^pm_[A-Za-z0-9_]+$/', $card), 404);
+        try {
+            $ok = \App\Payments\StripeGateway::removeCard($request->user(), $card);
+        } catch (\Throwable) {
+            $ok = false;
+        }
+
+        return back()->with('status', $ok ? __('shop.card.removed') : __('shop.card.declined'));
     }
 
     public function storeAddress(Request $request)

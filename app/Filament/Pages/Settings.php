@@ -171,8 +171,12 @@ class Settings extends Page implements HasForms
                         ->schema([
                             $secret('stripe_secret_key', 'Secret key')->placeholder('sk_test_… or sk_live_…')
                                 ->helperText('The "Secret key" (starts with sk_), not the publishable key (pk_).'),
+                            $text('stripe_publishable_key', 'Publishable key')->placeholder('pk_test_… or pk_live_…')
+                                ->helperText('Starts with pk_. With it, customers type their card on your own website (Stripe\'s secure card boxes) and can save it for next time. Without it, they are sent to Stripe\'s page.'),
+                            Forms\Components\Toggle::make('stripe_embedded')->label('Card form on my website')->inline(false)
+                                ->helperText('On: card boxes and saved cards on your payment page. Off: customers pay on Stripe\'s page.'),
                             $secret('stripe_webhook_secret', 'Webhook signing secret (optional)')->placeholder('whsec_…')
-                                ->helperText(fn () => 'Recommended once the site is online: in Stripe → Developers → Webhooks add '.route('payments.webhook', 'stripe').' with the event checkout.session.completed, then paste its signing secret here.'),
+                                ->helperText(fn () => 'Recommended once the site is online: in Stripe → Developers → Webhooks add '.route('payments.webhook', 'stripe').' with the events checkout.session.completed and payment_intent.succeeded, then paste its signing secret here.'),
                         ]),
                     Forms\Components\Toggle::make('applepay_enabled')->label('Apple Pay')->inline(false)
                         ->helperText('Shown on iPhone, iPad and Mac (Safari). Turn Apple Pay on in your Telr / Stripe account too.'),
@@ -211,6 +215,9 @@ class Settings extends Page implements HasForms
                         ->helperText('Checkout asks "Do you need a tax-free invoice?". Tourists who say yes must give a passport; you issue the tax-free tag (e.g. Planet) when the piece is handed over.'),
                     Forms\Components\TextInput::make('tax_free_min')->label('Minimum purchase for tax-free')->numeric()->minValue(0)->prefix('AED')
                         ->visible(fn (Forms\Get $get) => (bool) $get('tax_free_enabled'))->helperText('UAE rule: AED 250 including VAT.'),
+                    Forms\Components\Select::make('delivery_location')->label('Customer\'s map location (delivery)')
+                        ->options(['optional' => 'Ask — optional', 'required' => 'Required for delivery orders', 'off' => 'Not asked'])
+                        ->helperText('At checkout the customer taps "Use my current location" or pastes a Google Maps link. The order shows "📍 Open in Google Maps" for the driver.'),
                     Forms\Components\Select::make('id_photos')->label('Photos of the ID (front and back)')->required()
                         ->options(['optional' => 'Optional — customer may upload', 'required' => 'Required — front and back must be uploaded', 'hidden' => 'Not asked'])
                         ->helperText('Photos are stored privately; only admins can open them from the order.'),

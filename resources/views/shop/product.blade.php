@@ -18,22 +18,42 @@
     </nav>
 
     <div class="mt-6 grid gap-10 lg:grid-cols-2">
+        @php($video = $product->video())
+        @php($videoAt = count($images))
         <div x-data="{ active: 0 }">
             <div class="relative overflow-hidden rounded-3xl border border-line bg-sand" data-fly-scope>
                 @foreach ($images as $i => $img)
                     <img x-show="active === {{ $i }}" @if($i) x-cloak @endif src="{{ $img }}" alt="{{ $name }}" class="aspect-square w-full object-cover {{ $product->inStock() ? '' : 'grayscale-[35%]' }}" loading="{{ $i ? 'lazy' : 'eager' }}" width="900" height="900">
                 @endforeach
+                {{-- The video loads only when the customer taps play (preload none / iframe added on tap). --}}
+                @if ($video && $video['type'] === 'file')
+                    <video x-show="active === {{ $videoAt }}" x-cloak x-effect="if (active !== {{ $videoAt }}) $el.pause()" src="{{ $video['url'] }}" poster="{{ $images[0] }}" controls playsinline preload="none" class="aspect-square w-full bg-black object-contain"></video>
+                @elseif ($video && $video['type'] === 'youtube')
+                    <template x-if="active === {{ $videoAt }}"><iframe src="{{ $video['url'] }}&autoplay=1" title="{{ $name }}" class="aspect-square w-full" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></template>
+                @endif
                 @unless ($product->inStock())
                     @include('partials.sold-watermark', ['large' => true])
                 @endunless
                 @include('partials.diamond-specs', ['large' => true])
+                @if ($video && $video['type'] !== 'link')
+                    <button type="button" x-show="active !== {{ $videoAt }}" @click="active = {{ $videoAt }}" class="absolute bottom-3 end-3 z-[4] inline-flex items-center gap-1.5 rounded-full bg-black/70 px-3 py-1.5 text-xs font-semibold text-white backdrop-blur hover:bg-black">
+                        <svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>{{ __('shop.product.watch_video') }}</button>
+                @endif
             </div>
-            @if (count($images) > 1)
-                <div class="mt-3 flex gap-3">
+            @if (count($images) > 1 || ($video && $video['type'] !== 'link'))
+                <div class="mt-3 flex flex-wrap gap-3">
                     @foreach ($images as $i => $img)
                         <button @click="active = {{ $i }}" class="h-20 w-20 overflow-hidden rounded-xl border" :class="active === {{ $i }} ? 'border-gold-500' : 'border-line'"><img src="{{ $img }}" alt="" class="h-full w-full object-cover" loading="lazy"></button>
                     @endforeach
+                    @if ($video && $video['type'] !== 'link')
+                        <button @click="active = {{ $videoAt }}" class="relative h-20 w-20 overflow-hidden rounded-xl border" :class="active === {{ $videoAt }} ? 'border-gold-500' : 'border-line'" aria-label="{{ __('shop.product.watch_video') }}">
+                            <img src="{{ $video['thumb'] ?? $images[0] }}" alt="" class="h-full w-full object-cover" loading="lazy">
+                            <span class="absolute inset-0 flex items-center justify-center bg-black/35 text-white"><svg class="h-7 w-7" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></span></button>
+                    @endif
                 </div>
+            @endif
+            @if ($video && $video['type'] === 'link')
+                <a href="{{ $video['url'] }}" target="_blank" rel="noopener" class="btn-outline mt-3 w-full gap-2"><svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>{{ __('shop.product.watch_video') }}</a>
             @endif
         </div>
 

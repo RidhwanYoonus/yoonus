@@ -199,6 +199,8 @@ class OrderResource extends Resource
                 Infolists\Components\TextEntry::make('buyer_trn')->label('Buyer TRN')->placeholder('—'),
                 Infolists\Components\TextEntry::make('shipping_address')->label('Delivery')->placeholder(fn (Order $record) => $record->pickupBranch ? 'Pickup: '.$record->pickupBranch->name : '—')
                     ->formatStateUsing(fn ($state) => is_array($state) ? implode(', ', array_filter([$state['line1'] ?? null, $state['line2'] ?? null, $state['city'] ?? null, $state['zone'] ?? null])) : $state),
+                Infolists\Components\TextEntry::make('delivery_map')->label('Customer\'s location')->state(fn (Order $record) => $record->deliveryMapUrl() ? '📍 Open in Google Maps' : null)
+                    ->url(fn (Order $record) => $record->deliveryMapUrl())->openUrlInNewTab()->color('primary')->visible(fn (Order $record) => $record->fulfilment === 'delivery')->placeholder('Not shared'),
             ]),
             Infolists\Components\Section::make('Identity & handover')->columnSpan(1)->schema([
                 Infolists\Components\TextEntry::make('tax_free_requested')->label('Tourist tax-free')->badge()->color('warning')

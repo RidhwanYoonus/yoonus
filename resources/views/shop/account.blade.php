@@ -47,6 +47,23 @@
         </div>
     </section>
 
+    @if ($showCards)
+        <section class="mt-10">
+            <h2 class="font-display text-2xl">{{ __('shop.card.saved_title') }}</h2>
+            <p class="mt-1 text-xs text-muted">🔒 {{ __('shop.card.saved_note') }}</p>
+            <ul class="card mt-4 divide-y divide-line text-sm">
+                @forelse ($cards as $c)
+                    <li class="flex flex-wrap items-center gap-3 px-4 py-3"><span class="font-medium">{{ $c['brand'] }} •••• {{ $c['last4'] }}</span>
+                        <span class="text-xs text-muted">{{ __('shop.card.expires', ['date' => $c['exp']]) }}</span>
+                        <form method="POST" action="{{ route('account.cards.remove', $c['id']) }}" class="ms-auto" onsubmit="return confirm(@js(__('shop.card.remove').'?'))">@csrf @method('DELETE')
+                            <button class="text-xs text-red-700 underline">{{ __('shop.card.remove') }}</button></form></li>
+                @empty
+                    <li class="px-4 py-4 text-muted">{{ __('shop.card.saved_none') }}</li>
+                @endforelse
+            </ul>
+        </section>
+    @endif
+
     <section class="mt-10 grid gap-8 lg:grid-cols-2">
         <div>
             <h2 class="font-display text-2xl">{{ __('shop.account.addresses') }}</h2>

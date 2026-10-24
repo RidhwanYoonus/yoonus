@@ -38,7 +38,7 @@
             </div>
         </div>
 
-        <form method="POST" action="{{ route('account.id.store') }}" enctype="multipart/form-data" class="card p-4 sm:p-6"
+        <form method="POST" action="{{ route('account.id.store') }}" enctype="multipart/form-data" class="card p-4 sm:p-6" data-live-validate
               x-data="{ needed: true, useSaved: false, tourist: @js((bool) old('is_tourist', $u->is_tourist)), type: @js(old('id_type', $u->id_type ?: 'emirates_id')) }" x-effect="if (tourist) type = 'passport'">
             @csrf
             <h3 class="font-display text-xl">{{ $u->id_saved_at ? __('shop.id.replace') : __('shop.id.add_id') }}</h3>

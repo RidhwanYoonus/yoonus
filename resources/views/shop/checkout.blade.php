@@ -42,7 +42,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('checkout.place') }}" enctype="multipart/form-data" class="mt-8 grid gap-10 lg:grid-cols-[1fr_25rem]">
+    <form method="POST" action="{{ route('checkout.place') }}" enctype="multipart/form-data" data-live-validate class="mt-8 grid gap-10 lg:grid-cols-[1fr_25rem]">
         @csrf
         <input type="hidden" name="expected_total" :value="q.grand_total_raw">
         <div class="space-y-8">
@@ -79,6 +79,39 @@
                     <div class="sm:col-span-2"><label class="label" for="line1">{{ __('shop.checkout.address') }}</label><input id="line1" name="line1" x-model="form.line1" class="input" :required="form.fulfilment === 'delivery'" autocomplete="address-line1"></div>
                     <div><label class="label" for="line2">{{ __('shop.checkout.address2') }}</label><input id="line2" name="line2" x-model="form.line2" class="input" autocomplete="address-line2"></div>
                     <div><label class="label" for="city">{{ __('shop.checkout.city') }}</label><input id="city" name="city" x-model="form.city" class="input" :required="form.fulfilment === 'delivery'" autocomplete="address-level2"></div>
+                    @php($locMode = \App\Http\Controllers\CheckoutController::locationMode())
+                    @if ($locMode !== 'off')
+                        {{-- The exact spot for the driver: the phone's location, or a Google Maps link the customer pastes. --}}
+                        <div class="sm:col-span-2 rounded-xl border border-line p-4" x-data="{ lat: @js(old('delivery_lat', '')), lng: @js(old('delivery_lng', '')), link: @js(old('map_link', '')), busy: false, err: '',
+                                locate() {
+                                    if (! navigator.geolocation) { this.err = @js(__('shop.location.unsupported')); return; }
+                                    this.busy = true; this.err = '';
+                                    navigator.geolocation.getCurrentPosition(p => { this.lat = p.coords.latitude.toFixed(7); this.lng = p.coords.longitude.toFixed(7); this.busy = false; },
+                                        () => { this.busy = false; this.err = @js(__('shop.location.denied')); }, { enableHighAccuracy: true, timeout: 15000 });
+                                },
+                                fromLink() {
+                                    const m = this.link.match(/(?:@|q=|query=|ll=)(-?\d{1,2}\.\d+),\s*(-?\d{1,3}\.\d+)/);
+                                    if (m) { this.lat = m[1]; this.lng = m[2]; }
+                                } }">
+                            <p class="label">{{ __('shop.location.title') }} @if ($locMode === 'required')<span class="text-red-700">*</span>@else<span class="text-xs font-normal text-muted">({{ __('shop.location.optional') }})</span>@endif</p>
+                            <p class="text-xs text-muted">{{ __('shop.location.intro') }}</p>
+                            <input type="hidden" name="delivery_lat" :value="lat" :disabled="form.fulfilment !== 'delivery' || ! lat">
+                            <input type="hidden" name="delivery_lng" :value="lng" :disabled="form.fulfilment !== 'delivery' || ! lng">
+                            <button type="button" @click="locate()" class="btn-dark mt-3 gap-2 px-4 py-2 text-sm" :disabled="busy">📍 <span x-text="busy ? @js(__('shop.location.finding')) : (lat ? @js(__('shop.location.again')) : @js(__('shop.location.use_mine')))"></span></button>
+                            <p x-show="err" x-cloak x-text="err" class="mt-2 text-xs text-red-700"></p>
+                            <template x-if="lat && lng">
+                                <div class="mt-3">
+                                    <iframe :src="'https://maps.google.com/maps?q=' + lat + ',' + lng + '&z=17&output=embed'" class="h-48 w-full rounded-xl border border-line" loading="lazy" title="{{ __('shop.location.title') }}"></iframe>
+                                    <p class="mt-1 text-xs text-green-700">✓ {{ __('shop.location.added') }} <button type="button" class="underline" @click="lat = ''; lng = ''">{{ __('shop.location.remove') }}</button></p>
+                                </div>
+                            </template>
+                            <label class="label mt-3" for="map_link">{{ __('shop.location.or_link') }}</label>
+                            <input id="map_link" name="map_link" x-model="link" @change="fromLink()" class="input" dir="ltr" inputmode="url" placeholder="https://maps.app.goo.gl/…" pattern="https://.*" :disabled="form.fulfilment !== 'delivery'"
+                                   @if ($locMode === 'required') :required="form.fulfilment === 'delivery' && ! lat" @endif>
+                            @error('map_link')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror
+                            @error('delivery_lat')<p class="mt-1 text-xs text-red-700">{{ __('shop.location.needed') }}</p>@enderror
+                        </div>
+                    @endif
                     @auth<label class="flex items-center gap-2 text-sm sm:col-span-2"><input type="checkbox" name="save_address" value="1" class="accent-gold-600"> {{ __('shop.checkout.save_address') }}</label>@endauth
                 </div>
                 @endif

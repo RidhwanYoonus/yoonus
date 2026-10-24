@@ -34,6 +34,28 @@ class Product extends Model
         ]));
     }
 
+    /** YouTube video id from any YouTube link (watch, youtu.be, shorts, embed), or null. */
+    public function youtubeId(): ?string
+    {
+        return preg_match('~(?:youtube\.com/(?:watch\?(?:.*&)?v=|shorts/|embed/|live/)|youtu\.be/)([A-Za-z0-9_-]{11})~', (string) $this->video_url, $m) ? $m[1] : null;
+    }
+
+    /** ['type' => 'file'|'youtube'|'link', 'url' => …] or null when the piece has no video. */
+    public function video(): ?array
+    {
+        if (filled($this->video_path)) {
+            return ['type' => 'file', 'url' => \Illuminate\Support\Facades\Storage::disk('public')->url($this->video_path)];
+        }
+        if ($id = $this->youtubeId()) {
+            return ['type' => 'youtube', 'url' => 'https://www.youtube-nocookie.com/embed/'.$id.'?rel=0&playsinline=1', 'thumb' => 'https://i.ytimg.com/vi/'.$id.'/hqdefault.jpg'];
+        }
+        if (filled($this->video_url) && preg_match('~^https://~', $this->video_url)) {
+            return ['type' => 'link', 'url' => $this->video_url];
+        }
+
+        return null;
+    }
+
     public const GOLD_COLOURS = ['yellow' => 'Yellow gold', 'white' => 'White gold', 'rose' => 'Rose gold', 'two_tone' => 'Two-tone gold'];
 
     /** Sizes the customer chooses from (ring / bangle / chain length…), [] when the piece has one size. */

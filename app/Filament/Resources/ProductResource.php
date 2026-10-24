@@ -145,6 +145,12 @@ class ProductResource extends Resource
                         ->extraInputAttributes(['capture' => 'environment'])   // opens the back camera straight away on phones
                         ->placeholder('📷 Tap to open the camera')
                         ->helperText('On a phone this opens the back camera. Photos taken here are added after the images above when you save.'),
+                    Forms\Components\FileUpload::make('video_path')->label('Product video (optional)')
+                        ->disk('public')->directory('products/videos')->acceptedFileTypes(['video/mp4', 'video/quicktime', 'video/webm'])->maxSize(51200)
+                        ->helperText('MP4 or MOV from your phone, up to 50 MB (about 20–40 seconds). It only loads when the customer taps play, so it does not slow down the page.'),
+                    Forms\Components\TextInput::make('video_url')->label('…or a YouTube / Instagram / TikTok video link')->url()->maxLength(255)
+                        ->placeholder('https://youtu.be/…')
+                        ->helperText('A link uses no space on your website. YouTube plays inside the product page; Instagram and TikTok open in their app.'),
                 ]),
                 \App\Filament\Support\SeoFields::section(Product::class)->collapsed(fn (?Product $record) => $record && filled($record->meta_title) && filled($record->meta_description)),
             ]),

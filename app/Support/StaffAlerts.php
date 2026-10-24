@@ -24,7 +24,7 @@ class StaffAlerts
         $order->loadMissing('items');
         $items = $order->items->map(fn ($i) => $i->qty.' × '.$i->product_name.($i->optionsText() ? ' ('.$i->optionsText().')' : ''))->implode(', ');
         $text = "🛍 New order {$order->number} ({$why})\n{$order->customer_name} · {$order->phone}\n{$items}\nTotal AED ".number_format((float) $order->grand_total, 2)
-            ."\n".($order->fulfilment === 'pickup' ? 'Store pickup' : 'Delivery')."\n".url('/admin/orders/'.$order->id);
+            ."\n".($order->fulfilment === 'pickup' ? 'Store pickup' : 'Delivery'.($order->deliveryMapUrl() ? ' 📍 '.$order->deliveryMapUrl() : ''))."\n".url('/admin/orders/'.$order->id);
         $messenger = app(Messenger::class);
         foreach (self::numbers('staff_order_whatsapp') as $number) {
             $messenger->whatsapp($number, $text, 'staff_new_order');

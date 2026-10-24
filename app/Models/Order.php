@@ -125,6 +125,17 @@ class Order extends Model
     }
 
     /** Unpaid online order still inside its payment window. */
+    /** Google Maps link to the delivery spot the customer shared (map pin or pasted link), or null. */
+    public function deliveryMapUrl(): ?string
+    {
+        if (filled($this->delivery_lat ?? null) && filled($this->delivery_lng ?? null)) {
+            return 'https://www.google.com/maps/search/?api=1&query='.((float) $this->delivery_lat).','.((float) $this->delivery_lng);
+        }
+        $link = is_array($this->shipping_address) ? ($this->shipping_address['map_link'] ?? null) : null;
+
+        return filled($link) ? $link : null;
+    }
+
     public function awaitingPayment(): bool
     {
         return $this->status === 'pending' && $this->payment_status === 'unpaid'

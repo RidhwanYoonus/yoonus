@@ -57,6 +57,7 @@ return [
     ],
 
     'product' => [
+        'watch_video' => 'Watch video',
         'size' => 'Size', 'gold_colour' => 'Gold colour', 'choose' => 'Choose…',
         'choose_size' => 'Please choose a size.', 'choose_colour' => 'Please choose a gold colour.', 'choose_options' => 'Choose size / colour',
         'colour_yellow' => 'Yellow gold', 'colour_white' => 'White gold', 'colour_rose' => 'Rose gold', 'colour_two_tone' => 'Two-tone gold',
@@ -259,6 +260,31 @@ return [
         'delivered' => ['subject' => 'Order :number delivered', 'body' => 'We hope you love it. Thank you for shopping with us!'],
         'cancelled' => ['subject' => 'Order :number cancelled', 'body' => 'Your order has been cancelled. Contact us if you have any questions.'],
         'refunded' => ['subject' => 'Refund for order :number', 'body' => 'Your refund has been processed.'],
+    ],
+
+    'location' => [
+        'title' => 'Your location on the map', 'optional' => 'optional, helps the driver find you',
+        'intro' => 'Tap the button while you are at the delivery address, or paste a location link from Google Maps.',
+        'use_mine' => 'Use my current location', 'again' => 'Update my location', 'finding' => 'Finding you…',
+        'added' => 'Location added.', 'remove' => 'Remove', 'or_link' => 'Or paste a Google Maps link',
+        'denied' => 'We could not get your location. Allow location for this site in your browser, or paste a Google Maps link below.',
+        'unsupported' => 'This browser cannot share a location. Please paste a Google Maps link below.',
+        'needed' => 'Please share your location on the map for the delivery.',
+    ],
+
+    'card' => [
+        'title' => 'Pay by card', 'loading' => 'Loading the secure card form…', 'new' => 'Use a new card',
+        'secure' => 'Your card details go straight to Stripe, our bank-grade payment partner. We never see or keep your card number.',
+        'save' => 'Save this card for my next purchase', 'pay' => 'Pay :amount', 'paying' => 'Paying…', 'expires' => 'exp. :date',
+        'declined' => 'The payment did not go through. Please check the card or try another one.', 'back' => 'Back to my order',
+        'saved_title' => 'Saved cards', 'saved_none' => 'No saved cards. Tick "Save this card" when you pay to add one.',
+        'remove' => 'Remove', 'removed' => 'Card removed.', 'saved_note' => 'Cards are kept safely by Stripe, not on our website.',
+    ],
+
+    'form' => [
+        'required' => 'Please fill in this box.', 'email' => 'Please enter a full email address, e.g. name@gmail.com.',
+        'check' => 'Please check this box.', 'photo' => 'Please add this photo.',
+        'emirates_check' => 'This Emirates ID number does not look right — please check every digit (or add a photo of the ID).',
     ],
 
     'auth' => [
