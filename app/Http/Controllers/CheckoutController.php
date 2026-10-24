@@ -312,6 +312,47 @@ class CheckoutController extends Controller
         ];
     }
 
+    /** Coordinates from a Google Maps link; short links (maps.app.goo.gl) are opened to see where they lead. */
+    public function mapLink(Request $request)
+    {
+        $url = (string) $request->validate(['url' => ['required', 'string', 'max:255', 'regex:~^https://(maps\.app\.goo\.gl|goo\.gl/maps|(www\.)?google\.[a-z.]+/maps|maps\.google\.[a-z.]+)~']])['url'];
+        for ($hop = 0; $hop < 4; $hop++) {
+            if ($c = self::coordinates($url)) {
+                return response()->json(['lat' => $c[0], 'lng' => $c[1]]);
+            }
+            if (! preg_match('~^https://(maps\.app\.goo\.gl|goo\.gl|(www\.)?google\.[a-z.]+|maps\.google\.[a-z.]+)/~', $url)) {
+                break;
+            }
+            try {
+                $res = \App\Support\SecureHttp::send(fn ($http) => $http->withoutRedirecting()->get($url));
+            } catch (Throwable) {
+                break;
+            }
+            $next = $res->header('Location');
+            if (! $next) {
+                $c = self::coordinates((string) $res->body());
+
+                return $c ? response()->json(['lat' => $c[0], 'lng' => $c[1]]) : response()->json([], 404);
+            }
+            $url = $next;
+        }
+
+        return response()->json([], 404);
+    }
+
+    /** [lat, lng] from text such as …/@25.2048,55.2708,17z or ?q=25.2048,55.2708, or null. */
+    public static function coordinates(string $text): ?array
+    {
+        $text = urldecode($text);
+        foreach (['~!3d(-?\d{1,2}\.\d+)!4d(-?\d{1,3}\.\d+)~', '~@(-?\d{1,2}\.\d+),(-?\d{1,3}\.\d+)~', '~[?&](?:q|query|ll|center|destination)=(-?\d{1,2}\.\d+),\s*\+?(-?\d{1,3}\.\d+)~', '~/search/(-?\d{1,2}\.\d+),\s*\+?(-?\d{1,3}\.\d+)~'] as $re) {
+            if (preg_match($re, $text, $m) && abs((float) $m[1]) <= 90 && abs((float) $m[2]) <= 180) {
+                return [round((float) $m[1], 7), round((float) $m[2], 7)];
+            }
+        }
+
+        return null;
+    }
+
     /** Customer's map location for delivery: off | optional | required. */
     public static function locationMode(): string
     {

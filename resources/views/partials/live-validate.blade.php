@@ -7,12 +7,13 @@
     const fields = 'input:not([type=hidden]):not([type=submit]):not([type=button]), select, textarea';
     const visible = el => el.offsetParent !== null && ! el.classList.contains('sr-only');
     // Where the message goes: under the box, or under its wrapper (password eye, photo buttons, tick boxes).
-    const anchor = el => el.type === 'file' ? (el.closest('[x-data]') || el.parentElement)
+    const anchor = el => el.dataset.verifyGuard !== undefined ? el.parentElement
+        : el.type === 'file' ? (el.closest('[x-data]') || el.parentElement)
         : (el.type === 'checkbox' || el.type === 'radio') ? (el.closest('label') || el)
         : (el.parentElement.classList.contains('relative') ? el.parentElement : el);
     const message = el => {
         const v = el.validity;
-        if (v.valueMissing) return el.type === 'file' ? t.photo : t.required;
+        if (v.valueMissing) return el.dataset.msg || (el.type === 'file' ? t.photo : t.required);
         if (v.typeMismatch && el.type === 'email') return t.email;
         return el.validationMessage || t.check;
     };
@@ -38,6 +39,11 @@
         if (el.disabled || ! el.willValidate) return clear(el);
         if (! el.validity.valid) return show(el, message(el));
         clear(el);
+        // Mobile number typed: remind right away that it needs the code (checkout).
+        if (el.name === 'phone') {
+            const guard = el.form?.querySelector('[data-verify-guard]');
+            if (guard) setTimeout(() => check(guard), 50);
+        }
         // Emirates ID: the last digit checks the others, so a typing mistake is caught (a warning only).
         if (el.name === 'id_number') {
             const type = el.form?.querySelector('[name=id_type]')?.value, d = el.value.replace(/\D/g, '');
@@ -53,14 +59,17 @@
         const form = e.target.form;
         if (! form || form.dataset.liveValidate === undefined) return;
         check(e.target);
-        if (form.dataset.reported) return;
-        form.dataset.reported = '1';
-        setTimeout(() => delete form.dataset.reported, 300);
-        const first = [...form.querySelectorAll(fields)].find(f => f.willValidate && ! f.validity.valid);
-        if (first && ! visible(first)) {
-            e.preventDefault();   // the browser cannot point at a hidden box: show its message and scroll there
-            anchor(first).scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (! form.dataset.reported) {
+            form.dataset.reported = '1';
+            setTimeout(() => { delete form.dataset.reported; delete form.dataset.hiddenFirst; }, 300);
+            const first = [...form.querySelectorAll(fields)].find(f => f.willValidate && ! f.validity.valid);
+            if (first && ! visible(first)) {
+                // The browser cannot point at a hidden box (e.g. the mobile code): scroll to its message ourselves.
+                form.dataset.hiddenFirst = '1';
+                anchor(first).scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         }
+        if (form.dataset.hiddenFirst) e.preventDefault();   // and stop the browser jumping to a later box
     }, true);
     // Sent back by the server with errors: go to the first box with a message, not the top of the page.
     document.addEventListener('DOMContentLoaded', () => forms().forEach(form => {

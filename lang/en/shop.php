@@ -138,6 +138,7 @@ return [
     ],
 
     'checkout' => [
+        'press_again' => 'Please check the new total and press Place order again.',
         'title' => 'Checkout', 'delivery_paused' => 'Paused at the moment', 'no_fulfilment' => 'Delivery and pickup are both unavailable right now — please contact us to order.', 'contact' => 'Contact details', 'guest_note' => 'Checking out as a guest. Have an account?',
         'name' => 'Full name', 'phone' => 'Mobile number', 'email' => 'Email address',
         'buyer_trn' => 'Company TRN (optional)', 'buyer_trn_note' => 'For B2B purchases — shown on your tax invoice.',
@@ -263,6 +264,7 @@ return [
     ],
 
     'location' => [
+        'filled' => 'We filled in the address from the map — please check the street and building above.',
         'title' => 'Your location on the map', 'optional' => 'optional, helps the driver find you',
         'intro' => 'Tap the button while you are at the delivery address, or paste a location link from Google Maps.',
         'use_mine' => 'Use my current location', 'again' => 'Update my location', 'finding' => 'Finding you…',

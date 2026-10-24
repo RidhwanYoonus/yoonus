@@ -154,4 +154,32 @@ class CardVideoLocationTest extends TestCase
         $this->post('/checkout', $form + ['map_link' => 'https://maps.app.goo.gl/abc123'])->assertSessionHasNoErrors();
         $this->assertSame('https://maps.app.goo.gl/abc123', Order::sole()->deliveryMapUrl());
     }
+
+    public function test_google_maps_links_give_the_spot_short_links_are_followed(): void
+    {
+        $c = \App\Http\Controllers\CheckoutController::class;
+        $this->assertSame([25.2048493, 55.2707828], $c::coordinates('https://www.google.com/maps/place/Burj/@25.2048493,55.2707828,17z'));
+        $this->assertSame([25.1, 55.2], $c::coordinates('https://maps.google.com/?q=25.1,55.2'));
+        $this->assertSame([25.11, 55.22], $c::coordinates('https://www.google.com/maps/place/x/data=!3d25.11!4d55.22'));
+        $this->assertNull($c::coordinates('https://maps.app.goo.gl/abc'));
+
+        Http::fake(['maps.app.goo.gl/*' => Http::response('', 302, ['Location' => 'https://www.google.com/maps/place/Home/@25.3,55.4,17z'])]);
+        $this->postJson('/checkout/map-link', ['url' => 'https://maps.app.goo.gl/abc'])->assertJson(['lat' => 25.3, 'lng' => 55.4]);
+        $this->postJson('/checkout/map-link', ['url' => 'https://evil.example/x'])->assertStatus(422);
+    }
+
+    public function test_checkout_points_at_the_mobile_code_and_says_a_price_change_next_to_the_button(): void
+    {
+        Settings::set(['phone_verification' => true]);
+        $this->post('/cart/add/band');
+        $page = $this->get('/checkout');
+        if (\App\Shop\PhoneVerification::enabled()) {
+            $page->assertSee('data-verify-guard', false);
+        }
+        $branch = Branch::firstOrCreate(['name' => 'Souk'], ['emirate' => 'Dubai', 'address' => 'Deira']);
+        Settings::set(['phone_verification' => false]);
+        $this->post('/checkout', ['email' => 'g@example.com', 'phone' => '+971501234567', 'name' => 'G', 'fulfilment' => 'pickup', 'pickup_branch_id' => $branch->id,
+            'payment_method' => 'cod', 'expected_total' => '1.00'])->assertSessionHas('price_updated');
+        $this->get('/checkout')->assertSee('Please check the new total and press Place order again.');
+    }
 }

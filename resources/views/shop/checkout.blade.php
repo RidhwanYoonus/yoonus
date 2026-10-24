@@ -82,16 +82,39 @@
                     @php($locMode = \App\Http\Controllers\CheckoutController::locationMode())
                     @if ($locMode !== 'off')
                         {{-- The exact spot for the driver: the phone's location, or a Google Maps link the customer pastes. --}}
-                        <div class="sm:col-span-2 rounded-xl border border-line p-4" x-data="{ lat: @js(old('delivery_lat', '')), lng: @js(old('delivery_lng', '')), link: @js(old('map_link', '')), busy: false, err: '',
+                        <div class="sm:col-span-2 rounded-xl border border-line p-4" x-data="{ lat: @js(old('delivery_lat', '')), lng: @js(old('delivery_lng', '')), link: @js(old('map_link', '')), busy: false, err: '', filled: '',
                                 locate() {
                                     if (! navigator.geolocation) { this.err = @js(__('shop.location.unsupported')); return; }
                                     this.busy = true; this.err = '';
-                                    navigator.geolocation.getCurrentPosition(p => { this.lat = p.coords.latitude.toFixed(7); this.lng = p.coords.longitude.toFixed(7); this.busy = false; },
+                                    navigator.geolocation.getCurrentPosition(p => { this.lat = p.coords.latitude.toFixed(7); this.lng = p.coords.longitude.toFixed(7); this.busy = false; this.address(); },
                                         () => { this.busy = false; this.err = @js(__('shop.location.denied')); }, { enableHighAccuracy: true, timeout: 15000 });
                                 },
-                                fromLink() {
+                                async fromLink() {
+                                    if (! /^https:\/\//.test(this.link)) return;
                                     const m = this.link.match(/(?:@|q=|query=|ll=)(-?\d{1,2}\.\d+),\s*(-?\d{1,3}\.\d+)/);
-                                    if (m) { this.lat = m[1]; this.lng = m[2]; }
+                                    if (m) { this.lat = m[1]; this.lng = m[2]; this.address(); return; }
+                                    // Short link from the Google Maps app: the shop opens it to find the spot.
+                                    try {
+                                        const r = await fetch(@js(route('checkout.map-link')), { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content }, body: JSON.stringify({ url: this.link }) });
+                                        if (r.ok) { const j = await r.json(); this.lat = String(j.lat); this.lng = String(j.lng); this.address(); }
+                                    } catch (e) {}
+                                },
+                                // Street, building and area from the map spot (OpenStreetMap); only empty boxes are filled, then the customer checks them.
+                                async address() {
+                                    this.filled = '';
+                                    try {
+                                        const r = await fetch('https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&addressdetails=1&accept-language=en&lat=' + this.lat + '&lon=' + this.lng);
+                                        const a = (await r.json()).address || {};
+                                        const put = (id, v) => { const el = document.getElementById(id); if (el && v && ! el.value.trim()) { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); return 1; } return 0; };
+                                        let n = put('line1', [a.house_number, a.road || a.pedestrian || a.street].filter(Boolean).join(' ') || a.neighbourhood || a.quarter);
+                                        n += put('line2', a.building || a.amenity || a.residential || '');
+                                        n += put('city', a.suburb || a.neighbourhood || a.quarter || a.city_district || a.city || a.town || a.village);
+                                        const em = (a.state || a.city || '').replace(/ Emirate$/i, '').trim().toLowerCase();
+                                        const zone = document.getElementById('zone_id');
+                                        const opt = em && zone && [...zone.options].find(o => o.text.toLowerCase().startsWith(em));
+                                        if (opt && zone.value !== opt.value) { zone.value = opt.value; zone.dispatchEvent(new Event('change', { bubbles: true })); n++; }
+                                        if (n) this.filled = @js(__('shop.location.filled'));
+                                    } catch (e) {}
                                 } }">
                             <p class="label">{{ __('shop.location.title') }} @if ($locMode === 'required')<span class="text-red-700">*</span>@else<span class="text-xs font-normal text-muted">({{ __('shop.location.optional') }})</span>@endif</p>
                             <p class="text-xs text-muted">{{ __('shop.location.intro') }}</p>
@@ -103,6 +126,7 @@
                                 <div class="mt-3">
                                     <iframe :src="'https://maps.google.com/maps?q=' + lat + ',' + lng + '&z=17&output=embed'" class="h-48 w-full rounded-xl border border-line" loading="lazy" title="{{ __('shop.location.title') }}"></iframe>
                                     <p class="mt-1 text-xs text-green-700">✓ {{ __('shop.location.added') }} <button type="button" class="underline" @click="lat = ''; lng = ''">{{ __('shop.location.remove') }}</button></p>
+                                    <p x-show="filled" x-text="filled" class="mt-1 text-xs text-gold-700"></p>
                                 </div>
                             </template>
                             <label class="label mt-3" for="map_link">{{ __('shop.location.or_link') }}</label>
@@ -132,7 +156,8 @@
                         <svg class="mt-1 h-6 w-6 shrink-0 text-gold-700" fill="none" stroke="currentColor" stroke-width="1.6" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3"/></svg>
                         <div><h2 class="font-display text-2xl">{{ __('shop.verify.title') }}</h2><p class="mt-1 text-sm text-muted">{{ __('shop.verify.checkout_intro') }}</p></div>
                     </div>
-                    <div class="mt-4">@include('partials.phone-verify', ['phoneModel' => 'form.phone', 'verifiedPhones' => $verifiedPhones, 'emailInput' => '#email'])</div>
+                    <div class="mt-4">@include('partials.phone-verify', ['phoneModel' => 'form.phone', 'verifiedPhones' => $verifiedPhones, 'emailInput' => '#email', 'guard' => true])
+                        @error('phone_verification')<p class="mt-2 text-xs text-red-700">{{ $message }}</p>@enderror</div>
                     @error('phone_verification')<p class="mt-2 text-sm text-red-700">{{ $message }}</p>@enderror
                 </section>
             @endif
@@ -290,6 +315,14 @@
                         ]) !!}</span>
                     </label>
                     @error('accept_terms')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror
+                @endif
+                {{-- Sent back without a box to point at (price moved, method or delivery changed): say it here, next to the button. --}}
+                @php($general = collect(['checkout', 'payment_method', 'tax_free'])->map(fn ($k) => $errors->first($k))->filter())
+                @if (session('price_updated') || $general->isNotEmpty())
+                    <div class="mt-4 rounded-xl border border-gold-400 bg-gold-300/20 p-3 text-sm" role="alert">
+                        @if (session('price_updated'))<p class="font-medium text-red-700">{{ session('price_updated') }}</p><p class="mt-1 text-xs">{{ __('shop.checkout.press_again') }}</p>@endif
+                        @foreach ($general as $msg)<p class="text-red-700">{{ $msg }}</p>@endforeach
+                    </div>
                 @endif
                 <button class="btn-gold mt-5 hidden h-11 w-full lg:flex" @disabled($blocked) :disabled="loading">{{ __('shop.checkout.place') }}</button>
             </div>

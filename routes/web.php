@@ -34,6 +34,7 @@ Route::get('/cart/recover/{token}', [CartController::class, 'recover'])->middlew
 Route::middleware('throttle:checkout')->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout.show');
     Route::post('/checkout/quote', [CheckoutController::class, 'quote'])->name('checkout.quote');
+    Route::post('/checkout/map-link', [CheckoutController::class, 'mapLink'])->middleware('throttle:20,1')->name('checkout.map-link');
     Route::post('/checkout', [CheckoutController::class, 'place'])->name('checkout.place');
 });
 Route::get('/checkout/complete/{order}', [CheckoutController::class, 'complete'])->name('checkout.complete');

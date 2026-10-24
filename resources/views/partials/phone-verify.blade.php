@@ -41,6 +41,10 @@
             </template>
         </div>
         <p x-show="message" x-text="message" class="text-xs" :class="error ? 'text-red-700' : 'text-muted'"></p>
+        @if (! empty($guard))
+            {{-- Checkout: the form is not sent until the number is verified (pointed out right here, not after sending). --}}
+            <input type="text" class="sr-only" tabindex="-1" aria-hidden="true" required data-verify-guard data-msg="{{ __('shop.verify.required') }}" :value="isVerified() ? '1' : ''" :disabled="isVerified()">
+        @endif
         <p x-show="testCode" class="rounded-md bg-gold-300/20 px-3 py-2 text-xs font-medium text-gold-700">TEST MODE — WhatsApp is not set up yet, so here is the code: <b x-text="testCode" class="tracking-widest"></b></p>
     </div>
 </div>
