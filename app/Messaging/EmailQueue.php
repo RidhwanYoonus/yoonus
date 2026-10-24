@@ -31,7 +31,7 @@ class EmailQueue
 
     public static function sentToday(): int
     {
-        $start = now(config('app.timezone'))->startOfDay()->utc();
+        $start = now()->startOfDay();   // dates are stored in the shop's own time (Asia/Dubai)
 
         return NotificationLog::where('channel', 'email')->whereIn('status', ['sent', 'logged'])->where('created_at', '>=', $start)->count();
     }
