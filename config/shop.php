@@ -88,6 +88,7 @@ return [
         'tax_free_min' => 250,
         'affiliate_rate_backgrounds' => [],      // photos behind the affiliates' gold-rate picture
         'id_auto_read' => true,                 // fill ID number / expiry from the ID photo (OCR in the browser)
+        'affiliate_banner' => true,             // "You are shopping with …" bar on white-page visits
         'affiliate_customer_contacts' => true,  // affiliates see phone/email of customers linked to them
         'product_text_style' => true,           // title-case product names, sentence-case descriptions on save
         'seo_auto_fill' => true,                // empty SEO boxes are written from the product / category details              // shop lists start with "Available only" ticked

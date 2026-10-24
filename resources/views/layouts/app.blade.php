@@ -67,7 +67,7 @@
     @endif
     @include('partials.rate-banner')
     @include('partials.header')
-    @if (isset($affiliateContext) && $affiliateContext->whitePage && $affiliateContext->affiliate)
+    @if (isset($affiliateContext) && $affiliateContext->whitePage && $affiliateContext->affiliate && \App\Support\Settings::bool('affiliate_banner', true))
         <div class="border-b border-line bg-sand/60 py-2 text-center text-xs text-muted">{{ __('shop.affiliate.shopping_with', ['name' => $affiliateContext->affiliate->name()]) }}</div>
     @endif
 

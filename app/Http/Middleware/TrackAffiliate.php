@@ -27,6 +27,22 @@ class TrackAffiliate
         if ($request->is('admin', 'admin/*', 'livewire/*')) {
             return $next($request);
         }
+        // ?aff=none: forget the affiliate link on this phone / computer (normal shop prices again).
+        if (strtolower((string) $request->query('aff')) === 'none') {
+            Cookie::queue(Cookie::forget(self::COOKIE));
+            if ($request->hasSession()) {
+                $request->session()->forget(self::COOKIE);
+            }
+            view()->share('affiliateContext', $context);
+
+            return $next($request);
+        }
+        // The shop's own admins and staff are never linked to an affiliate (normal prices while they check the shop).
+        if ($request->user()?->is_admin || $request->user()?->is_staff) {
+            view()->share('affiliateContext', $context);
+
+            return $next($request);
+        }
         try {
             [$code, $white] = $this->fromRequest($request);
             if ($code !== null) {

@@ -269,6 +269,8 @@ class Settings extends Page implements HasForms
                     Forms\Components\Toggle::make('affiliate_customer_contacts')->label('Affiliates see their customers\' phone and email')->inline(false)
                         ->helperText('In the affiliate portal → "My customers": customers who signed up with their link or ordered through them. Off = phone and email are partly hidden (e.g. +97150 *** 567).'),
 
+                    Forms\Components\Toggle::make('affiliate_banner')->label('Show "You are shopping with …" bar')->inline(false)
+                        ->helperText('Shown on phones that opened an affiliate\'s own price page (white page) or a product they shared from it; prices there include that affiliate\'s mark-up. To clear it on a phone, open the shop with ?aff=none at the end of the address. Admin and staff accounts are never linked.'),
                     Forms\Components\TextInput::make('affiliate_cookie_days')->label('Customer stays linked to the affiliate for')->numeric()->minValue(1)->maxValue(365)->suffix('days')
                         ->helperText('After clicking an affiliate link, orders within this time earn that affiliate commission. The last link clicked wins.'),
                     Forms\Components\Placeholder::make('affiliate_help')->hiddenLabel()->content('Defaults for new affiliates — each affiliate can have their own rates under Affiliates.'),
